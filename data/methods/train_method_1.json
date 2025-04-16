@@ -1,0 +1,26 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "RandomPoint",
+            "trainer_init": {},
+            "train_kwargs": {
+                "reps": 1
+            }
+        },
+        {
+            "trainer": "ScipyTrainer",
+            "trainer_init": {
+                "evaluator": "EfficientDepthOneEvaluator",
+                "evaluator_init": {},
+                "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
+            },
+            "train_kwargs": {
+                "result": {
+                    "optimized_params": "params0"
+                }
+            },
+            "save_file": "method_1.json"
+        }
+    ],
+    "description": "Use the efficient depth-one energy evaluation in the ScipyTrainer."
+}

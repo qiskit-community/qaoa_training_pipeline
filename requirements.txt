@@ -1,0 +1,10 @@
+fonttools>=4.43.0
+pillow>=10.2.0
+zipp>=3.19.1
+networkx
+numpy>=1.22.0
+scipy
+quimb>=1.8.2
+matplotlib>=3.3
+qiskit>=1.0
+qiskit-optimization
