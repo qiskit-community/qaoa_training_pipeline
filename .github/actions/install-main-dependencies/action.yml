@@ -10,8 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-name: 'Install Main Dependencies'
-description: 'Installs Python dependencies from Main'
+name: 'Install Training Pipeline Main Dependencies'
+description: 'Installs Python dependencies using Qiskit from Main'
 inputs:
   os:
     description: 'OS'
@@ -35,10 +35,47 @@ runs:
       with:
         path: qiskit-cache
         key: qiskit-cache-${{ inputs.os }}-${{ inputs.python-version }}-${{ env.QISKIT_HASH }}-${{ env.CACHE_VERSION }}
-    - name: Install Qiskit from Main
+    - name: Install Qiskit from Main  
       env:
         MACOSX_DEPLOYMENT_TARGET: 10.15
       run: |
-        echo 'Install Qiskit from Stable'
-        pip install -U qiskit
+        if [ "${{ inputs.qiskit-main }}" == "true" ]; then
+          echo 'Install Qiskit from Main'
+          BASE_DIR=qiskit-cache
+          build_from_main=true
+          cache_hit=${{ steps.qiskit-cache.outputs.cache-hit }}
+          echo "cache hit: ${cache_hit}"
+          if [ "$cache_hit" == "true" ]; then
+            pip_result=0
+            pushd "${BASE_DIR}"
+            python -m pip install *.whl && pip_result=$? || pip_result=$?
+            popd
+            if [ $pip_result == 0 ]; then
+              build_from_main=false
+            fi
+          else
+            mkdir -p ${BASE_DIR}
+          fi
+          if [ "$build_from_main" == "true" ]; then
+            echo 'Create wheel file from main'
+            pip install -U wheel setuptools_rust
+            git clone --depth 1 --branch main https://github.com/Qiskit/qiskit.git /tmp/qiskit
+            pushd /tmp/qiskit
+            python setup.py bdist_wheel
+            popd
+            cp -rf /tmp/qiskit/dist/*.whl "${BASE_DIR}"
+            pushd "${BASE_DIR}"
+            python -m pip install *.whl
+            popd
+            pip uninstall -y setuptools_rust
+          fi
+        else
+          echo 'Install Qiskit from Stable'
+          pip install -U qiskit
+        fi
+      shell: bash
+    - name: Install stable Aer
+      run: |
+        echo 'Install stable Aer'
+        pip install -U qiskit-aer
       shell: bash
