@@ -8,8 +8,9 @@
 
 """Tests for the reweighted trainer."""
 
-import networkx as nx
 from unittest import TestCase
+
+import networkx as nx
 
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.training.reweighting import ReweightingTrainer

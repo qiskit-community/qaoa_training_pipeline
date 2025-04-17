@@ -8,8 +8,8 @@
 
 """Tests of the train.py script."""
 
-import os, glob
-
+import glob
+import os
 import sys
 
 from unittest import TestCase

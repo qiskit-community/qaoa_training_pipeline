@@ -33,6 +33,7 @@ class TestTrainingFramework(TestCase):
         for cls in [RandomPoint, OptimizedParametersLoader]:
             trainer = cls()
 
+            # pylint: disable=pointless-statement
             with self.assertRaises(ValueError):
                 trainer.minimization
 

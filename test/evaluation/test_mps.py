@@ -303,6 +303,7 @@ class TestMPSEvaluatorSWAPs(TestCase):
         (0.5, 0.25, 0.4, 0.25, True),
     )
     @unpack
+    # pylint: disable=too-many-positional-arguments
     def test_depth_two_swap_strat(self, beta0, beta1, gamma0, gamma1, vidal):
         """Test swap strategy for depth two QAOA."""
         cost_op = SparsePauliOp.from_list(
