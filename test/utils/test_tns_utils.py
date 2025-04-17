@@ -464,7 +464,7 @@ class TestVidalCircuitMPS(TrainingPipelineTestCase):
         self.assertAlmostEqual(abs(overlap), 1.0)
 
         # Check also that the Vidal tensor is properly normalized
-        self.assertTrue(vidal_circuit.check_if_all_tensors_are_normalized())
+        self.assertTrue(vidal_circuit.check_if_all_tensors_are_normalized(1.0e-14))
 
     def test_circuit_mps_vidal_two_qubit_gate_non_nn(self):
         """Test the functionalities for applying a two-qubit gate onto a
