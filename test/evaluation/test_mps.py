@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -242,7 +242,7 @@ class TestMPSEvaluator(TestCase):
 
     def test_evaluate_from_file(self):
         """Checks the training starting from a graph stored in a file"""
-        
+
         # Retrieves the graph
         data_dir = self.test_dir + "/../data/"
         graph_file = "000000_12nodes_minus_plus_weighted.json"

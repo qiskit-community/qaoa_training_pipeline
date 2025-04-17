@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -777,7 +777,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
     def _apply_one_local(self, scaling_factor):
         """Internal helper function to apply one-local terms from the Ansatz."""
         for i_qubit in range(self.n_qubits):
-            if abs(self._adj_matrix[i_qubit, i_qubit]) > 1.0E-16:
+            if abs(self._adj_matrix[i_qubit, i_qubit]) > 1.0e-16:
                 value = 2.0 * scaling_factor * self._adj_matrix[i_qubit, i_qubit]
                 self._mps_representation.apply_rz_gate(i_qubit, value)
 
