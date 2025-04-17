@@ -10,6 +10,7 @@
 
 from test import TrainingPipelineTestCase
 
+import unittest
 from ddt import ddt
 import networkx as nx
 import numpy as np
@@ -19,8 +20,8 @@ from qiskit.circuit import Parameter
 from qiskit.circuit.library import QAOAAnsatz
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import HighLevelSynthesis
-
 from qiskit.quantum_info import SparsePauliOp
+import qiskit_optimization.optionals as _optionals
 
 from qaoa_training_pipeline.utils.graph_utils import (
     operator_to_graph,
@@ -183,6 +184,7 @@ class TestGraphUtils(TrainingPipelineTestCase):
         self.assertEqual(paulis.paulis, expected.paulis)
         self.assertTrue(np.allclose(paulis.coeffs, expected.coeffs))
 
+    @unittest.skipIf(not _optionals.HAS_CPLEX, "CPLEX not available.")
     def test_max_cut_solutions(self):
         """Test that we can properly solve for the maximum cut."""
 
