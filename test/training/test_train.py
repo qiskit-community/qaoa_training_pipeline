@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,11 +8,12 @@
 
 """Tests of the train.py script."""
 
-import os, glob
+from test import TrainingPipelineTestCase
 
+import glob
+import os
 import sys
 
-from unittest import TestCase
 from unittest.mock import patch
 from ddt import ddt, data
 
@@ -20,7 +21,7 @@ from qaoa_training_pipeline.train import train, get_script_args
 
 
 @ddt
-class TestTrain(TestCase):
+class TestTrain(TrainingPipelineTestCase):
     """Test the train.py script."""
 
     def tearDown(self) -> None:

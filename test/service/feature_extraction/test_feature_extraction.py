@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,7 +8,7 @@
 
 """Tests for feature extraction."""
 
-from unittest import TestCase
+from test import TrainingPipelineTestCase
 
 import networkx as nx
 
@@ -16,7 +16,7 @@ from qaoa_training_pipeline.service.feature_extraction import FeatureExtractor
 from qaoa_training_pipeline.utils.graph_utils import graph_to_dict
 
 
-class TestFeatureExtractor(TestCase):
+class TestFeatureExtractor(TrainingPipelineTestCase):
     """Test the feature extractor."""
 
     def setUp(self) -> None:

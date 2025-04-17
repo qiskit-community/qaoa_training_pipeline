@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,8 +8,9 @@
 
 """Tests for the reweighted trainer."""
 
+from test import TrainingPipelineTestCase
+
 import networkx as nx
-from unittest import TestCase
 
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.training.reweighting import ReweightingTrainer
@@ -17,7 +18,7 @@ from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
 
-class TestReweightedTrainer(TestCase):
+class TestReweightedTrainer(TrainingPipelineTestCase):
     """Methods to test the reweighted trainer."""
 
     def test_train(self):

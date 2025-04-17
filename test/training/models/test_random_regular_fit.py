@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,16 +8,17 @@
 
 """Test the class that fits to a model."""
 
+from test import TrainingPipelineTestCase
+
 import networkx as nx
 from ddt import ddt, data
-from unittest import TestCase
 
 from qaoa_training_pipeline.training.models.random_regular_fit import RandomRegularDepthOneFit
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
 
 @ddt
-class TestRandomRegularModel(TestCase):
+class TestRandomRegularModel(TrainingPipelineTestCase):
     @data(3, 4, 5, 7, 8, 9)
     def test_model(self, degree: int):
         model = RandomRegularDepthOneFit()

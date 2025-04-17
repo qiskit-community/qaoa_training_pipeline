@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,7 +8,7 @@
 
 """Classes to test the TQA trainer."""
 
-from unittest import TestCase
+from test import TrainingPipelineTestCase
 
 from qiskit.quantum_info import SparsePauliOp
 
@@ -16,7 +16,7 @@ from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
 from qaoa_training_pipeline.training.tqa_trainer import TQATrainer
 
 
-class TestTQA(TestCase):
+class TestTQA(TrainingPipelineTestCase):
     """Class to test the TQA trainer."""
 
     def test_no_optim(self):

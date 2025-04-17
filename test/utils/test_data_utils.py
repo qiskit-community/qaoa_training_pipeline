@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,20 +8,19 @@
 
 """Test functions that help manipulating data."""
 
-from unittest import TestCase
+from test import TrainingPipelineTestCase
+
 import networkx as nx
 
 from qiskit.quantum_info import SparsePauliOp
-
 from qiskit_optimization.applications import Maxcut
-
 from qaoa_training_pipeline.utils.data_utils import (
     samples_to_objective_values,
     input_to_operator,
 )
 
 
-class TestDataUtils(TestCase):
+class TestDataUtils(TrainingPipelineTestCase):
     """Test the functions in `data_utils.py`."""
 
     def test_samples_to_objective_values(self):
@@ -42,7 +41,7 @@ class TestDataUtils(TestCase):
         """Test that we can create cost operators."""
 
         # Standard QUBO test.
-        input = {
+        input_qubo = {
             "edge list": [
                 {"nodes": [0, 1], "weight": 1.0},
                 {"nodes": [0, 2], "weight": 1.0},
@@ -50,14 +49,14 @@ class TestDataUtils(TestCase):
         }
 
         expected = SparsePauliOp.from_list([("IZZ", 1), ("ZIZ", 1)])
-        self.assertEqual(input_to_operator(input), expected)
+        self.assertEqual(input_to_operator(input_qubo), expected)
 
         # Test the pre-factor.
         expected = SparsePauliOp.from_list([("IZZ", -0.5), ("ZIZ", -0.5)])
-        self.assertEqual(input_to_operator(input, -0.5), expected)
+        self.assertEqual(input_to_operator(input_qubo, -0.5), expected)
 
         # Test a HOBO
-        input = {
+        input_hobo = {
             "edge list": [
                 {"nodes": [0, 1, 2], "weight": -1.0},
                 {"nodes": [0, 2], "weight": 1.0},
@@ -65,4 +64,4 @@ class TestDataUtils(TestCase):
         }
 
         expected = SparsePauliOp.from_list([("ZZZ", -1), ("ZIZ", 1)])
-        self.assertEqual(input_to_operator(input), expected)
+        self.assertEqual(input_to_operator(input_hobo), expected)

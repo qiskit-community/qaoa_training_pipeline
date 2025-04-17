@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,7 +8,7 @@
 
 """Tests of the Transition States trainer."""
 
-from unittest import TestCase
+from test import TrainingPipelineTestCase
 
 from qiskit.quantum_info import SparsePauliOp
 
@@ -17,7 +17,7 @@ from qaoa_training_pipeline.evaluation import LightConeEvaluator, MPSEvaluator
 from qaoa_training_pipeline.training import TransitionStatesTrainer, ScipyTrainer
 
 
-class TestTransitionStates(TestCase):
+class TestTransitionStates(TrainingPipelineTestCase):
     """Class to test the transition states."""
 
     def setUp(self):
