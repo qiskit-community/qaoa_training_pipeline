@@ -7,5 +7,4 @@ scipy
 quimb>=1.8.2
 matplotlib>=3.3
 qiskit>=1.0,<2.0
-cplex
-qiskit-optimization
+qiskit-optimization[cplex]
