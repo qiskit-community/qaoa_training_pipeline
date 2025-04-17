@@ -8,13 +8,13 @@
 
 """Test the class that fits to a model."""
 
+from test import TrainingPipelineTestCase
+
 import networkx as nx
 from ddt import ddt, data
 
 from qaoa_training_pipeline.training.models.random_regular_fit import RandomRegularDepthOneFit
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
-
-from test import TrainingPipelineTestCase
 
 
 @ddt

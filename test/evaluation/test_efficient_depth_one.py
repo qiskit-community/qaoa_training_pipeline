@@ -8,7 +8,8 @@
 
 """Tests for the efficient depth-one evaluator."""
 
-from unittest import TestCase
+from test import TrainingPipelineTestCase
+
 from ddt import ddt, data, unpack
 import numpy as np
 
@@ -26,7 +27,7 @@ from qaoa_training_pipeline.evaluation.efficient_depth_one import (
 
 
 @ddt
-class TestEfficientDepthOne(TestCase):
+class TestEfficientDepthOne(TrainingPipelineTestCase):
     """Test the efficient depth-one evaluator."""
 
     def setUp(self) -> None:

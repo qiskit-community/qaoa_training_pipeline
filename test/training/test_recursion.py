@@ -8,14 +8,14 @@
 
 """Tests for recursive training."""
 
+from test import TrainingPipelineTestCase
+
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
 from qaoa_training_pipeline.training.recursion import RecursionTrainer
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.parameter_extenders import interpolate
-
-from test import TrainingPipelineTestCase
 
 
 class TestRecursion(TrainingPipelineTestCase):

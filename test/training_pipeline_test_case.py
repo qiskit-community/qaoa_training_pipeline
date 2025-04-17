@@ -34,3 +34,8 @@ class TrainingPipelineTestCase(unittest.TestCase):
         category=DeprecationWarning,
         message=r".*The property.*qiskit.*unit.*",
     )
+    warnings.filterwarnings(
+        "ignore",
+        category=DeprecationWarning,
+        message=r".*The property.*qiskit.*condition.*",
+    )

@@ -8,13 +8,13 @@
 
 """Tests of the Transition States trainer."""
 
+from test import TrainingPipelineTestCase
+
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.evaluation import LightConeEvaluator, MPSEvaluator
 from qaoa_training_pipeline.training import TransitionStatesTrainer, ScipyTrainer
-
-from test import TrainingPipelineTestCase
 
 
 class TestTransitionStates(TrainingPipelineTestCase):

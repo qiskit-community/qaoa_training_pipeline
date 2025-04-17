@@ -8,6 +8,8 @@
 
 """Test converting from a cost operator to a graph."""
 
+from test import TrainingPipelineTestCase
+
 from ddt import ddt
 import networkx as nx
 import numpy as np
@@ -26,8 +28,6 @@ from qaoa_training_pipeline.utils.graph_utils import (
     graph_to_operator,
     solve_max_cut,
 )
-
-from test import TrainingPipelineTestCase
 
 
 @ddt

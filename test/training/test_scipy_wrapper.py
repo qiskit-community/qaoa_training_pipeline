@@ -8,6 +8,8 @@
 
 """Tests of the SciPy trainer."""
 
+from test import TrainingPipelineTestCase
+
 from ddt import ddt, data
 import numpy as np
 
@@ -20,8 +22,6 @@ from qaoa_training_pipeline.evaluation import (
     MPSEvaluator,
 )
 from qaoa_training_pipeline.training import ScipyTrainer
-
-from test import TrainingPipelineTestCase
 
 
 @ddt

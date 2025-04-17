@@ -8,12 +8,12 @@
 
 """Tests for feature extraction."""
 
+from test import TrainingPipelineTestCase
+
 import networkx as nx
 
 from qaoa_training_pipeline.service.feature_extraction import FeatureExtractor
 from qaoa_training_pipeline.utils.graph_utils import graph_to_dict
-
-from test import TrainingPipelineTestCase
 
 
 class TestFeatureExtractor(TrainingPipelineTestCase):
