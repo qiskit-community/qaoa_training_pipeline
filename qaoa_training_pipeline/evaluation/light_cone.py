@@ -58,7 +58,7 @@ class LightConeEvaluator(BaseEvaluator):
         # The graph from which we will take sub-graphs using the light-cone.
         self.graph = None
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,

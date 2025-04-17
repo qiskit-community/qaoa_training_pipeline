@@ -10,8 +10,6 @@
 
 from unittest import TestCase
 
-import os
-
 from qaoa_training_pipeline.training.optimized_parameter_loader import OptimizedParametersLoader
 
 

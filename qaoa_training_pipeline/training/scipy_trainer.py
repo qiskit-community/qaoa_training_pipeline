@@ -73,7 +73,7 @@ class ScipyTrainer(BaseTrainer):
         """Return the parameter history of the last optimization run."""
         return self._parameter_history
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,

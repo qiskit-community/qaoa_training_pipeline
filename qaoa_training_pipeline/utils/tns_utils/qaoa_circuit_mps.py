@@ -43,6 +43,7 @@ class QAOACircuitTNSRepresentation(ABC):
       * The circuit ansatz is constructed starting from the adjecency matrix
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         n_qubits: int,
@@ -107,6 +108,7 @@ class QAOACircuitTNSRepresentation(ABC):
                 self._list_of_hyperedges.append(QAOAManyBodyCorrelator(i[0], self._n_qubits, i[1]))
 
     @classmethod
+    # pylint: disable=too-many-positional-arguments
     def construct_from_graph(
         cls,
         graph: Graph,
@@ -157,6 +159,7 @@ class QAOACircuitTNSRepresentation(ABC):
         )
 
     @classmethod
+    # pylint: disable=too-many-positional-arguments
     def construct_from_list_of_edges(
         cls,
         list_of_edges: List[Tuple[List[int], float]],
@@ -368,6 +371,7 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
     to the accuracy (measured as fidelity) at which the circuit is approximated.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         n_qubits: int,
@@ -674,6 +678,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
     For this reason, multiple qubits can be applied in parallel.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         n_qubits: int,
