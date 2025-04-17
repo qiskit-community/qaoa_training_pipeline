@@ -9,7 +9,6 @@
 """Tests for the Matrix Product State evaluator."""
 
 import os
-from unittest import TestCase
 from ddt import data, ddt, unpack
 
 import networkx as nx
@@ -25,9 +24,11 @@ from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrat
 from qaoa_training_pipeline.evaluation import MPSEvaluator, EfficientDepthOneEvaluator
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator, load_graph
 
+from test import TrainingPipelineTestCase
+
 
 @ddt
-class TestMPSEvaluator(TestCase):
+class TestMPSEvaluator(TrainingPipelineTestCase):
     """Tests for the matrix product state energy evaluation."""
 
     def setUp(self):
@@ -268,7 +269,7 @@ class TestMPSEvaluator(TestCase):
 
 
 @ddt
-class TestMPSEvaluatorSWAPs(TestCase):
+class TestMPSEvaluatorSWAPs(TrainingPipelineTestCase):
     """Test the swap strategies True option."""
 
     @data((1, 1), (0.1234, -0.56), (0.25, 0.5), (0.5, 0.25))

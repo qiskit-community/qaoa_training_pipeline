@@ -8,15 +8,15 @@
 
 """Classes to test the TQA trainer."""
 
-from unittest import TestCase
-
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
 from qaoa_training_pipeline.training.tqa_trainer import TQATrainer
 
+from test import TrainingPipelineTestCase
 
-class TestTQA(TestCase):
+
+class TestTQA(TrainingPipelineTestCase):
     """Class to test the TQA trainer."""
 
     def test_no_optim(self):

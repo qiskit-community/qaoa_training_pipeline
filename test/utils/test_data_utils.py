@@ -8,7 +8,6 @@
 
 """Test functions that help manipulating data."""
 
-from unittest import TestCase
 import networkx as nx
 
 from qiskit.quantum_info import SparsePauliOp
@@ -20,8 +19,10 @@ from qaoa_training_pipeline.utils.data_utils import (
     input_to_operator,
 )
 
+from test import TrainingPipelineTestCase
 
-class TestDataUtils(TestCase):
+
+class TestDataUtils(TrainingPipelineTestCase):
     """Test the functions in `data_utils.py`."""
 
     def test_samples_to_objective_values(self):

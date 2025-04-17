@@ -9,7 +9,6 @@
 """Tests for the light-cone evaluator."""
 
 from typing import Dict
-from unittest import TestCase
 from ddt import ddt, data, unpack
 import networkx as nx
 
@@ -22,9 +21,11 @@ from qaoa_training_pipeline.evaluation.light_cone import LightConeEvaluator
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
+from test import TrainingPipelineTestCase
+
 
 @ddt
-class TestLightConeEvaluator(TestCase):
+class TestLightConeEvaluator(TrainingPipelineTestCase):
     """Tests for the light-cone energy evaluation."""
 
     def setUp(self):

@@ -8,12 +8,12 @@
 
 """Tests for parameter loading."""
 
-from unittest import TestCase
-
 from qaoa_training_pipeline.training.optimized_parameter_loader import OptimizedParametersLoader
 
+from test import TrainingPipelineTestCase
 
-class TestOptimizedParameterLoader(TestCase):
+
+class TestOptimizedParameterLoader(TrainingPipelineTestCase):
     """Methods to test loading optimized parameters."""
 
     def test_train(self):

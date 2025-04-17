@@ -8,7 +8,6 @@
 
 """Test for the TNS utilities."""
 
-from unittest import TestCase
 from typing import List, Tuple
 
 import random
@@ -42,8 +41,10 @@ from qaoa_training_pipeline.utils.tns_utils.symbolic_mpo import SymbolicMPOConst
 
 from qaoa_training_pipeline.evaluation import MPSEvaluator
 
+from test import TrainingPipelineTestCase
 
-class TestQAOAMPS(TestCase):
+
+class TestQAOAMPS(TrainingPipelineTestCase):
     """Test methods to get MPS representations of QAOA problems."""
 
     def generate_adjacency_matrix_linear(self, n_qubits: int) -> np.array:
@@ -123,7 +124,7 @@ class TestQAOAMPS(TestCase):
 
 
 @ddt
-class TestMultiQubitGates(TestCase):
+class TestMultiQubitGates(TrainingPipelineTestCase):
     """Tests on the functionalities to represent multi-qubit gates"""
 
     def test_trivial_constructor_multi_qubit_gate(self):
@@ -227,7 +228,7 @@ class TestMultiQubitGates(TestCase):
 
 
 @ddt
-class TestCostFunction(TestCase):
+class TestCostFunction(TrainingPipelineTestCase):
     """Test methods for constructing the MPO representation of the cost function"""
 
     def test_trivial_cost_function_bond_dimension(self):
@@ -388,7 +389,7 @@ class TestCostFunction(TestCase):
 
 
 @ddt
-class TestVidalCircuitMPS(TestCase):
+class TestVidalCircuitMPS(TrainingPipelineTestCase):
     """Tests the class representing a circuit as an MPS in Vidal's format"""
 
     @staticmethod
@@ -922,7 +923,7 @@ class TestVidalCircuitMPS(TestCase):
 
 
 @ddt
-class TestMatrixProductStateHOBO(TestCase):
+class TestMatrixProductStateHOBO(TrainingPipelineTestCase):
     """Test on HOBO problems"""
 
     @staticmethod
