@@ -1,0 +1,47 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "ScipyTrainer",
+            "trainer_init": {
+                "evaluator": "MPSEvaluator",
+                "evaluator_init": {
+                    "use_vidal_form": true,
+                    "threshold_circuit": 0.01
+                },
+                "minimize_args": {
+                    "options": {
+                        "maxiter": 20,
+                        "rhobeg": 0.2
+                    }
+                }
+            },
+            "train_kwargs": {
+                "params0": [0, 0]
+            },
+            "save_file": "concatenated_mps_first_step.json"
+        },
+        {
+            "trainer": "ScipyTrainer",
+            "trainer_init": {
+                "evaluator": "MPSEvaluator",
+                "evaluator_init": {
+                    "use_vidal_form": false,
+                    "threshold_circuit": 0.001
+                },
+                "minimize_args": {
+                    "options": {
+                        "maxiter": 20,
+                        "rhobeg": 0.2
+                    }
+                }
+            },
+            "train_kwargs": {
+                "result": {
+                    "optimized_params": "params0"
+                }
+            },
+            "save_file": "concatenated_mps_second_step.json"
+        }
+    ],
+    "description": "Use multiple, stacked MPS evaluation with the scipy trainer."
+}

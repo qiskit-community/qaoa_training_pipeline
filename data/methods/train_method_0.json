@@ -1,0 +1,17 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "DepthOneScanTrainer",
+            "trainer_init": {
+                "evaluator": "EfficientDepthOneEvaluator",
+                "evaluator_init": {}
+            },
+            "train_kwargs": {
+                "parameter_ranges": [[0, 3.1456], [0, 3.1456]],
+                "num_points": 15
+            },
+            "save_file": "method_0.json"
+        }
+    ],
+    "description": "Uses a grid search on the efficient depth one evaluator."
+}

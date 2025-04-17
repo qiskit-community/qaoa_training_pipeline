@@ -1,0 +1,22 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "ReweightingTrainer",
+            "trainer_init": {
+                "trainer1": "ScipyTrainer",
+                "trainer1_init": {
+                    "evaluator": "EfficientDepthOneEvaluator",
+                    "evaluator_init": {},
+                    "minimize_args": {"options": {"maxiter": 100, "rhobeg": 0.2}}
+                }
+            },
+            "train_kwargs": {
+                "trainer1_kwargs": {
+                    "params0": [0, 0]
+                }
+            },
+            "save_file": "method_5.json"
+        }
+    ],
+    "description": "Use the efficient depth one evaluation with the scipy trainer in a reweighting approach."
+}

@@ -1,0 +1,14 @@
+{
+    "edge list": [
+        {"nodes": [0, 1], "weight": 6.0},
+        {"nodes": [0, 4], "weight": -1.0},
+        {"nodes": [0, 5], "weight": 3.0},
+        {"nodes": [1, 2], "weight": 5.0},
+        {"nodes": [1, 4], "weight": -4.0},
+        {"nodes": [2, 3], "weight": 7.0},
+        {"nodes": [2, 5], "weight": 7.0},
+        {"nodes": [3, 4], "weight": -6.0},
+        {"nodes": [3, 5], "weight": 1.0}
+    ],
+    "Description": "Copied from example_graph.json and added weights."
+}

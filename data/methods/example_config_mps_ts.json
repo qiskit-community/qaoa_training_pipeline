@@ -1,0 +1,57 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "DepthOneScanTrainer",
+            "trainer_init": {
+                "evaluator": "EfficientDepthOneEvaluator",
+                "evaluator_init": {}
+            },
+            "train_kwargs": {
+                "num_points": 15
+            },
+            "save_file": "test_result_depth_one_mps_ts.json"
+        },
+        {
+            "trainer": "TransitionStatesTrainer",
+            "trainer_init": {
+                "trainer": "ScipyTrainer",
+                "trainer_init": {
+                    "evaluator": "MPSEvaluator",
+                    "evaluator_init": {
+                        "bond_dim_circuit": 32,
+                        "use_vidal_form": false,
+                        "threshold_circuit": 1.0e-3
+                    },
+                    "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
+                }
+            },
+            "train_kwargs": {
+                "result": {
+                    "optimized_params": "previous_optimal_point"
+                }
+            },
+            "save_file": "test_result_depth_two_mps_ts.json"
+        },
+        {
+            "trainer": "TransitionStatesTrainer",
+            "trainer_init": {
+                "trainer": "ScipyTrainer",
+                "trainer_init": {
+                    "evaluator": "MPSEvaluator",
+                    "evaluator_init": {
+                        "bond_dim_circuit": 64,
+                        "use_vidal_form": false,
+                        "threshold_circuit": 1.0e-3
+                    },
+                    "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
+                }
+            },
+            "train_kwargs": {
+                "result": {
+                    "optimized_params": "previous_optimal_point"
+                }
+            },
+            "save_file": "test_result_depth_three_mps_ts.json"
+        }
+    ]
+}
