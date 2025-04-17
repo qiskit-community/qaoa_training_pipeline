@@ -1,0 +1,17 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "ScipyTrainer",
+            "trainer_init": {
+                "evaluator": "LightConeEvaluator",
+                "evaluator_init": {},
+                "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
+            },
+            "train_kwargs": {
+                "params0": [0, 0]
+            },
+            "save_file": "method_3.json"
+        }
+    ],
+    "description": "Use the light-cone evaluation with the scipy trainer."
+}

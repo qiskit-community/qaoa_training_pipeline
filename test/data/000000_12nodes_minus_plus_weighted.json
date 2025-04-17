@@ -1,0 +1,467 @@
+{
+    "edge list": [
+        {
+            "nodes": [
+                0,
+                1
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                0,
+                2
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                0,
+                3
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                0,
+                4
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                0,
+                5
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                0,
+                6
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                0,
+                7
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                0,
+                8
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                0,
+                9
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                0,
+                10
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                0,
+                11
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                1,
+                2
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                1,
+                3
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                1,
+                4
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                1,
+                5
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                1,
+                6
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                1,
+                7
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                1,
+                8
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                1,
+                9
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                1,
+                10
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                1,
+                11
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                2,
+                3
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                2,
+                4
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                2,
+                5
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                2,
+                6
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                2,
+                7
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                2,
+                8
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                2,
+                9
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                2,
+                10
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                2,
+                11
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                3,
+                4
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                3,
+                5
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                3,
+                6
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                3,
+                7
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                3,
+                8
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                3,
+                9
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                3,
+                10
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                3,
+                11
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                4,
+                5
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                4,
+                6
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                4,
+                7
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                4,
+                8
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                4,
+                9
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                4,
+                10
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                4,
+                11
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                5,
+                6
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                5,
+                7
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                5,
+                8
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                5,
+                9
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                5,
+                10
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                5,
+                11
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                6,
+                7
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                6,
+                8
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                6,
+                9
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                6,
+                10
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                6,
+                11
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                7,
+                8
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                7,
+                9
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                7,
+                10
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                7,
+                11
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                8,
+                9
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                8,
+                10
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                8,
+                11
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                9,
+                10
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                9,
+                11
+            ],
+            "weight": -1
+        },
+        {
+            "nodes": [
+                10,
+                11
+            ],
+            "weight": -1
+        }
+    ],
+    "Description": "Fully connected graph with random edges weights drawn uniformly from {-1, 1}. Numpy seed: np.random.default_rng(seed=42)"
+}

@@ -1,0 +1,21 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "ScipyTrainer",
+            "trainer_init": {
+                "evaluator": "MPSEvaluator",
+                "evaluator_init": {
+                    "bond_dim_circuit": 24,
+                    "use_vidal_form": true,
+                    "threshold_circuit": 0.001
+                },
+                "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
+            },
+            "train_kwargs": {
+                "params0": [0, 0]
+            },
+            "save_file": "method_4.json"
+        }
+    ],
+    "description": "Use the MPS evaluation with the scipy trainer."
+}

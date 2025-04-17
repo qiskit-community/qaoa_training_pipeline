@@ -1,0 +1,31 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "DepthOneScanTrainer",
+            "trainer_init": {
+                "evaluator": "EfficientDepthOneEvaluator",
+                "evaluator_init": {}
+            },
+            "train_kwargs": {
+                "parameter_ranges": [[0, 3.1456], [0, 3.1456]],
+                "num_points": 15
+            },
+            "save_file": "method_2.json"
+        },
+        {
+            "trainer": "ScipyTrainer",
+            "trainer_init": {
+                "evaluator": "EfficientDepthOneEvaluator",
+                "evaluator_init": {},
+                "minimize_args": {"options": {"maxiter": 100, "rhobeg": 0.2}}
+            },
+            "train_kwargs": {
+                "result": {
+                    "optimized_params": "params0"
+                }
+            },
+            "save_file": "method_2.json"  
+        }
+    ],
+    "description": "Uses a grid search on the efficient depth one evaluator followed by a SciPy training to refine the parameters."
+}
