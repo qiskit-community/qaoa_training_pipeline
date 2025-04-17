@@ -8,7 +8,6 @@
 
 """Tests of the SciPy trainer."""
 
-from unittest import TestCase
 from ddt import ddt, data
 import numpy as np
 
@@ -22,9 +21,11 @@ from qaoa_training_pipeline.evaluation import (
 )
 from qaoa_training_pipeline.training import ScipyTrainer
 
+from test import TrainingPipelineTestCase
+
 
 @ddt
-class TestSciPyTrainer(TestCase):
+class TestSciPyTrainer(TrainingPipelineTestCase):
     """Test that we can use the scipy trainer."""
 
     def test_basic_with_light_cone(self):

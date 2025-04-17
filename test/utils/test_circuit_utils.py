@@ -8,7 +8,6 @@
 
 """Tests for circuit manipulation methods."""
 
-from unittest import TestCase
 import numpy as np
 
 from qiskit import QuantumCircuit
@@ -16,8 +15,10 @@ from qiskit.quantum_info import Operator
 
 from qaoa_training_pipeline.utils.circuit_utils import split_circuit
 
+from test import TrainingPipelineTestCase
 
-class TestCircuitUtils(TestCase):
+
+class TestCircuitUtils(TrainingPipelineTestCase):
     """Class to test circuit utils."""
 
     def test_split_circuit(self):
