@@ -8,18 +8,16 @@
 
 """Test functions that help manipulating data."""
 
+from test import TrainingPipelineTestCase
+
 import networkx as nx
 
 from qiskit.quantum_info import SparsePauliOp
-
 from qiskit_optimization.applications import Maxcut
-
 from qaoa_training_pipeline.utils.data_utils import (
     samples_to_objective_values,
     input_to_operator,
 )
-
-from test import TrainingPipelineTestCase
 
 
 class TestDataUtils(TrainingPipelineTestCase):

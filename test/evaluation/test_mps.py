@@ -8,6 +8,8 @@
 
 """Tests for the Matrix Product State evaluator."""
 
+from test import TrainingPipelineTestCase
+
 import os
 from ddt import data, ddt, unpack
 
@@ -23,8 +25,6 @@ from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrat
 
 from qaoa_training_pipeline.evaluation import MPSEvaluator, EfficientDepthOneEvaluator
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator, load_graph
-
-from test import TrainingPipelineTestCase
 
 
 @ddt

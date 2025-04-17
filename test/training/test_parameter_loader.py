@@ -8,9 +8,9 @@
 
 """Tests for parameter loading."""
 
-from qaoa_training_pipeline.training.optimized_parameter_loader import OptimizedParametersLoader
-
 from test import TrainingPipelineTestCase
+
+from qaoa_training_pipeline.training.optimized_parameter_loader import OptimizedParametersLoader
 
 
 class TestOptimizedParameterLoader(TrainingPipelineTestCase):

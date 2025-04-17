@@ -8,6 +8,8 @@
 
 """Tests for the light-cone evaluator."""
 
+from test import TrainingPipelineTestCase
+
 from typing import Dict
 from ddt import ddt, data, unpack
 import networkx as nx
@@ -20,8 +22,6 @@ from qiskit.primitives import StatevectorEstimator
 from qaoa_training_pipeline.evaluation.light_cone import LightConeEvaluator
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
-
-from test import TrainingPipelineTestCase
 
 
 @ddt

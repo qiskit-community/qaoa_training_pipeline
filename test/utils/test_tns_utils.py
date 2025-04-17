@@ -8,6 +8,8 @@
 
 """Test for the TNS utilities."""
 
+from test import TrainingPipelineTestCase
+
 from typing import List, Tuple
 
 import random
@@ -40,8 +42,6 @@ from qaoa_training_pipeline.utils.tns_utils.multi_qubit_gates import QAOAManyBod
 from qaoa_training_pipeline.utils.tns_utils.symbolic_mpo import SymbolicMPOConstruction
 
 from qaoa_training_pipeline.evaluation import MPSEvaluator
-
-from test import TrainingPipelineTestCase
 
 
 class TestQAOAMPS(TrainingPipelineTestCase):

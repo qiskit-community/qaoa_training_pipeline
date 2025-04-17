@@ -8,6 +8,8 @@
 
 """Tests for the framework."""
 
+from test import TrainingPipelineTestCase
+
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
 
@@ -19,8 +21,6 @@ from qaoa_training_pipeline.training.reweighting import ReweightingTrainer
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.tqa_trainer import TQATrainer
 from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
-
-from test import TrainingPipelineTestCase
 
 
 class TestTrainingFramework(TrainingPipelineTestCase):

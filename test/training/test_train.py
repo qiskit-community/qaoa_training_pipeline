@@ -8,6 +8,8 @@
 
 """Tests of the train.py script."""
 
+from test import TrainingPipelineTestCase
+
 import glob
 import os
 import sys
@@ -16,8 +18,6 @@ from unittest.mock import patch
 from ddt import ddt, data
 
 from qaoa_training_pipeline.train import train, get_script_args
-
-from test import TrainingPipelineTestCase
 
 
 @ddt
