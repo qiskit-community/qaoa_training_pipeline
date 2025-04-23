@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,7 +8,7 @@
 
 """Tests for recursive training."""
 
-from unittest import TestCase
+from test import TrainingPipelineTestCase
 
 from qiskit.quantum_info import SparsePauliOp
 
@@ -18,7 +18,7 @@ from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.parameter_extenders import interpolate
 
 
-class TestRecursion(TestCase):
+class TestRecursion(TrainingPipelineTestCase):
     """Tests for the recursive trainer."""
 
     def test_simple(self):

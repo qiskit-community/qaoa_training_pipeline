@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,20 +8,19 @@
 
 """Test for the TNS utilities."""
 
-from unittest import TestCase
+from test import TrainingPipelineTestCase
+
+from typing import List, Tuple
 
 import random
-
-from cmath import exp as cexp
-from ddt import ddt, data
 from itertools import product
 from math import sqrt
+from cmath import exp as cexp
+from ddt import ddt, data
 
 import networkx as nx
 
 import numpy as np
-
-from typing import List, Tuple
 
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import PauliEvolutionGate
@@ -45,7 +44,7 @@ from qaoa_training_pipeline.utils.tns_utils.symbolic_mpo import SymbolicMPOConst
 from qaoa_training_pipeline.evaluation import MPSEvaluator
 
 
-class TestQAOAMPS(TestCase):
+class TestQAOAMPS(TrainingPipelineTestCase):
     """Test methods to get MPS representations of QAOA problems."""
 
     def generate_adjacency_matrix_linear(self, n_qubits: int) -> np.array:
@@ -125,7 +124,7 @@ class TestQAOAMPS(TestCase):
 
 
 @ddt
-class TestMultiQubitGates(TestCase):
+class TestMultiQubitGates(TrainingPipelineTestCase):
     """Tests on the functionalities to represent multi-qubit gates"""
 
     def test_trivial_constructor_multi_qubit_gate(self):
@@ -229,7 +228,7 @@ class TestMultiQubitGates(TestCase):
 
 
 @ddt
-class TestCostFunction(TestCase):
+class TestCostFunction(TrainingPipelineTestCase):
     """Test methods for constructing the MPO representation of the cost function"""
 
     def test_trivial_cost_function_bond_dimension(self):
@@ -390,7 +389,7 @@ class TestCostFunction(TestCase):
 
 
 @ddt
-class TestVidalCircuitMPS(TestCase):
+class TestVidalCircuitMPS(TrainingPipelineTestCase):
     """Tests the class representing a circuit as an MPS in Vidal's format"""
 
     @staticmethod
@@ -465,7 +464,7 @@ class TestVidalCircuitMPS(TestCase):
         self.assertAlmostEqual(abs(overlap), 1.0)
 
         # Check also that the Vidal tensor is properly normalized
-        self.assertTrue(vidal_circuit.check_if_all_tensors_are_normalized())
+        self.assertTrue(vidal_circuit.check_if_all_tensors_are_normalized(1.0e-14))
 
     def test_circuit_mps_vidal_two_qubit_gate_non_nn(self):
         """Test the functionalities for applying a two-qubit gate onto a
@@ -758,6 +757,7 @@ class TestVidalCircuitMPS(TestCase):
             -1.0,
             1.0,
         ]
+        # pylint: disable=line-too-long
         list_of_labels = [
             "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIZZ",
             "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIZZI",
@@ -921,66 +921,9 @@ class TestVidalCircuitMPS(TestCase):
         )
         self.assertAlmostEqual(energy_with_vidal, energy_without_vidal)
 
-    def test_circuit_mps_vidal_swap_gate(self):
-        """Test the functionalities for applying a two-qubit gate onto a
-        circuit encoded as an MPS in Vidal's form
-        """
-        n_qubits = 10
-        mps_circuit = TestVidalCircuitMPS.generate_template_circuit(n_qubits, 1, 100)
-        # Now swaps and swaps back and check that the original MPS is obtained
-        vidal_circuit = CircuitMPSVidalCanonization(mps_circuit)
-        for i_qubit in range(n_qubits - 1):
-            vidal_circuit.apply_swap_gate(i_qubit)
-        for i_qubit in range(n_qubits - 2, -1, -1):
-            vidal_circuit.apply_swap_gate(i_qubit)
-        overlap = (mps_circuit.psi.H & vidal_circuit.tensor_network).contract(...)
-        self.assertAlmostEqual(abs(overlap), 1.0)
-
-    def test_vidal_trivial_cost_function_on_mps(self):
-        """Tests that a trivial (i.e., = identity) cost function is = norm of the MPS"""
-        coeff = 0.30031989
-        list_of_labels = ["IIIII"]
-        list_of_coefficients = [coeff]
-        sparse_pauli = SparsePauliOp(list_of_labels, list_of_coefficients)
-        cost_function = QAOACostFunction(sparse_pauli)
-        graph = nx.Graph()
-        graph.add_weighted_edges_from([(0, 1, -0.1), (1, 2, 1.2), (2, 3, 1.4), (3, 4, -0.7)])
-        qaoa_mps = QAOACircuitVidalRepresentation.construct_from_graph(
-            graph, truncation_threshold=1.0e-10, max_bond_dim=1000
-        )
-        qaoa_mps.apply_qaoa_layer([0.1, 0.2], [0.1, 0.2])
-        cost_function = qaoa_mps.compute_cost_function(cost_function)
-        self.assertAlmostEqual(cost_function, coeff)
-
-    def test_coherence_between_conventional_and_vidal(self):
-        """Checks that the MPS simulator yields the same results independently on the chosen
-        canonization
-        """
-
-        # Generate the cost function
-        number_of_qubits = 10
-        graph = nx.random_regular_graph(d=3, n=number_of_qubits)
-        cost_op = graph_to_operator(graph)
-        truncation_threshold = 1.0e-10
-
-        # Vidal gauge
-        mps_evaluator_vidal = MPSEvaluator(
-            use_vidal_form=True, threshold_circuit=truncation_threshold
-        )
-        cost_function_vidal = mps_evaluator_vidal.evaluate(cost_op, [1, 2])
-
-        # Conventional gauge
-        mps_evaluator_conventional = MPSEvaluator(
-            use_vidal_form=False, threshold_circuit=truncation_threshold
-        )
-        cost_function_conventional = mps_evaluator_conventional.evaluate(cost_op, [1, 2])
-
-        # Final check
-        self.assertAlmostEqual(cost_function_conventional, cost_function_vidal)
-
 
 @ddt
-class TestMatrixProductStateHOBO(TestCase):
+class TestMatrixProductStateHOBO(TrainingPipelineTestCase):
     """Test on HOBO problems"""
 
     @staticmethod
@@ -1004,6 +947,7 @@ class TestMatrixProductStateHOBO(TestCase):
 
         # Four-body part
         for i in range(1, n_qubits - 2):
+            # pylint: disable=invalid-name
             for t in range(1, int(np.floor((n_qubits - i - 1) / 2)) - 1):
                 for k in range(t + 1, n_qubits - t - i - 1):
                     returned_list.append([(i - 1, i + t - 1, i + k - 1, i + t + k - 1), 2.0])

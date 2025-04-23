@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,8 +8,9 @@
 
 """Tests for the Matrix Product State evaluator."""
 
+from test import TrainingPipelineTestCase
+
 import os
-from unittest import TestCase
 from ddt import data, ddt, unpack
 
 import networkx as nx
@@ -27,7 +28,7 @@ from qaoa_training_pipeline.utils.graph_utils import graph_to_operator, load_gra
 
 
 @ddt
-class TestMPSEvaluator(TestCase):
+class TestMPSEvaluator(TrainingPipelineTestCase):
     """Tests for the matrix product state energy evaluation."""
 
     def setUp(self):
@@ -242,7 +243,7 @@ class TestMPSEvaluator(TestCase):
 
     def test_evaluate_from_file(self):
         """Checks the training starting from a graph stored in a file"""
-        
+
         # Retrieves the graph
         data_dir = self.test_dir + "/../data/"
         graph_file = "000000_12nodes_minus_plus_weighted.json"
@@ -268,7 +269,7 @@ class TestMPSEvaluator(TestCase):
 
 
 @ddt
-class TestMPSEvaluatorSWAPs(TestCase):
+class TestMPSEvaluatorSWAPs(TrainingPipelineTestCase):
     """Test the swap strategies True option."""
 
     @data((1, 1), (0.1234, -0.56), (0.25, 0.5), (0.5, 0.25))
@@ -303,6 +304,7 @@ class TestMPSEvaluatorSWAPs(TestCase):
         (0.5, 0.25, 0.4, 0.25, True),
     )
     @unpack
+    # pylint: disable=too-many-positional-arguments
     def test_depth_two_swap_strat(self, beta0, beta1, gamma0, gamma1, vidal):
         """Test swap strategy for depth two QAOA."""
         cost_op = SparsePauliOp.from_list(

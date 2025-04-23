@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -76,7 +76,7 @@ class ReweightingTrainer(BaseTrainer):
         """Return the trainer of the weighted graph."""
         return self._trainer_weighted
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,

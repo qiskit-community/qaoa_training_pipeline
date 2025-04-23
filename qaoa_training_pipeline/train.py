@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -194,26 +194,25 @@ def train(args: Optional[List]):
 
         all_results[train_idx] = result
 
+        if args.save:
+            # Prepare the file where to save the result
+            date_tag = datetime.strftime(datetime.now(), "%Y%m%d_%H%M%S")
+            if save_file is None:
+                save_file_local = date_tag + "_" + conf.pop("save_file")
+            else:
+                save_file_local = date_tag + "_" + save_file
+
+            # If the directory is not existent, creates it
+            if not os.path.exists(args.save_dir) and args.save_dir != "":
+                os.makedirs(args.save_dir)
+
+            with open(args.save_dir + save_file_local, "w") as fout:
+                json.dump(all_results, fout, indent=4)
+
     all_results["args"] = vars(args)
-
-    if args.save:
-        # Prepare the file where to save the result
-        date_tag = datetime.strftime(datetime.now(), "%Y%m%d_%H%M%S")
-        if save_file is None:
-            save_file_local = date_tag + "_" + conf.pop("save_file")
-        else:
-            save_file_local = date_tag + "_" + save_file
-
-        # If the directory is not existent, creates it
-        if not os.path.exists(args.save_dir) and args.save_dir != "":
-            os.makedirs(args.save_dir)
-
-        with open(args.save_dir + save_file_local, "w") as fout:
-            json.dump(all_results, fout, indent=4)
-
     return all_results
 
 
 if __name__ == "__main__":
-    args, _ = get_script_args()
-    train(args)
+    script_args, _ = get_script_args()
+    train(script_args)

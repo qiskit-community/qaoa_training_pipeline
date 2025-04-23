@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -44,7 +44,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         self._mixers = None
         self._initial_states = None
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,

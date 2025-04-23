@@ -28,10 +28,6 @@ setuptools.setup(
         "Operating System :: MacOS",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering",
     ],
     keywords="qaoa",
@@ -40,6 +36,6 @@ setuptools.setup(
     ),
     install_requires=REQUIREMENTS,
     include_package_data=True,
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     zip_safe=False,
 )
