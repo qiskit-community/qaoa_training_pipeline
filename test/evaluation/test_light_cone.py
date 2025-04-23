@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,8 +8,9 @@
 
 """Tests for the light-cone evaluator."""
 
+from test import TrainingPipelineTestCase
+
 from typing import Dict
-from unittest import TestCase
 from ddt import ddt, data, unpack
 import networkx as nx
 
@@ -24,7 +25,7 @@ from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
 
 @ddt
-class TestLightConeEvaluator(TestCase):
+class TestLightConeEvaluator(TrainingPipelineTestCase):
     """Tests for the light-cone energy evaluation."""
 
     def setUp(self):

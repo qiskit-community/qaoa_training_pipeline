@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -52,6 +52,7 @@ class BaseEvaluator(ABC):
         return {"name": self.__class__.__name__}
 
     @classmethod
+    # pylint: disable=unused-argument
     def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
         """A hook that sub-classes can implement to parse initialization kwargs."""
         return dict()

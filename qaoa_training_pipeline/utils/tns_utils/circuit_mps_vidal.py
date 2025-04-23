@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -593,12 +593,13 @@ class CircuitMPSVidalCanonization:
 
             self._tn.contract_ind(self._get_bond_label_left(i_site))
             (tid,) = self._tn._get_tids_from_tags(self._get_schmidt_tag(i_site), which="all")
-            t = self._tn.pop_tensor(tid)
+            tensor = self._tn.pop_tensor(tid)
             left_inds = (
                 ["b0"] if i_site == 0 else ["b" + str(i_site), self._get_bond_label_right(i_site)]
             )
+            # pylint: disable=invalid-name
             U, S, V = tensor_split(
-                t,
+                tensor,
                 left_inds=left_inds,
                 get="tensors",
                 absorb=None,

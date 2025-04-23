@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -163,8 +163,13 @@ def circuit_to_graph(circuit: QuantumCircuit) -> nx.Graph:
         if len(inst.qubits) == 1:
             edge = (qreg.index(inst.qubits[0]), qreg.index(inst.qubits[0]))
 
-        if len(inst.qubits) == 2:
+        elif len(inst.qubits) == 2:
             edge = (qreg.index(inst.qubits[0]), qreg.index(inst.qubits[1]))
+
+        else:
+            raise ValueError(
+                "Instructions with more than 2 qubits cannot be converted to graph edges."
+            )
 
         if edge in seen_edges:
             raise ValueError(f"Circuit contains multiple times the edge {edge}.")

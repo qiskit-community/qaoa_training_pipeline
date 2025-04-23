@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,14 +8,12 @@
 
 """Tests for parameter loading."""
 
-from unittest import TestCase
-
-import os
+from test import TrainingPipelineTestCase
 
 from qaoa_training_pipeline.training.optimized_parameter_loader import OptimizedParametersLoader
 
 
-class TestOptimizedParameterLoader(TestCase):
+class TestOptimizedParameterLoader(TrainingPipelineTestCase):
     """Methods to test loading optimized parameters."""
 
     def test_train(self):

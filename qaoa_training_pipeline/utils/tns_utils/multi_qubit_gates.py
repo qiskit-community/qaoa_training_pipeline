@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -278,20 +278,20 @@ class QAOAManyBodyCorrelator:
                 left_inds = (
                     ["b0", "k0"] if i == 0 else ["b" + str(i), "k" + str(i), "BD" + str(i - 1)]
                 )
-                (l, r) = tensor_split(
+                (left, right) = tensor_split(
                     gate_tensorized,
                     left_inds=left_inds,
                     get="tensors",
                     absorb="both",
                     bond_ind="BD" + str(i),
                 )
-                l.add_tag("site" + str(i))
-                self._mpo_representation |= l
+                left.add_tag("site" + str(i))
+                self._mpo_representation |= left
                 if i != self._i_qubits[0] + len(self._i_qubits) - 2:
-                    gate_tensorized = r
+                    gate_tensorized = right
                 else:
-                    r.add_tag("site" + str(i + 1))
-                    self._mpo_representation |= r
+                    right.add_tag("site" + str(i + 1))
+                    self._mpo_representation |= right
 
             for i_qubit in range(self._i_qubits[0] + len(self._i_qubits), self._n_qubits):
                 if i_qubit == self._n_qubits - 1:
@@ -327,16 +327,12 @@ class QAOAManyBodyCorrelator:
                         i,
                         True,
                         "right",
-                        truncation_threshold,
-                        max_bond_dim,
                     )
                     self._swap_sites(
                         self._mpo_representation,
                         i,
                         False,
                         "right",
-                        truncation_threshold,
-                        max_bond_dim,
                     )
 
             # Final update of parameters
@@ -346,13 +342,7 @@ class QAOAManyBodyCorrelator:
         return self._mpo_representation
 
     def _swap_sites(
-        self,
-        input_mpo: MatrixProductOperator,
-        site: int,
-        is_upper: bool,
-        absorb_mod: str,
-        truncation_threshold: Optional[float] = None,
-        max_bond_dimension: Optional[float] = None,
+        self, input_mpo: MatrixProductOperator, site: int, is_upper: bool, absorb_mod: str
     ):
         """Applies a swap gate onto the MPS
 
@@ -364,14 +354,16 @@ class QAOAManyBodyCorrelator:
             site (int): sites onto which the swap is applied.
             is_upper (bool): whether to apply onto the upper of lower indices.
             absorb_mod (str): where to absorb the non-unitary part.
-            truncation_threshold (Optional[float]): threshold for the
-                truncated Singular Value Decompositon.
-                Defaults to None, in which case this is effectively 0.
-            max_bond_dim (Optional[int]): maximum bond dimension that
-                is allowed when compressing the MPO.
-                Defaults to None, in which case no boundaries on the bond
-                dimension are applied.
         """
+        # TODO: implement the following input args:
+        # truncation_threshold (Optional[float]): threshold for the
+        #     truncated Singular Value Decompositon.
+        #     Defaults to None, in which case this is effectively 0.
+        # max_bond_dim (Optional[int]): maximum bond dimension that
+        #     is allowed when compressing the MPO.
+        #     Defaults to None, in which case no boundaries on the bond
+        #     dimension are applied.
+
         swap_gate = np.zeros([2, 2, 2, 2], dtype=float)
         for i_phys in range(2):
             for j_phys in range(2):

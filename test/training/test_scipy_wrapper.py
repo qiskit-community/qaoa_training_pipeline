@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,7 +8,8 @@
 
 """Tests of the SciPy trainer."""
 
-from unittest import TestCase
+from test import TrainingPipelineTestCase
+
 from ddt import ddt, data
 import numpy as np
 
@@ -24,7 +25,7 @@ from qaoa_training_pipeline.training import ScipyTrainer
 
 
 @ddt
-class TestSciPyTrainer(TestCase):
+class TestSciPyTrainer(TrainingPipelineTestCase):
     """Test that we can use the scipy trainer."""
 
     def test_basic_with_light_cone(self):

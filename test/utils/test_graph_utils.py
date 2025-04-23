@@ -1,4 +1,4 @@
-# 
+#
 #
 # (C) Copyright IBM 2024.
 #
@@ -8,7 +8,9 @@
 
 """Test converting from a cost operator to a graph."""
 
-from unittest import TestCase
+from test import TrainingPipelineTestCase
+
+import unittest
 from ddt import ddt
 import networkx as nx
 import numpy as np
@@ -18,8 +20,8 @@ from qiskit.circuit import Parameter
 from qiskit.circuit.library import QAOAAnsatz
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import HighLevelSynthesis
-
 from qiskit.quantum_info import SparsePauliOp
+import qiskit_optimization.optionals as _optionals
 
 from qaoa_training_pipeline.utils.graph_utils import (
     operator_to_graph,
@@ -30,7 +32,7 @@ from qaoa_training_pipeline.utils.graph_utils import (
 
 
 @ddt
-class TestGraphUtils(TestCase):
+class TestGraphUtils(TrainingPipelineTestCase):
     """Test methods to manipulate graph, circuits, and cost operators."""
 
     def test_operator_to_graph(self):
@@ -182,6 +184,7 @@ class TestGraphUtils(TestCase):
         self.assertEqual(paulis.paulis, expected.paulis)
         self.assertTrue(np.allclose(paulis.coeffs, expected.coeffs))
 
+    @unittest.skipIf(not _optionals.HAS_CPLEX, "CPLEX not available.")
     def test_max_cut_solutions(self):
         """Test that we can properly solve for the maximum cut."""
 
