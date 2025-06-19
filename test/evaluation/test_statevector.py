@@ -34,7 +34,7 @@ class TestStatevectorEvaluator(TestCase):
         ansatz.assign_parameters(params, inplace=True)
         result = estimator.run([(ansatz, cost_op, [])]).result()
         return float(result[0].data.evs)
-    
+
     def test_evaluate(self):
         """Basic test of the evaluator."""
         self.assertAlmostEqual(
