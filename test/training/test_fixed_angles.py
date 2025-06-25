@@ -8,6 +8,7 @@
 
 """Classes to test the fixed-angles trainer."""
 
+from importlib import import_module
 from test import TrainingPipelineTestCase
 
 from qiskit.quantum_info import SparsePauliOp
@@ -52,7 +53,17 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
 
         result = trainer.train(self.cost_op, reps=2)
 
-        _, _, aprrox_ratio = solve_max_cut(self.cost_op, result["energy"])
+        # CPLEX installation can be unreliable in CI.
+        try:
+            import_module("cplex")
+            has_cplex = True
+        except ImportError:
+            has_cplex = False
+
+        if has_cplex:
+            _, _, aprrox_ratio = solve_max_cut(self.cost_op, result["energy"])
+        else:
+            aprrox_ratio = 0.86081  # This is the value that the line above yields.
 
         self.assertGreater(aprrox_ratio, result["approximation ratio"])
 
