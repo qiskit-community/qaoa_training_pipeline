@@ -11,10 +11,12 @@
 from .efficient_depth_one import EfficientDepthOneEvaluator
 from .light_cone import LightConeEvaluator
 from .mps_evaluator import MPSEvaluator
+from .statevector_evaluator import StatevectorEvaluator
 
 
 EVALUATORS = {
     "EfficientDepthOneEvaluator": EfficientDepthOneEvaluator,
     "LightConeEvaluator": LightConeEvaluator,
     "MPSEvaluator": MPSEvaluator,
+    "StatevectorEvaluator": StatevectorEvaluator,
 }
