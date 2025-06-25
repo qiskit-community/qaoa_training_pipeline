@@ -6,6 +6,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+"""Class to load the known angles of the fixed-angle conjecture."""
+
 import json
 import os
 import warnings
@@ -20,8 +22,6 @@ from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
-
-"""Class to load the known angles of the fixed-angle conjecture."""
 
 
 class FixedAngleConjecture(BaseTrainer):
@@ -64,7 +64,7 @@ class FixedAngleConjecture(BaseTrainer):
             f"Optimization is currently not implemented by {self.__class__.__name__}."
         )
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
