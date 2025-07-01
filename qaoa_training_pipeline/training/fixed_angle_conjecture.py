@@ -69,6 +69,7 @@ class FixedAngleConjecture(BaseTrainer):
         self,
         cost_op: SparsePauliOp,
         reps: int = 1,
+        degree: int = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
@@ -79,11 +80,21 @@ class FixedAngleConjecture(BaseTrainer):
         average node degree and round it to the closest integer. This allows the method
         to provide angles for non-regular graphs. However, the performance of such an
         approximation has not yet been tested.
+
+        Args:
+            cost_op: The cost operator. This argument may be used to infere the degree of the
+                graph if the `degree` argument is None.
+            reps: The number of QAOA repetitions. This argument is used.
+            degree: The degree of the k-regular graph to use. By default, this argument is None
+                and the method infers the degree from the given cost operator.
+            mixer: Not used.
+            initial_state: Not used.
+            ansatz_circuit: Not used.
         """
 
         if mixer is not None:
             warnings.warn(
-                f"{self.__class__.__name__} ignores the mixer input. " "Returning standard angles."
+                f"{self.__class__.__name__} ignores the mixer input. Returning standard angles."
             )
 
         if initial_state is not None:
@@ -101,11 +112,14 @@ class FixedAngleConjecture(BaseTrainer):
         start = time()
 
         # Since we only care about the degree of the graph the pre_factor is irrelevant.
-        graph = operator_to_graph(cost_op)
+        if degree is None:
+            graph = operator_to_graph(cost_op)
 
-        avg_degree = np.average([degree for _, degree in graph.degree()])
+            avg_degree = np.average([degree for _, degree in graph.degree()])
 
-        degree_key = str(int(np.round(avg_degree)))
+            degree_key = str(int(np.round(avg_degree)))
+        else:
+            degree_key = str(degree)
 
         if degree_key not in self._data:
             raise NotImplementedError(
@@ -131,6 +145,7 @@ class FixedAngleConjecture(BaseTrainer):
             "trainer": self.to_config(),
             "train_duration": time() - start,
             "approximation ratio": angles_data["AR"],
+            "degree": degree_key,
         }
 
     @classmethod
@@ -156,9 +171,20 @@ class FixedAngleConjecture(BaseTrainer):
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
         """Extract training key word arguments from a string.
 
-        The input args are only the number of repetitions. There the args_str is only a single int.
+        Args:
+            args_str: The input args are the number of repetitions and optionally the
+            desired degree. The arguments string takes the form `reps_degree`. If no
+            degree is desired then use `none`, for example, `2_none` for depth-two QAOA
+            and degree to be infered from the graph.
         """
         if args_str is None:
             return dict()
 
-        return {"reps": int(args_str)}
+        args = args_str.split("_")
+
+        if args[1].lower() == "none":
+            degree = None
+        else:
+            degree = int(args[1])
+
+        return {"reps": int(args[0]), "degree": degree}
