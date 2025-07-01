@@ -86,4 +86,4 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
         trainer = FixedAngleConjecture.from_config({})
         train_args = trainer.parse_train_kwargs("2_none")
 
-        self.assertDictEqual(train_args, {"reps": "2", "degree": None})
+        self.assertDictEqual(train_args, {"reps": 2, "degree": None})
