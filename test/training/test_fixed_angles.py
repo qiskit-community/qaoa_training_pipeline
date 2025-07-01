@@ -80,3 +80,10 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
         self.assertTrue(isinstance(trainer.evaluator, MPSEvaluator))
 
         self.assertEqual(trainer.evaluator.to_config()["bond_dim_circuit"], 2)
+
+    def test_parse_train_args(self):
+        """Test the parsing of the training arguments."""
+        trainer = FixedAngleConjecture.from_config({})
+        train_args = trainer.parse_train_kwargs("2_none")
+
+        self.assertDictEqual(train_args, {"reps": "2", "degree": None})
