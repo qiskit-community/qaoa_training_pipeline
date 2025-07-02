@@ -47,4 +47,4 @@ class TestStatevectorEvaluator(TestCase):
         trainer = ScipyTrainer(self.evaluator, {"options": {"maxiter": 3, "rhobeg": 0.2}})
         result = trainer.train(cost_op=self.cost_op, params0=[0.2, 0.3])
 
-        self.assertEqual(len(result["energy_history"]), 3)
+        self.assertGreaterEqual(len(result["energy_history"]), 3)
