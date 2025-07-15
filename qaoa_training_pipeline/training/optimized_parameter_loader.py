@@ -10,12 +10,13 @@
 
 import glob
 import json
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.exceptions import TrainingError
 
 
@@ -45,7 +46,7 @@ class OptimizedParametersLoader(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-    ) -> Dict[str, Any]:
+    ) -> ParamResult:
         """Load from a file.
 
         We will load from a file and take the parameters from the last trainer in the
@@ -86,11 +87,10 @@ class OptimizedParametersLoader(BaseTrainer):
 
         max_key = str(max(keys))
 
-        return {
-            "optimized_params": data[max_key]["optimized_params"],
-            "from_file": loaded_file_name,
-            "trainer": self.to_config(),
-        }
+        param_result = ParamResult(data[max_key]["optimized_params"], None, self, None)
+        param_result["from_file"] = loaded_file_name
+
+        return param_result
 
     @classmethod
     def from_config(cls, config: dict) -> "OptimizedParametersLoader":

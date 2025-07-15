@@ -19,6 +19,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.evaluation import EVALUATORS
 
 
@@ -65,7 +66,7 @@ class DepthOneScanTrainer(BaseTrainer):
         ansatz_circuit: Optional[QuantumCircuit] = None,
         parameter_ranges: Optional[List[Tuple[float, float]]] = None,
         num_points: Optional[int] = 15,
-    ):
+    ) -> ParamResult:
         r"""Train the parameters by doing a 2D scan.
 
         Args:
@@ -110,14 +111,11 @@ class DepthOneScanTrainer(BaseTrainer):
         self._opt_gamma = opt_gamma
         self._opt_beta = opt_beta
 
-        return {
-            "optimized_params": [opt_beta, opt_gamma],
-            "energy": opt_energy,
-            "trainer": self.to_config(),
-            "num_points": num_points,
-            "parameter_ranges": parameter_ranges,
-            "train_duration": time() - start,
-        }
+        opt_result = ParamResult([opt_beta, opt_gamma], time() - start, self, opt_energy)
+        opt_result["num_points"] = num_points
+        opt_result["parameter_ranges"] = parameter_ranges
+
+        return opt_result
 
     def plot(self, axis: Optional[plt.Axes] = None, fig: Optional[plt.Figure] = None):
         """Make a plot of the training.

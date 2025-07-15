@@ -20,6 +20,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
+from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class TransitionStatesTrainer(BaseTrainer):
@@ -68,7 +69,7 @@ class TransitionStatesTrainer(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-    ):
+    ) -> ParamResult:
         r"""Train the parameters based on a previous optimal point.
 
         Args:
@@ -89,15 +90,13 @@ class TransitionStatesTrainer(BaseTrainer):
         """
         start = time()
 
-        result, self._all_ts = dict(), []
+        result, self._all_ts = dict(), dict()
 
         for idx, ts_state in enumerate(self.make_ts(previous_optimal_point)):
             res = self._trainer.train(cost_op, ts_state, mixer, initial_state, ansatz_circuit)
             res.update({"ts": ts_state})
 
-            self._all_ts.append(res)
-
-            result[f"ts{idx}"] = res
+            self._all_ts[f"ts{idx}"] = res
 
             if not self.minimization:
                 keep = res["energy"] > result.get("energy", -np.inf)
@@ -109,10 +108,13 @@ class TransitionStatesTrainer(BaseTrainer):
                 result["optimized_params"] = res["optimized_params"]
                 result["ts"] = ts_state
 
-        result["trainer"] = self.to_config()
-        result["train_duration"] = time() - start
+        param_result = ParamResult(
+            result["optimized_params"], time() - start, self, result["energy"]
+        )
+        param_result["ts"] = result["ts"]
+        param_result.update(self._all_ts)
 
-        return result
+        return param_result
 
     @staticmethod
     def make_ts(params: List[float]) -> List[List[float]]:
