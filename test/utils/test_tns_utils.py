@@ -264,12 +264,15 @@ class TestCostFunction(TrainingPipelineTestCase):
             symbolic_mpo.add_term(i_string, i_coeff)
         mpo_cost_function = symbolic_mpo.generate_mpo_representation()
         operator_norm = (mpo_cost_function.H & mpo_cost_function) ^ all
+        self.assertAlmostEqual(operator_norm.imag, 0.0)
 
         cost_function_conventional = QAOACostFunction(SparsePauliOp(pauli_strings, pauli_coeffs))
         mpo_cost_function_ref = cost_function_conventional.mpo.mpo
         operator_norm_ref = (mpo_cost_function_ref.H & mpo_cost_function_ref) ^ all
+        self.assertAlmostEqual(operator_norm_ref.imag, 0.0)
+
         fidelity = ((mpo_cost_function_ref.H & mpo_cost_function) ^ all) / (
-            sqrt(operator_norm) * sqrt(operator_norm_ref)
+            sqrt(operator_norm.real) * sqrt(operator_norm_ref.real)
         )
         self.assertAlmostEqual(fidelity, 1.0)
 
@@ -285,12 +288,15 @@ class TestCostFunction(TrainingPipelineTestCase):
             symbolic_mpo.add_term(i_string, i_coeff)
         mpo_cost_function = symbolic_mpo.generate_mpo_representation()
         operator_norm = (mpo_cost_function.H & mpo_cost_function) ^ all
+        self.assertAlmostEqual(operator_norm.imag, 0.0)
 
         cost_function_conventional = QAOACostFunction(SparsePauliOp(pauli_strings, pauli_coeffs))
         mpo_cost_function_ref = cost_function_conventional.mpo.mpo
         operator_norm_ref = (mpo_cost_function_ref.H & mpo_cost_function_ref) ^ all
+        self.assertAlmostEqual(operator_norm_ref.imag, 0.0)
+
         fidelity = ((mpo_cost_function_ref.H & mpo_cost_function) ^ all) / (
-            sqrt(operator_norm) * sqrt(operator_norm_ref)
+            sqrt(operator_norm.real) * sqrt(operator_norm_ref.real)
         )
         self.assertAlmostEqual(fidelity, 1.0)
 
@@ -306,12 +312,15 @@ class TestCostFunction(TrainingPipelineTestCase):
             symbolic_mpo.add_term(i_string, i_coeff)
         mpo_cost_function = symbolic_mpo.generate_mpo_representation()
         operator_norm = (mpo_cost_function.H & mpo_cost_function) ^ all
+        self.assertAlmostEqual(operator_norm.imag, 0.0)
 
         cost_function_conventional = QAOACostFunction(SparsePauliOp(pauli_strings, pauli_coeffs))
         mpo_cost_function_ref = cost_function_conventional.mpo.mpo
         operator_norm_ref = (mpo_cost_function_ref.H & mpo_cost_function_ref) ^ all
+        self.assertAlmostEqual(operator_norm_ref.imag, 0.0)
+
         fidelity = ((mpo_cost_function_ref.H & mpo_cost_function) ^ all) / (
-            sqrt(operator_norm) * sqrt(operator_norm_ref)
+            sqrt(operator_norm.real) * sqrt(operator_norm_ref.real)
         )
         self.assertAlmostEqual(fidelity, 1.0)
 
