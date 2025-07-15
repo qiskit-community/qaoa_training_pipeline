@@ -41,22 +41,6 @@ def samples_to_objective_values(
     return objective_values
 
 
-def standardize_scipy_result(result, params0, train_duration, sign) -> dict:
-    """Standardizes results from SciPy such that it can be serialized."""
-    result = dict(result)
-    result["optimized_params"] = result.pop("x").tolist()
-    result["energy"] = sign * result.pop("fun")
-    result["x0"] = params0
-    result["train_duration"] = train_duration
-
-    # Serialize the success bool to avoid json crashing
-    if "success" in result:
-        success = result["success"]
-        result["success"] = f"{success}"
-
-    return result
-
-
 def input_to_operator(input_data: dict, pre_factor: float = 1.0) -> SparsePauliOp:
     """Create a cost operator from a dict.
 
