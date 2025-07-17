@@ -43,9 +43,10 @@ class ParamResult:
             "platform": platform.platform(),
         }
 
-        self.data["optimized_params"] = optimized_params
+        # Convert, e.g., np.float to float
+        self.data["optimized_params"] = [float(val) for val in optimized_params]
         self.data["train_duration"] = duration
-        self.data["energy"] = energy
+        self.data["energy"] = float(energy)
         self.data["trainer"] = trainer.to_config()
 
     def __contains__(self, item):
