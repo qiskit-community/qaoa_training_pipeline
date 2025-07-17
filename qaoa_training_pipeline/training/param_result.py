@@ -11,6 +11,8 @@
 from dataclasses import dataclass
 import platform
 from typing import Optional, TYPE_CHECKING
+import numpy as np
+
 
 if TYPE_CHECKING:
     from qaoa_training_pipeline.training.base_trainer import BaseTrainer
@@ -46,7 +48,7 @@ class ParamResult:
         # Convert, e.g., np.float to float
         self.data["optimized_params"] = [float(val) for val in optimized_params]
         self.data["train_duration"] = duration
-        self.data["energy"] = float(energy)
+        self.data["energy"] = float(energy) if isinstance(energy, np.float) else energy
         self.data["trainer"] = trainer.to_config()
 
     def __contains__(self, item):
