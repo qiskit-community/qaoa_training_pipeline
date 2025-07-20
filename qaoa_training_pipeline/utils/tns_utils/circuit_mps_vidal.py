@@ -706,7 +706,7 @@ class CircuitMPSVidalCanonization:
             [matrix_product_state[self._get_tensor_tag(i)].data for i in range(self._n_qubits)]
         )
 
-    def _apply_two_qubit_gate(self, i_qubit: int, array: np.array):
+    def _apply_two_qubit_gate(self, i_qubit: int, array: np.array) -> np.ndarray:
         """Applies a two-qubit gate on the circuit.
 
         Note that the two-qubit gate is assumed to be nearest-neighbour,
