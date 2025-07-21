@@ -14,3 +14,9 @@
 ### Details and comments
 
 
+
+### Version updated
+
+Please increment the `qaoa_training_pipeline_version` variable and extend the main README.md. 
+
+- [ ]

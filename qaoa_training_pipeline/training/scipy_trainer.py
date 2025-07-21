@@ -20,7 +20,7 @@ from scipy.optimize import minimize
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.utils.data_utils import standardize_scipy_result
+from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class ScipyTrainer(BaseTrainer):
@@ -81,7 +81,7 @@ class ScipyTrainer(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-    ):
+    ) -> ParamResult:
         r"""Call SciPy's minimize function to do the optimization.
 
         Args:
@@ -117,14 +117,15 @@ class ScipyTrainer(BaseTrainer):
 
         result = minimize(_energy, np.array(params0), **self._minimize_args)
 
-        result = standardize_scipy_result(result, params0, time() - start, self._sign)
-        result["trainer"] = self.to_config()
-        result["energy_history"] = self._energy_history
-        result["parameter_history"] = self._parameter_history
+        param_result = ParamResult.from_scipy_result(
+            result, params0, time() - start, self._sign, self
+        )
+        param_result["energy_history"] = self._energy_history
+        param_result["parameter_history"] = self._parameter_history
 
-        result.update(self._evaluator.get_results_from_last_iteration())
+        param_result.update(self._evaluator.get_results_from_last_iteration())
 
-        return result
+        return param_result
 
     def plot(
         self,

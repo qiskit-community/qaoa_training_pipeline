@@ -140,6 +140,12 @@ If you are planning to contribute to the repository, you can have an editable in
 
 This repository is still in development: new functionality is being added and the API is subject to change.
 
+## Version tracking
+
+| Version | Added functionality      | Pull request |
+|---------|--------------------------|--------------|
+| 1       | Track system information |           #8 |
+
 ## IBM Public Repository Disclosure
 
 All content in these repositories including code has been provided by IBM under the associated open source software license and IBM is under no obligation to provide enhancements, updates, or support. 

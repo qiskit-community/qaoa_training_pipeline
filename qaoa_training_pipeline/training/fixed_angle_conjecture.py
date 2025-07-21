@@ -21,6 +21,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -73,7 +74,7 @@ class FixedAngleConjecture(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-    ):
+    ) -> ParamResult:
         """Load the fixed-angles based on the degree of the graph in the cost operator.
 
         This method will extract a graph from the provided cost operator and compute the
@@ -139,14 +140,17 @@ class FixedAngleConjecture(BaseTrainer):
         if self._evaluator is not None:
             energy = self._evaluator.evaluate(cost_op, angles_data["beta"] + angles_data["gamma"])
 
-        return {
-            "optimized_params": angles_data["beta"] + angles_data["gamma"],
-            "energy": energy,
-            "trainer": self.to_config(),
-            "train_duration": time() - start,
-            "approximation ratio": angles_data["AR"],
-            "degree": degree_key,
-        }
+        param_result = ParamResult(
+            angles_data["beta"] + angles_data["gamma"],
+            time() - start,
+            self,
+            energy,
+        )
+
+        param_result["approximation ratio"] = angles_data["AR"]
+        param_result["degree"] = degree_key
+
+        return param_result
 
     @classmethod
     def from_config(cls, config: dict) -> "FixedAngleConjecture":
