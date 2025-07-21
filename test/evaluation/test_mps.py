@@ -120,6 +120,19 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         additional_results = evaluator.get_results_from_last_iteration()
         self.assertTrue(all(0 < i < 5 for i in additional_results["circuit_bond_dimension"]))
 
+    @data((0.1, 0.2, -0.1, -0.2), (-0.1, 0.2, 0.14, 0.5))
+    @unpack
+    def test_depth_two_fidelity_bounds(self, beta0, beta1, gamma0, gamma1):
+        """Checks that MPS simualtions respect the bounds on the fidelity."""
+        params = [beta0, beta1, gamma0, gamma1]
+        cost_op = SparsePauliOp.from_list([("ZIIZ", 0.123), ("IZIZ", -1), ("IIZZ", 2)])
+
+        evaluator = MPSEvaluator(bond_dim_circuit=2, store_intermediate_schmidt_values=True)
+        _ = evaluator.evaluate(cost_op, params)
+        fidelity_bound = evaluator.calculate_fidelity_bounds()
+        self.assertLess(fidelity_bound, 1)
+        self.assertGreater(fidelity_bound, 0)
+
     @data((1, 1), (0.1234, -0.56), (0.25, 0.5), (0.5, 0.25))
     @unpack
     def test_ansatz_circuit(self, beta, gamma):
