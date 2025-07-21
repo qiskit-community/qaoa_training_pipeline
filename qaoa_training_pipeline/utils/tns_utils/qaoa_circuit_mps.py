@@ -686,7 +686,10 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
                 tn_i_qubit = min(tn_i, tn_j)
 
                 rzz_gate = parse_to_gate(
-                    "RZZ", 2.0 * scaling_factor * self._adj_matrix[i_qubit, j_qubit], j_qubit, i_qubit
+                    "RZZ",
+                    2.0 * scaling_factor * self._adj_matrix[i_qubit, j_qubit],
+                    j_qubit,
+                    i_qubit,
                 )
                 list_of_schmidt_gate = self._apply_two_qubit_gate(tn_i_qubit, rzz_gate.array, True)
                 if self._store_schmidt:
@@ -700,11 +703,13 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
             # 2. Apply the SWAPs.
             if 0 <= swap_layer_idx < len(self._swap_strat):
                 for swap_pairs in self._swap_strat.swap_layer(swap_layer_idx):
-                    
+
                     if swap_pairs[1] != swap_pairs[0] + 1:
                         raise ValueError("Inconsistency found in SWAP strategy")
 
-                    list_of_schmidt_swap = self._apply_two_qubit_gate(swap_pairs[0], swap_gate, True)
+                    list_of_schmidt_swap = self._apply_two_qubit_gate(
+                        swap_pairs[0], swap_gate, True
+                    )
                     if self._store_schmidt:
                         self._list_of_schmidt.append(list_of_schmidt_swap)
 

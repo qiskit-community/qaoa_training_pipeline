@@ -514,7 +514,7 @@ class CircuitMPSVidalCanonization:
 
         for i_swap in range(max_qubit - 2, min_qubit - 1, -1):
             list_of_schmidt_values.append(self.apply_swap_gate(i_swap))
-            
+
         return list_of_schmidt_values
 
     def apply_rzz_gate_nn(self, i_qubit: int, theta: float) -> np.ndarray:
