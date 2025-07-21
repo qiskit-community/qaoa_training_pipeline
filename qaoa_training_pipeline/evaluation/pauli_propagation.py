@@ -86,3 +86,19 @@ class PPEvaluator(BaseEvaluator):
         """
 
         # TODO Implement this.
+
+    def to_config(self) -> Dict:
+        """Json serializable config to keep track of how results are generated."""
+        config = super().to_config()
+
+        # TODO variables set at init must go here.
+
+        return config
+
+    @classmethod
+    def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
+        """Parse initialization kwargs."""
+
+        # TODO parsing happens here
+
+        return dict()
