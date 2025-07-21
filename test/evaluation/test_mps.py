@@ -158,8 +158,9 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
 
         self.assertAlmostEqual(actual, expected, places=8)
 
-    @data(True, False)
-    def test_custom_mixer_and_initial_state(self, vidal: bool):
+    @data((True, False), (False, True))
+    @unpack
+    def test_custom_mixer_and_initial_state(self, vidal: bool, store_schmidt_values: bool):
         """Test that the MPS correctly evaluates with custom initial states and mixers."""
         cost_op = SparsePauliOp.from_list([("IIZZ", -0.5), ("ZIIZ", -0.5), ("IZIZ", -0.5)])
 
@@ -175,7 +176,9 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         mixer.rz(2 * Parameter("beta"), range(4))
         mixer.ry(-np.pi, 0)
 
-        energy = MPSEvaluator(use_vidal_form=vidal).evaluate(
+        energy = MPSEvaluator(
+            use_vidal_form=vidal, store_schmidt_values=store_schmidt_values
+        ).evaluate(
             cost_op,
             params,
             initial_state=init,
@@ -193,14 +196,16 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         with self.assertRaises(ValueError):
             MPSEvaluator(use_vidal_form=vidal).evaluate(cost_op, params, mixer=mixer)
 
-    @data((False, False), (True, False), (False, True), (True, True))
+    @data((False, False, True), (True, False, True), (False, True, False), (True, True, False))
     @unpack
-    def test_single_z(self, vidal, swap_strat):
+    def test_single_z(self, vidal, swap_strat, store_schmidt):
         """Tests that cost operators with single-z terms are properly evaluated."""
         cost_op = SparsePauliOp.from_list([("ZZ", -1), ("IZ", 1), ("ZI", 0.5)])
 
         params = [1.2, 2.3]
-        evaluator = MPSEvaluator(use_vidal_form=vidal, use_swap_strategy=swap_strat)
+        evaluator = MPSEvaluator(
+            use_vidal_form=vidal, use_swap_strategy=swap_strat, store_schmidt_values=store_schmidt
+        )
         actual = evaluator.evaluate(cost_op, params)
         expected = self.qiskit_circuit_simulation(cost_op, params)
 
