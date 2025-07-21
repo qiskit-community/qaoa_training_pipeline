@@ -126,6 +126,7 @@ class QAOACircuitTNSRepresentation(ABC):
         swap_strategy: Optional[SwapStrategy] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Constructor from a networkx graph.
 
@@ -145,6 +146,8 @@ class QAOACircuitTNSRepresentation(ABC):
                 then we assume that the mixer is the sum of X gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
+            store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
+                each application of a two-qubit gate should be stored. Defaults to `False`.
 
         Returns:
             QAOACircuitMPSRepresentation: instance of the QAOACircuitMPSRepresentation
@@ -165,6 +168,7 @@ class QAOACircuitTNSRepresentation(ABC):
             swap_strategy=swap_strategy,
             mixer=mixer,
             initial_state=initial_state,
+            store_intermediate_schmidt_values=store_intermediate_schmidt_values,
         )
 
     @classmethod
@@ -177,6 +181,7 @@ class QAOACircuitTNSRepresentation(ABC):
         swap_strategy: Optional[SwapStrategy] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Constructor taking as input explicitly a list of edges/weight.
 
@@ -220,6 +225,7 @@ class QAOACircuitTNSRepresentation(ABC):
             list_of_hyperedges=list_of_higher_order_terms,
             mixer=mixer,
             initial_state=initial_state,
+            store_intermediate_schmidt_values=store_intermediate_schmidt_values,
         )
 
     @property
@@ -398,6 +404,7 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
         list_of_hyperedges: Optional[List[Tuple[List[int], float]]] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Class constructor
 
@@ -420,6 +427,8 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
                 then we assume that the mixer is the sum of X gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
+            store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
+                each application of a two-qubit gate should be stored. Defaults to `False`.
         """
         self._mps_representation = CircuitMPS(n_qubits)
         self._canonization_center = 0
@@ -432,6 +441,7 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
             list_of_hyperedges=list_of_hyperedges,
             mixer=mixer,
             initial_state=initial_state,
+            store_intermediate_schmidt_values=store_intermediate_schmidt_values,
         )
 
     def get_underlying_tn(self) -> MatrixProductState:
@@ -744,6 +754,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
         list_of_hyperedges: Optional[List[Tuple[List[int], float]]] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Class initialization.
 
@@ -769,6 +780,8 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
                 then we assume that the mixer is the sum of X gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
+            store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
+                each application of a two-qubit gate should be stored. Defaults to `False`.
         """
 
         self._mps_representation = CircuitMPSVidalCanonization.construct_empty_circuit(
@@ -783,6 +796,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
             list_of_hyperedges=list_of_hyperedges,
             mixer=mixer,
             initial_state=initial_state,
+            store_intermediate_schmidt_values=store_intermediate_schmidt_values,
         )
 
     def get_underlying_tn(self) -> MatrixProductState:
