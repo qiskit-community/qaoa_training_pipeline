@@ -23,7 +23,10 @@ class ParamResult:
     """A class to store the results of a parameter optimization.
 
     This class ensures that we have elementary information such as information on the
-    platform in addition to training duration and parameters.
+    platform in addition to training duration and parameters. The class includes a
+    `qaoa_training_pipeline_version` variable. This variable should be updated manually
+    in each new commit to the repository. The addeded functionality is tracked in
+    a table in the main README.md.
     """
 
     data: dict
@@ -43,6 +46,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
+            "qaoa_training_pipeline_version": 1,
         }
 
         # Convert, e.g., np.float to float
