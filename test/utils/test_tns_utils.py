@@ -990,11 +990,13 @@ class TestMatrixProductStateHOBO(TrainingPipelineTestCase):
             mpo_from_symbolic_constructor.H & mpo_from_symbolic_constructor
         ) ^ all
         norm_brute_force = (mpo_from_brute_force.H & mpo_from_brute_force) ^ all
-        self.assertAlmostEqual(norm_brute_force, norm_symbolic_constructor)
+        self.assertAlmostEqual(norm_symbolic_constructor.imag, 0.)
+        self.assertAlmostEqual(norm_brute_force.imag, 0.)
+        self.assertAlmostEqual(norm_brute_force.real, norm_symbolic_constructor.real)
 
         # Checks fidelity
         overlap = (mpo_from_brute_force.H & mpo_from_symbolic_constructor) ^ all
-        fidelity = overlap / sqrt(norm_brute_force * norm_symbolic_constructor)
+        fidelity = overlap / sqrt(norm_brute_force.real * norm_symbolic_constructor.real)
         self.assertAlmostEqual(fidelity, 1.0)
 
     @data("IIIIIIII", "IIIXXIII", "IIXIXIII", "IXIXIXIX", "IIZZIIII", "ZIIIIIZI", "ZIZIZIZI")
