@@ -109,12 +109,15 @@ class QAOACircuitTNSRepresentation(ABC):
         # `QAOAManyBodyCorrelator` class here.
         self._list_of_hyperedges: List[QAOAManyBodyCorrelator] = []
         if list_of_hyperedges is not None:
+            if len(list_of_hyperedges) != 0:
 
-            if self._store_schmidt:
-                raise ValueError("Schmidt value generation for HOBO not supported")
+                if self._store_schmidt:
+                    raise ValueError("Schmidt value generation for HOBO not supported")
 
-            for i in list_of_hyperedges:
-                self._list_of_hyperedges.append(QAOAManyBodyCorrelator(i[0], self._n_qubits, i[1]))
+                for i in list_of_hyperedges:
+                    self._list_of_hyperedges.append(
+                        QAOAManyBodyCorrelator(i[0], self._n_qubits, i[1])
+                    )
 
     @classmethod
     # pylint: disable=too-many-positional-arguments
@@ -247,6 +250,10 @@ class QAOACircuitTNSRepresentation(ABC):
     def compute_expectation_value_single_pauli_string(self, pauli_string: str) -> float:
         """Calculates the expectation value of a single Pauli string."""
         pass
+
+    def get_intermediate_schmidt_values(self) -> List[List[float]]:
+        """Getter for the intermediate Schmidt values."""
+        return self._list_of_schmidt
 
     def compute_cost_function(self, cost_function: QAOACostFunction) -> complex:
         """Calculates the QAOA cost associated with the circuit
