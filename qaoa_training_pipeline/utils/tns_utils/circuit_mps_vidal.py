@@ -8,7 +8,7 @@
 
 """These classes wrap Tensor Network circuit functionalities."""
 
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 from math import sqrt, cos, sin
 
