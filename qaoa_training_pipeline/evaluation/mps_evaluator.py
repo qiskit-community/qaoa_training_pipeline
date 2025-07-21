@@ -10,7 +10,7 @@
 
 from typing import Dict, List, Optional
 
-from math import sqrt
+from math import sqrt, prod
 
 import numpy as np
 
@@ -271,6 +271,34 @@ class MPSEvaluator(BaseEvaluator):
             bound -= 2 * epsilon
 
         return bound
+
+    def calculate_fidelity_approximation(self) -> float:
+        r"""Returns an approximation of the fidelity of the MPS simulation.
+
+        The bound relies on the theory reported in "What Limits the Simulation of Quantum Computers?"
+        PRX Quantum 10, 041038 (2020). It is calculated as follows:
+
+        .. math::
+            F = \prod_{i=1}^N \sum_j \chi_j^2
+
+        where :math:`n` represents the number of two-qubit gates of the circuit, and the sum over
+        :math:`j` includes all the singular values that are retained in the singular value decomposition
+        that is applied when simulating the action of a two-qubit gate.
+
+        Returns:
+            float: approximation of the fidelity.
+
+        Raises:
+            ValueError: if the intermediate Schmidt values have not been stored during the
+                        circuit simulation.
+        """
+
+        if not self._intermediate_schmidt_values or len(self._intermediate_schmidt_values) == 0:
+            raise ValueError(
+                "Intermediate Schmidt values must be stored for getting the fidelity approximation."
+            )
+
+        return prod(sum(i**2 for i in i_schmidt) for i_schmidt in self._intermediate_schmidt_values)
 
     @property
     def schmidt_values(self) -> List[List[float]]:
