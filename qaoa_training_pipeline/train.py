@@ -207,7 +207,7 @@ def train(args: Optional[List]):
                 os.makedirs(args.save_dir)
 
             with open(args.save_dir + save_file_local, "w") as fout:
-                json.dump(all_results, fout, indent=4)
+                json.dump({k: v.data for k, v in all_results.items()}, fout, indent=4)
 
     all_results["args"] = vars(args)
     return all_results

@@ -15,10 +15,11 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
-from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
-from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
+from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
+from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -84,7 +85,7 @@ class ReweightingTrainer(BaseTrainer):
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
         trainer1_kwargs: Optional[dict] = None,
-    ):
+    ) -> ParamResult:
         r"""Train by unweighting the cost_op and then reweighting it.
 
         First, the unweighted trainer is called to obtain a set of optimal parameters.

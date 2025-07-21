@@ -20,7 +20,7 @@ from scipy.optimize import minimize
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.utils.data_utils import standardize_scipy_result
+from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class TQATrainer(BaseTrainer):
@@ -79,7 +79,7 @@ class TQATrainer(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-    ) -> Dict[str, Any]:
+    ) -> ParamResult:
         self._energy_history = []
         self._parameter_history = []
 
@@ -104,24 +104,25 @@ class TQATrainer(BaseTrainer):
 
         start = time()
 
-        result = dict()
         if self.evaluator is None:
             tqa_dt = 0.75
-            result["energy"] = None
-            result["train_duration"] = time() - start
+            param_result = ParamResult(
+                self.tqa_schedule(reps, dt=tqa_dt), time() - start, self, None
+            )
         else:
             params0 = [0.75]
             result = minimize(_energy, params0, **self._minimize_args)
-            result = standardize_scipy_result(result, params0, time() - start, self._sign)
-            tqa_dt = result["optimized_params"][0]
+            param_result = ParamResult.from_scipy_result(
+                result, params0, time() - start, self._sign, self
+            )
+            param_result["optimized_params"] = self.tqa_schedule(
+                reps, dt=param_result["optimized_params"]
+            )
 
-        result["optimized_params"] = self.tqa_schedule(reps, dt=tqa_dt)
-        result["tqa_dt"] = tqa_dt
-        result["trainer"] = self.to_config()
-        result["energy_history"] = self._energy_history
-        result["parameter_history"] = self._parameter_history
+        param_result["energy_history"] = self._energy_history
+        param_result["parameter_history"] = self._parameter_history
 
-        return result
+        return param_result
 
     @staticmethod
     def tqa_schedule(reps: int, dt: float) -> np.array:

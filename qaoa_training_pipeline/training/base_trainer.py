@@ -9,12 +9,13 @@
 """Base trainer interface."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class BaseTrainer(ABC):
@@ -43,7 +44,7 @@ class BaseTrainer(ABC):
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> ParamResult:
         """Performs the training."""
         raise NotImplementedError("Sub-classes must implement `train`.")
 
