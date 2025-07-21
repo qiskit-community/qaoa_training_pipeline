@@ -10,6 +10,8 @@
 
 from typing import Dict, List, Optional
 
+from math import sqrt
+
 import numpy as np
 
 from qiskit.circuit import QuantumCircuit
@@ -57,6 +59,7 @@ class MPSEvaluator(BaseEvaluator):
         bond_dim_mpo: Optional[int] = None,
         use_swap_strategy: bool = False,
         store_schmidt_values: bool = False,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Initializes the MPS evaluator.
 
@@ -84,6 +87,8 @@ class MPSEvaluator(BaseEvaluator):
                 network. Defaults to False.
             store_schmidt_values (bool): If true then the Schmidt values are stored in a JSON
                 serializable format.
+            store_intermediate_schmidt_values (bool): If `True`, stores the intermediate Schmidt
+                values obtained at each application of a two-qubit gate.
         """
         self._threshold_circuit = threshold_circuit
         self._max_bond_circuit = bond_dim_circuit
@@ -91,7 +96,9 @@ class MPSEvaluator(BaseEvaluator):
         self._max_bond_cost = bond_dim_mpo
         self._use_swap_strategy = use_swap_strategy
         self._store_schmidt = store_schmidt_values
+        self._store_intermediate_schmidt_values = store_intermediate_schmidt_values
         self._schmidt_values = None
+        self._intermediate_schmidt_values = None
 
         # This is initialized when `evaluate` is called for the first time.
         self._cost_op = None
@@ -190,9 +197,13 @@ class MPSEvaluator(BaseEvaluator):
             swap_strategy=self._swap_strategy,
             mixer=mixer,
             initial_state=initial_state,
+            store_intermediate_schmidt_values=self._store_intermediate_schmidt_values,
         )
 
         circuit.apply_qaoa_layer(beta_parameters, gamma_parameters)
+
+        if self._store_intermediate_schmidt_values:
+            self._intermediate_schmidt_values = circuit.get_intermediate_schmidt_values()
 
         cost_function_estimate = circuit.compute_cost_function(self._cost_op)
 
@@ -230,6 +241,36 @@ class MPSEvaluator(BaseEvaluator):
                 last iteration
         """
         return self._results_last_iteration
+
+    def calculate_fidelity_bounds(self) -> float:
+        """Returns a bound on the fidelity of the MPS simulation.
+
+        The bound relies on the theory reported in "What Limits the Simulation of Quantum Computers?"
+        PRX Quantum 10, 041038 (2020). It is calculated as follows:
+
+        .. math::
+            F = 1 - 2 \sum_{i=1}^n \sqrt{1 - \sum_{j} \chi_{j}^2}
+
+        where :math:`n` represents the number of two-qubit gates of the circuit, and the sum over
+        :math:`j` includes all the singular values that are retained in the singular value decomposition
+        that is applied when simulating the action of a two-qubit gate.
+
+        Note that, if the intermediate Schmidt values are not stored, then 0 is returned
+
+        Returns:
+            float: lower-bound on the fidelity.
+        """
+
+        if not self._intermediate_schmidt_values or len(self._intermediate_schmidt_values) == 0:
+            return 0.0
+
+        bound = 1.0
+
+        for i_schmidt in self._intermediate_schmidt_values:
+            epsilon = 1.0 - sqrt(sum(i**2 for i in i_schmidt))
+            bound -= 2 * epsilon
+
+        return bound
 
     @property
     def schmidt_values(self) -> List[List[float]]:
