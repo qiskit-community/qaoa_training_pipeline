@@ -23,7 +23,7 @@ if HAS_JL:
     from juliacall import Main as jl
 
 
-class MPSEvaluator(BaseEvaluator):
+class PPEvaluator(BaseEvaluator):
     """Evaluator based on the Pauli propagation method.
     
     This class requires that the system has the Pauli propagation toolkit
