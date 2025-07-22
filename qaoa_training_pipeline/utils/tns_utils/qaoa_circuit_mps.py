@@ -955,10 +955,12 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
             for node0, node1 in self._swap_layer_pairs[layer_idx]:
                 tn_j_qubit = min(permutation.index(node0), permutation.index(node1))
 
-                self._mps_representation.apply_rzz_gate_nn(
+                list_of_schmidt = self._mps_representation.apply_rzz_gate_nn(
                     tn_j_qubit,
                     2.0 * scaling_factor * self._adj_matrix[node0, node1],
                 )
+                if self._store_schmidt:
+                    self._list_of_schmidt.append(list_of_schmidt)
 
             if rep % 2 == 0:
                 swap_layer_idx = layer_idx - 1
@@ -968,7 +970,9 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
             # 2. Apply the SWAPs.
             if 0 <= swap_layer_idx < len(self._swap_strat):
                 for swap_pairs in self._swap_strat.swap_layer(swap_layer_idx):
-                    self._mps_representation.apply_swap_gate(swap_pairs[0])
+                    list_of_schmidt_swap = self._mps_representation.apply_swap_gate(swap_pairs[0])
+                    if self._store_schmidt:
+                        self._list_of_schmidt.append(list_of_schmidt_swap)
 
     def compute_expectation_value_single_pauli_string(self, pauli_string: str) -> float:
         """Calculates the expectation value of a single Pauli string.
