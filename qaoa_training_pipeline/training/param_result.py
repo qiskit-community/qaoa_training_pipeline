@@ -13,11 +13,10 @@ import platform
 from typing import Optional, TYPE_CHECKING
 import numpy as np
 
+from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 
 if TYPE_CHECKING:
     from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-
-from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 
 
 @dataclass

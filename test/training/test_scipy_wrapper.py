@@ -51,7 +51,6 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         self.assertTrue(len(result["parameter_history"]) > 0)
         self.assertTrue(len(result["energy_evaluation_time"]) > 0)
 
-
     def test_min_vs_max(self):
         """Test that a simple training works."""
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
