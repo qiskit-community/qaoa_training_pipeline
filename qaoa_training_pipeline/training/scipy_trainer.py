@@ -85,10 +85,6 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
         start = time()
 
-        self._energy_history = []
-        self._parameter_history = []
-        self._energy_evaluation_time = []
-
         def _energy(x):
             """Maximize the energy by minimizing the negative energy."""
             estart = time()
