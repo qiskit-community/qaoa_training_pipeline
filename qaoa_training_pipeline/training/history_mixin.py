@@ -12,7 +12,7 @@ from typing import List
 
 
 class HistoryMixin:
-    """A small mix-in class to trakc enery history.
+    """A small mix-in class to track energy history.
 
     This can be used in e.g. ScipyTrainer and other trainers that
     perform an optimization of the parameters.
