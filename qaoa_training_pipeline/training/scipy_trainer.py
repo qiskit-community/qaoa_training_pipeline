@@ -43,7 +43,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
         """
-        BaseTrainer.__init__(evaluator)
+        BaseTrainer.__init__(self, evaluator)
         HistoryMixin.__init__(self)
 
         self._minimize_args = {"method": "COBYLA"}
@@ -81,7 +81,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             ansatz_circuit: The ansatz circuit in case it differs from the standard QAOA
                 circuit given by :math:`\exp(-i\gamma H_C)`.
         """
-        self.recreate_history()
+        self.reset_history()
 
         start = time()
 
@@ -111,9 +111,6 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         param_result = ParamResult.from_scipy_result(
             result, params0, time() - start, self._sign, self
         )
-        param_result["energy_history"] = self._energy_history
-        param_result["parameter_history"] = self._parameter_history
-        param_result["energy_evaluation_time"] = self._energy_evaluation_time
 
         param_result.update(self._evaluator.get_results_from_last_iteration())
 

@@ -17,6 +17,8 @@ import numpy as np
 if TYPE_CHECKING:
     from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 
+from qaoa_training_pipeline.training.history_mixin import HistoryMixin
+
 
 @dataclass
 class ParamResult:
@@ -81,6 +83,12 @@ class ParamResult:
         """Update the data with the given dictionary."""
         self.data.update(other)
 
+    def add_history(self, history_mixin: HistoryMixin):
+        """Add the history to the data."""
+        self.data["energy_history"] = history_mixin.energy_history
+        self.data["parameter_history"] = history_mixin.parameter_history
+        self.data["energy_evaluation_time"] = history_mixin.energy_evaluation_time
+
     # pylint: disable=(too-many-positional-arguments
     @classmethod
     def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> dict:
@@ -98,5 +106,8 @@ class ParamResult:
         if "success" in result:
             success = result["success"]
             param_result["success"] = f"{success}"
+
+        if isinstance(trainer, HistoryMixin):
+            param_result.add_history(trainer)
 
         return param_result
