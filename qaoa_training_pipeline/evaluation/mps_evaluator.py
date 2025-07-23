@@ -89,6 +89,10 @@ class MPSEvaluator(BaseEvaluator):
                 serializable format.
             store_intermediate_schmidt_values (bool): If `True`, stores the intermediate Schmidt
                 values obtained at each application of a two-qubit gate.
+                Note that setting this variable to `True` generates N vectors of integers of size
+                m, N being the number of two-qubit gates of the circuit and m being the maximum
+                allowed bond dimension. Therefore, a large amount of data may be generated for
+                accurate simulations of deep circuits.
         """
         self._threshold_circuit = threshold_circuit
         self._max_bond_circuit = bond_dim_circuit
