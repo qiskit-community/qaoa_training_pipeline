@@ -52,7 +52,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
         """
-        BaseTrainer.__init__(evaluator)
+        BaseTrainer.__init__(self, evaluator)
         HistoryMixin.__init__(self)
 
         self._minimize_args = {"method": "COBYLA", "options": {"maxiter": 20, "rhobeg": 0.1}}
@@ -118,9 +118,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
                 reps, dt=param_result["optimized_params"]
             )
 
-        param_result["energy_history"] = self._energy_history
-        param_result["parameter_history"] = self._parameter_history
-        param_result["energy_evaluation_time"] = self._energy_evaluation_time
+        param_result.add_history(self)
 
         return param_result
 
