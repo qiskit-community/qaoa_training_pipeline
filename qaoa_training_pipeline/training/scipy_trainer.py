@@ -18,12 +18,13 @@ from qiskit.quantum_info import SparsePauliOp
 from scipy.optimize import minimize
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
-class ScipyTrainer(BaseTrainer):
+class ScipyTrainer(BaseTrainer, HistoryMixin):
     """A trainer that wraps SciPy's minimize function."""
 
     def __init__(
@@ -42,18 +43,13 @@ class ScipyTrainer(BaseTrainer):
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
         """
-        super().__init__(evaluator)
+        BaseTrainer.__init__(evaluator)
+        HistoryMixin.__init__(self)
 
         self._minimize_args = {"method": "COBYLA"}
 
         minimize_args = minimize_args or {}
         self._minimize_args.update(minimize_args)
-
-        # Energy history is saved internally at each optimization for plotting.
-        self._energy_history = []
-
-        # Parameter history is saved internally
-        self._parameter_history = []
 
         # Sign to control whether we minimize or maximize the energy
         self._sign = 1 if energy_minimization else -1
@@ -62,16 +58,6 @@ class ScipyTrainer(BaseTrainer):
     def minimization(self) -> bool:
         """Return True if the energy is minimized."""
         return self._sign == 1
-
-    @property
-    def energy_history(self) -> List[float]:
-        """Return the energy history of the last optimization run."""
-        return self._energy_history
-
-    @property
-    def parameter_history(self) -> List[List[float]]:
-        """Return the parameter history of the last optimization run."""
-        return self._parameter_history
 
     # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
@@ -95,13 +81,17 @@ class ScipyTrainer(BaseTrainer):
             ansatz_circuit: The ansatz circuit in case it differs from the standard QAOA
                 circuit given by :math:`\exp(-i\gamma H_C)`.
         """
+        self.recreate_history()
+
         start = time()
 
         self._energy_history = []
         self._parameter_history = []
+        self._energy_evaluation_time = []
 
         def _energy(x):
             """Maximize the energy by minimizing the negative energy."""
+            estart = time()
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
                 params=x,
@@ -110,6 +100,7 @@ class ScipyTrainer(BaseTrainer):
                 ansatz_circuit=ansatz_circuit,
             )
 
+            self._energy_evaluation_time.append(time() - estart)
             self._energy_history.append(self._sign * energy)
             self._parameter_history.append(list(val for val in x))
 
@@ -122,6 +113,7 @@ class ScipyTrainer(BaseTrainer):
         )
         param_result["energy_history"] = self._energy_history
         param_result["parameter_history"] = self._parameter_history
+        param_result["energy_evaluation_time"] = self._energy_evaluation_time
 
         param_result.update(self._evaluator.get_results_from_last_iteration())
 
