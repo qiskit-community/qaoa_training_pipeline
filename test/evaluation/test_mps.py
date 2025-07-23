@@ -127,6 +127,7 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         (-0.1, 0.12, -0.4, 0.0, False, True),
     )
     @unpack
+    # pylint: disable=too-many-positional-arguments
     def test_depth_two_fidelity_bounds(self, beta0, beta1, gamma0, gamma1, vidal, swap_strategy):
         """Checks that MPS simualtions respect the bounds on the fidelity."""
         params = [beta0, beta1, gamma0, gamma1]
