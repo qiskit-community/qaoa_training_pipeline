@@ -212,7 +212,7 @@ class TransitionStatesTrainer(BaseTrainer):
         if parameter_history:
             line_styles = ["-", ":", "--", "-."]
 
-            for idx, result in enumerate(self._all_ts):
+            for key, result in enumerate(self._all_ts.values()):
                 params_hist = result["parameter_history"]
 
                 for param_idx in range(len(params_hist[0])):
@@ -223,7 +223,7 @@ class TransitionStatesTrainer(BaseTrainer):
                         ls=line_styles[idx % 4],
                     )
         else:
-            for idx, result in enumerate(self._all_ts):
+            for idx, result in enumerate(self._all_ts.values()):
                 axis.plot(
                     result["energy_history"],
                     **plot_style,
