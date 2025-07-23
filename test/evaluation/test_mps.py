@@ -136,7 +136,7 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         _ = evaluator.evaluate(cost_op, params)
 
         # Gets the bounds
-        fidelity_bound = evaluator.calculate_fidelity_bounds()
+        fidelity_bound = evaluator.calculate_fidelity_lower_bound()
         self.assertLessEqual(fidelity_bound, 1)
         self.assertGreaterEqual(fidelity_bound, 0)
 

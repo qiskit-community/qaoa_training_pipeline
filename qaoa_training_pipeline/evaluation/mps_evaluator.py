@@ -246,7 +246,7 @@ class MPSEvaluator(BaseEvaluator):
         """
         return self._results_last_iteration
 
-    def calculate_fidelity_bounds(self) -> float:
+    def calculate_fidelity_lower_bound(self) -> float:
         r"""Returns a bound on the fidelity of the MPS simulation.
 
         The bound relies on the theory reported in "What Limits the Simulation of Quantum Computers?"
