@@ -13,6 +13,7 @@ import platform
 from typing import Optional, TYPE_CHECKING
 import numpy as np
 
+from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 
 if TYPE_CHECKING:
     from qaoa_training_pipeline.training.base_trainer import BaseTrainer
@@ -46,7 +47,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 1,
+            "qaoa_training_pipeline_version": 2,
         }
 
         # Convert, e.g., np.float to float
@@ -81,6 +82,12 @@ class ParamResult:
         """Update the data with the given dictionary."""
         self.data.update(other)
 
+    def add_history(self, history_mixin: HistoryMixin):
+        """Add the history to the data."""
+        self.data["energy_history"] = history_mixin.energy_history
+        self.data["parameter_history"] = history_mixin.parameter_history
+        self.data["energy_evaluation_time"] = history_mixin.energy_evaluation_time
+
     # pylint: disable=(too-many-positional-arguments
     @classmethod
     def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> dict:
@@ -98,5 +105,8 @@ class ParamResult:
         if "success" in result:
             success = result["success"]
             param_result["success"] = f"{success}"
+
+        if isinstance(trainer, HistoryMixin):
+            param_result.add_history(trainer)
 
         return param_result
