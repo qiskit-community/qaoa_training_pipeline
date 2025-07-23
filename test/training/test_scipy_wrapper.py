@@ -86,9 +86,10 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         )
 
         # Check that history is present.
-        self.assertTrue(len(result_mps["energy_history"]) > 0)
-        self.assertTrue(len(result_mps["parameter_history"]) > 0)
-        self.assertTrue(len(result_mps["energy_evaluation_time"]) > 0)
+        hist_len = len(result_mps["energy_history"])
+        self.assertTrue(hist_len > 0)
+        self.assertEqual(len(result_mps["parameter_history"]), hist_len)
+        self.assertEqual(len(result_mps["energy_evaluation_time"]), hist_len)
 
     @data(True, False)
     def test_mps_vidal_simulator_vs_light_cone_depth_two(self, is_vidal_form):
