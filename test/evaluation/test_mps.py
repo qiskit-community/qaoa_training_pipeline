@@ -132,18 +132,24 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         params = [beta0, beta1, gamma0, gamma1]
         cost_op = SparsePauliOp.from_list([("ZIIZ", 0.123), ("IZIZ", -1), ("IIZZ", 2)])
 
-        evaluator = MPSEvaluator(bond_dim_circuit=2, store_intermediate_schmidt_values=True)
+        evaluator = MPSEvaluator(
+            bond_dim_circuit=2,
+            store_intermediate_schmidt_values=True,
+            use_vidal_form=vidal,
+            use_swap_strategy=swap_strategy,
+        )
         _ = evaluator.evaluate(cost_op, params)
 
         # Gets the bounds
+        precision = 1.0e-10
         fidelity_bound = evaluator.calculate_fidelity_lower_bound()
-        self.assertLessEqual(fidelity_bound, 1)
-        self.assertGreaterEqual(fidelity_bound, 0)
+        self.assertLessEqual(fidelity_bound, 1 + precision)
+        self.assertGreaterEqual(fidelity_bound, 0 - precision)
 
         # Gets the fidelity approximation
         fidelity_approx = evaluator.calculate_fidelity_approximation()
-        self.assertLessEqual(fidelity_approx, 1)
-        self.assertGreaterEqual(fidelity_approx, 0)
+        self.assertLessEqual(fidelity_approx, 1 + precision)
+        self.assertGreaterEqual(fidelity_approx, 0 - precision)
 
     @data((1, 1), (0.1234, -0.56), (0.25, 0.5), (0.5, 0.25))
     @unpack

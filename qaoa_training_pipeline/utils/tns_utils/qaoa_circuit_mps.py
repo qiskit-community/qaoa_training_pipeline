@@ -928,7 +928,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
                 j_qubit, i_qubit, 2.0 * scaling_factor * self._adj_matrix[i_qubit, j_qubit]
             )
             if self._store_schmidt:
-                self._list_of_schmidt.append(list_of_schmidt)
+                self._list_of_schmidt.extend(list_of_schmidt)
 
         # HOBO term
         for i_hyper_edge in self._list_of_hyperedges:
