@@ -8,13 +8,14 @@
 
 """A class to generate random initial points."""
 
-from typing import Any, Dict, Optional
+from typing import Optional
 from time import time
 import numpy as np
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class RandomPoint(BaseTrainer):
@@ -64,7 +65,7 @@ class RandomPoint(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-    ) -> Dict[str, Any]:
+    ) -> ParamResult:
         """Return a random initial point.
 
         Args:
@@ -94,12 +95,10 @@ class RandomPoint(BaseTrainer):
 
         params = [float(val) for val in rng.uniform(lb_, ub_, 2 * reps)]
 
-        return {
-            "optimized_params": params,
-            "note": f"The parameters are randomly generated with uniform and seed {self._seed}.",
-            "train_duration": time() - start,
-            "Energy": "NA",
-        }
+        param_result = ParamResult(params, time() - start, self, "NA")
+        param_result["note"] = f"The parameters are uniformly generated with seed {self._seed}."
+
+        return param_result
 
     @classmethod
     def from_config(cls, config: dict) -> "RandomPoint":
@@ -129,4 +128,14 @@ class RandomPoint(BaseTrainer):
             "lower_bound": float(args[1]),
             "upper_bound": float(args[2]),
             "seed": seed,
+        }
+
+    def to_config(self) -> dict:
+        """Creates a serializeable dictionary to keep track of how results are created.
+
+        Note: This datastructure is not intended for us to recreate the class instance.
+        """
+        return {
+            "trainer_name": self.__class__.__name__,
+            "evaluator": "NA",
         }

@@ -25,6 +25,11 @@ class TestTQA(TrainingPipelineTestCase):
 
         self.assertListEqual(result["optimized_params"], [0.875, 0.625, 0.375, 0.125, 0.375, 0.625])
 
+        # Check that history is not present.
+        self.assertTrue(len(result["energy_history"]) == 0)
+        self.assertTrue(len(result["parameter_history"]) == 0)
+        self.assertTrue(len(result["energy_evaluation_time"]) == 0)
+
     def test_optim(self):
         """Test that we can optimize the dt of the TQA schedule."""
         evaluator = MPSEvaluator()
@@ -37,6 +42,11 @@ class TestTQA(TrainingPipelineTestCase):
 
         self.assertEqual(result["success"], "True")
         self.assertEqual(len(result["optimized_params"]), 8)
+
+        # Check that history is present.
+        self.assertTrue(len(result["energy_history"]) > 0)
+        self.assertTrue(len(result["parameter_history"]) > 0)
+        self.assertTrue(len(result["energy_evaluation_time"]) > 0)
 
     def test_from_config(self):
         """Test that we can create TQA trainers from configs."""
