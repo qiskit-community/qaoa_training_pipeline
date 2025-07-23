@@ -19,11 +19,12 @@ from scipy.optimize import minimize
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
-class TQATrainer(BaseTrainer):
+class TQATrainer(BaseTrainer, HistoryMixin):
     """Trotterized Quantum Annealing parameter generation.
 
     This trainer is based on the Trotterized Annealing parameters initialization
@@ -51,17 +52,13 @@ class TQATrainer(BaseTrainer):
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
         """
-        super().__init__(evaluator)
+        BaseTrainer.__init__(evaluator)
+        HistoryMixin.__init__(self)
+
         self._minimize_args = {"method": "COBYLA", "options": {"maxiter": 20, "rhobeg": 0.1}}
 
         minimize_args = minimize_args or {}
         self._minimize_args.update(minimize_args)
-
-        # Energy history is saved internally at each optimization for plotting.
-        self._energy_history = []
-
-        # Parameter history is saved internally
-        self._parameter_history = []
 
         # Sign to control whether we minimize or maximize the energy
         self._sign = 1 if energy_minimization else -1
@@ -80,8 +77,8 @@ class TQATrainer(BaseTrainer):
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
     ) -> ParamResult:
-        self._energy_history = []
-        self._parameter_history = []
+        """Train the QAOA parameters."""
+        self.reset_history()
 
         def _energy(x):
             """Optimize the energy by minimizing the negative energy.
@@ -89,6 +86,7 @@ class TQATrainer(BaseTrainer):
             If self._sign is -1, i.e., the default set by `energy_minimization`
             then the scipy.minimize is converted into a maximization.
             """
+            estart = time()
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
                 params=self.tqa_schedule(reps, dt=x[0]),
@@ -97,6 +95,7 @@ class TQATrainer(BaseTrainer):
                 ansatz_circuit=ansatz_circuit,
             )
 
+            self._energy_evaluation_time.append(time() - estart)
             self._energy_history.append(self._sign * energy)
             self._parameter_history.append(list(val for val in x))
 
@@ -121,6 +120,7 @@ class TQATrainer(BaseTrainer):
 
         param_result["energy_history"] = self._energy_history
         param_result["parameter_history"] = self._parameter_history
+        param_result["energy_evaluation_time"] = self._energy_evaluation_time
 
         return param_result
 
