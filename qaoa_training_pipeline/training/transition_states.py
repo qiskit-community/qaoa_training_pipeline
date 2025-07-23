@@ -212,7 +212,7 @@ class TransitionStatesTrainer(BaseTrainer):
         if parameter_history:
             line_styles = ["-", ":", "--", "-."]
 
-            for key, result in enumerate(self._all_ts.values()):
+            for idx, result in enumerate(self._all_ts.values()):
                 params_hist = result["parameter_history"]
 
                 for param_idx in range(len(params_hist[0])):
