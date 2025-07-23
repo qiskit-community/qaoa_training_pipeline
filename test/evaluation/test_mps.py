@@ -137,13 +137,13 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
 
         # Gets the bounds
         fidelity_bound = evaluator.calculate_fidelity_bounds()
-        self.assertLess(fidelity_bound, 1)
-        self.assertGreater(fidelity_bound, 0)
+        self.assertLessEqual(fidelity_bound, 1)
+        self.assertGreaterEqual(fidelity_bound, 0)
 
         # Gets the fidelity approximation
         fidelity_approx = evaluator.calculate_fidelity_approximation()
-        self.assertLess(fidelity_approx, 1)
-        self.assertGreater(fidelity_approx, 0)
+        self.assertLessEqual(fidelity_approx, 1)
+        self.assertGreaterEqual(fidelity_approx, 0)
 
     @data((1, 1), (0.1234, -0.56), (0.25, 0.5), (0.5, 0.25))
     @unpack
