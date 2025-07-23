@@ -606,7 +606,7 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
         """Applies a two-qubit gate on the circuit.
 
         Note that the two-qubit gate is assumed to be nearest-neighbour,
-        so it is applied on gates `i_qubit` and `i_qubit + 1`
+        so it is applied on qubits `i_qubit` and `i_qubit + 1`
 
         Args:
             i_qubit (int): qubit on which the gate is applied
