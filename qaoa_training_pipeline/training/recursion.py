@@ -9,7 +9,7 @@
 """Class to recursively train QAOA parameters."""
 
 from time import time
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Dict, Optional
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -18,6 +18,7 @@ from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.parameter_extenders import PARAMETEREXTENDERS
+from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class RecursionTrainer(BaseTrainer):
@@ -61,7 +62,7 @@ class RecursionTrainer(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-    ) -> Dict[str, Any]:
+    ) -> ParamResult:
         """Perform the training.
 
         Args:
@@ -104,12 +105,10 @@ class RecursionTrainer(BaseTrainer):
             energy = result["energy"]
             all_results[current_reps] = result
 
-        all_results["train_duration"] = time() - start
-        all_results["optimized_params"] = params0
-        all_results["trainer"] = self.to_config()
-        all_results["energy"] = energy
+        param_result = ParamResult(params0, time() - start, self, energy)
+        param_result.update(all_results)
 
-        return all_results
+        return param_result
 
     @classmethod
     def from_config(cls, config: Dict) -> "RecursionTrainer":
