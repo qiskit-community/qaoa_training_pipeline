@@ -17,13 +17,14 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
+from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.evaluation import EVALUATORS
 
 
-class DepthOneScanTrainer(BaseTrainer):
+class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
     """Scan the gamma and beta parameters of QAOA."""
 
     def __init__(self, evaluator: BaseEvaluator, energy_minimization: bool = False):
@@ -35,7 +36,8 @@ class DepthOneScanTrainer(BaseTrainer):
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
         """
-        super().__init__(evaluator=evaluator)
+        BaseTrainer.__init__(self, evaluator=evaluator)
+        HistoryMixin.__init__(self)
 
         # Parameters that will be filled by the scanner.
         self._energies = None
@@ -83,6 +85,7 @@ class DepthOneScanTrainer(BaseTrainer):
             num_points: The number of points in the gamma and beta ranges to take. This
                 method will thus evaluate the energy `num_points**2` times.
         """
+        self.reset_history()
         start = time()
 
         parameter_ranges = parameter_ranges or self._default_range
@@ -95,6 +98,7 @@ class DepthOneScanTrainer(BaseTrainer):
 
         for idx1, beta in enumerate(self._betas):
             for idx2, gamma in enumerate(self._gammas):
+                estart = time()
                 energy = self._evaluator.evaluate(
                     cost_op,
                     [beta, gamma],
@@ -102,7 +106,11 @@ class DepthOneScanTrainer(BaseTrainer):
                     initial_state,
                     ansatz_circuit,
                 )
-                self._energies[idx1, idx2] = np.real(energy)
+                self._energies[idx1, idx2] = float(np.real(energy))
+
+                self._energy_evaluation_time.append(time() - estart)
+                self._energy_history.append(float(np.real(energy)))
+                self._parameter_history.append([beta, gamma])
 
         min_idx, opt_energy = self._extrema_locator(self._energies)
         min_idxb, min_idxg = min_idx // num_points, min_idx % num_points
@@ -114,6 +122,7 @@ class DepthOneScanTrainer(BaseTrainer):
         opt_result = ParamResult([opt_beta, opt_gamma], time() - start, self, opt_energy)
         opt_result["num_points"] = num_points
         opt_result["parameter_ranges"] = parameter_ranges
+        opt_result.add_history(self)
 
         return opt_result
 
