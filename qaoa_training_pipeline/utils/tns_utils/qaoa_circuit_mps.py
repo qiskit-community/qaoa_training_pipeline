@@ -340,7 +340,7 @@ class QAOACircuitTNSRepresentation(ABC):
         pass
 
     @abstractmethod
-    def _apply_ansatz_layer(self, scaling_factor: float):
+    def _apply_ansatz_layer(self, scaling_factor: float) -> List[np.ndarray]:
         """Applies the circuit ansatz onto the circuit.
 
         Args:
