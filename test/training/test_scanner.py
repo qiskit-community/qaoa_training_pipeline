@@ -8,9 +8,10 @@
 
 """Tests of the class DepthOneScanTrainer."""
 
+from test import TrainingPipelineTestCase
+
 from qiskit.quantum_info import SparsePauliOp
 
-from test import TrainingPipelineTestCase
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
 
