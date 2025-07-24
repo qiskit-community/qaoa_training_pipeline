@@ -264,12 +264,15 @@ class TestCostFunction(TrainingPipelineTestCase):
             symbolic_mpo.add_term(i_string, i_coeff)
         mpo_cost_function = symbolic_mpo.generate_mpo_representation()
         operator_norm = (mpo_cost_function.H & mpo_cost_function) ^ all
+        self.assertAlmostEqual(operator_norm.imag, 0.0)
 
         cost_function_conventional = QAOACostFunction(SparsePauliOp(pauli_strings, pauli_coeffs))
         mpo_cost_function_ref = cost_function_conventional.mpo.mpo
         operator_norm_ref = (mpo_cost_function_ref.H & mpo_cost_function_ref) ^ all
+        self.assertAlmostEqual(operator_norm_ref.imag, 0.0)
+
         fidelity = ((mpo_cost_function_ref.H & mpo_cost_function) ^ all) / (
-            sqrt(operator_norm) * sqrt(operator_norm_ref)
+            sqrt(operator_norm.real) * sqrt(operator_norm_ref.real)
         )
         self.assertAlmostEqual(fidelity, 1.0)
 
@@ -285,12 +288,15 @@ class TestCostFunction(TrainingPipelineTestCase):
             symbolic_mpo.add_term(i_string, i_coeff)
         mpo_cost_function = symbolic_mpo.generate_mpo_representation()
         operator_norm = (mpo_cost_function.H & mpo_cost_function) ^ all
+        self.assertAlmostEqual(operator_norm.imag, 0.0)
 
         cost_function_conventional = QAOACostFunction(SparsePauliOp(pauli_strings, pauli_coeffs))
         mpo_cost_function_ref = cost_function_conventional.mpo.mpo
         operator_norm_ref = (mpo_cost_function_ref.H & mpo_cost_function_ref) ^ all
+        self.assertAlmostEqual(operator_norm_ref.imag, 0.0)
+
         fidelity = ((mpo_cost_function_ref.H & mpo_cost_function) ^ all) / (
-            sqrt(operator_norm) * sqrt(operator_norm_ref)
+            sqrt(operator_norm.real) * sqrt(operator_norm_ref.real)
         )
         self.assertAlmostEqual(fidelity, 1.0)
 
@@ -306,12 +312,15 @@ class TestCostFunction(TrainingPipelineTestCase):
             symbolic_mpo.add_term(i_string, i_coeff)
         mpo_cost_function = symbolic_mpo.generate_mpo_representation()
         operator_norm = (mpo_cost_function.H & mpo_cost_function) ^ all
+        self.assertAlmostEqual(operator_norm.imag, 0.0)
 
         cost_function_conventional = QAOACostFunction(SparsePauliOp(pauli_strings, pauli_coeffs))
         mpo_cost_function_ref = cost_function_conventional.mpo.mpo
         operator_norm_ref = (mpo_cost_function_ref.H & mpo_cost_function_ref) ^ all
+        self.assertAlmostEqual(operator_norm_ref.imag, 0.0)
+
         fidelity = ((mpo_cost_function_ref.H & mpo_cost_function) ^ all) / (
-            sqrt(operator_norm) * sqrt(operator_norm_ref)
+            sqrt(operator_norm.real) * sqrt(operator_norm_ref.real)
         )
         self.assertAlmostEqual(fidelity, 1.0)
 
@@ -981,11 +990,13 @@ class TestMatrixProductStateHOBO(TrainingPipelineTestCase):
             mpo_from_symbolic_constructor.H & mpo_from_symbolic_constructor
         ) ^ all
         norm_brute_force = (mpo_from_brute_force.H & mpo_from_brute_force) ^ all
-        self.assertAlmostEqual(norm_brute_force, norm_symbolic_constructor)
+        self.assertAlmostEqual(norm_symbolic_constructor.imag, 0.0)
+        self.assertAlmostEqual(norm_brute_force.imag, 0.0)
+        self.assertAlmostEqual(norm_brute_force.real, norm_symbolic_constructor.real)
 
         # Checks fidelity
         overlap = (mpo_from_brute_force.H & mpo_from_symbolic_constructor) ^ all
-        fidelity = overlap / sqrt(norm_brute_force * norm_symbolic_constructor)
+        fidelity = overlap / sqrt(norm_brute_force.real * norm_symbolic_constructor.real)
         self.assertAlmostEqual(fidelity, 1.0)
 
     @data("IIIIIIII", "IIIXXIII", "IIXIXIII", "IXIXIXIX", "IIZZIIII", "ZIIIIIZI", "ZIZIZIZI")
