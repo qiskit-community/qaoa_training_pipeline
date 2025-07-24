@@ -120,6 +120,38 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         additional_results = evaluator.get_results_from_last_iteration()
         self.assertTrue(all(0 < i < 5 for i in additional_results["circuit_bond_dimension"]))
 
+    @data(
+        (0.1, 0.2, -0.1, -0.2, True, True),
+        (-0.1, 0.2, 0.14, 0.5, True, False),
+        (0.3, 0.1, 0.12, -0.1, False, False),
+        (-0.1, 0.12, -0.4, 0.0, False, True),
+    )
+    @unpack
+    # pylint: disable=too-many-positional-arguments
+    def test_depth_two_fidelity_bounds(self, beta0, beta1, gamma0, gamma1, vidal, swap_strategy):
+        """Checks that MPS simualtions respect the bounds on the fidelity."""
+        params = [beta0, beta1, gamma0, gamma1]
+        cost_op = SparsePauliOp.from_list([("ZIIZ", 0.123), ("IZIZ", -1), ("IIZZ", 2)])
+
+        evaluator = MPSEvaluator(
+            bond_dim_circuit=2,
+            store_intermediate_schmidt_values=True,
+            use_vidal_form=vidal,
+            use_swap_strategy=swap_strategy,
+        )
+        _ = evaluator.evaluate(cost_op, params)
+
+        # Gets the bounds
+        precision = 1.0e-10
+        fidelity_bound = evaluator.calculate_fidelity_lower_bound()
+        self.assertLessEqual(fidelity_bound, 1 + precision)
+        self.assertGreaterEqual(fidelity_bound, 0 - precision)
+
+        # Gets the fidelity approximation
+        fidelity_approx = evaluator.calculate_fidelity_approximation()
+        self.assertLessEqual(fidelity_approx, 1 + precision)
+        self.assertGreaterEqual(fidelity_approx, 0 - precision)
+
     @data((1, 1), (0.1234, -0.56), (0.25, 0.5), (0.5, 0.25))
     @unpack
     def test_ansatz_circuit(self, beta, gamma):
@@ -158,8 +190,9 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
 
         self.assertAlmostEqual(actual, expected, places=8)
 
-    @data(True, False)
-    def test_custom_mixer_and_initial_state(self, vidal: bool):
+    @data((True, False), (False, True))
+    @unpack
+    def test_custom_mixer_and_initial_state(self, vidal: bool, store_schmidt_values: bool):
         """Test that the MPS correctly evaluates with custom initial states and mixers."""
         cost_op = SparsePauliOp.from_list([("IIZZ", -0.5), ("ZIIZ", -0.5), ("IZIZ", -0.5)])
 
@@ -175,7 +208,9 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         mixer.rz(2 * Parameter("beta"), range(4))
         mixer.ry(-np.pi, 0)
 
-        energy = MPSEvaluator(use_vidal_form=vidal).evaluate(
+        energy = MPSEvaluator(
+            use_vidal_form=vidal, store_schmidt_values=store_schmidt_values
+        ).evaluate(
             cost_op,
             params,
             initial_state=init,
@@ -193,14 +228,16 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         with self.assertRaises(ValueError):
             MPSEvaluator(use_vidal_form=vidal).evaluate(cost_op, params, mixer=mixer)
 
-    @data((False, False), (True, False), (False, True), (True, True))
+    @data((False, False, True), (True, False, True), (False, True, False), (True, True, False))
     @unpack
-    def test_single_z(self, vidal, swap_strat):
+    def test_single_z(self, vidal, swap_strat, store_schmidt):
         """Tests that cost operators with single-z terms are properly evaluated."""
         cost_op = SparsePauliOp.from_list([("ZZ", -1), ("IZ", 1), ("ZI", 0.5)])
 
         params = [1.2, 2.3]
-        evaluator = MPSEvaluator(use_vidal_form=vidal, use_swap_strategy=swap_strat)
+        evaluator = MPSEvaluator(
+            use_vidal_form=vidal, use_swap_strategy=swap_strat, store_schmidt_values=store_schmidt
+        )
         actual = evaluator.evaluate(cost_op, params)
         expected = self.qiskit_circuit_simulation(cost_op, params)
 

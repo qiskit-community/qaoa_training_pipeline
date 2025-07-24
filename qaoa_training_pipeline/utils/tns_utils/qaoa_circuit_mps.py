@@ -1,5 +1,4 @@
 #
-#
 # (C) Copyright IBM 2024.
 #
 # Any modifications or derivative works of this code must retain this
@@ -12,13 +11,12 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Optional, List, Tuple
 
+from math import sqrt
+
 from networkx import Graph
 import numpy as np
 
-from quimb.tensor import (
-    CircuitMPS,
-    MatrixProductState,
-)
+from quimb.tensor import CircuitMPS, MatrixProductState, tensor_network_gate_inds
 from quimb.tensor.circuit import parse_to_gate
 
 from qiskit import QuantumCircuit
@@ -54,6 +52,7 @@ class QAOACircuitTNSRepresentation(ABC):
         list_of_hyperedges: Optional[List[Tuple[List[int], float]]] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Class initialization.
 
@@ -74,6 +73,8 @@ class QAOACircuitTNSRepresentation(ABC):
                 then we assume that the mixer is the sum of X gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
+            store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
+                each application of a two-qubit gate should be stored. Defaults to `False`.
         """
         self._n_qubits = n_qubits
         self._adj_matrix = adjacency_matrix
@@ -82,6 +83,10 @@ class QAOACircuitTNSRepresentation(ABC):
         self._swap_strat = swap_strategy
         self._swap_layer_pairs = None
         self._initial_states = None if initial_state is None else split_circuit(initial_state)
+        self._store_schmidt = store_intermediate_schmidt_values
+
+        if self._store_schmidt:
+            self._list_of_schmidt = []
 
         self._mixers = None
         if mixer is not None:
@@ -104,8 +109,15 @@ class QAOACircuitTNSRepresentation(ABC):
         # `QAOAManyBodyCorrelator` class here.
         self._list_of_hyperedges: List[QAOAManyBodyCorrelator] = []
         if list_of_hyperedges is not None:
-            for i in list_of_hyperedges:
-                self._list_of_hyperedges.append(QAOAManyBodyCorrelator(i[0], self._n_qubits, i[1]))
+            if len(list_of_hyperedges) != 0:
+
+                if self._store_schmidt:
+                    raise ValueError("Schmidt value generation for HOBO not supported")
+
+                for i in list_of_hyperedges:
+                    self._list_of_hyperedges.append(
+                        QAOAManyBodyCorrelator(i[0], self._n_qubits, i[1])
+                    )
 
     @classmethod
     # pylint: disable=too-many-positional-arguments
@@ -117,6 +129,7 @@ class QAOACircuitTNSRepresentation(ABC):
         swap_strategy: Optional[SwapStrategy] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Constructor from a networkx graph.
 
@@ -136,6 +149,8 @@ class QAOACircuitTNSRepresentation(ABC):
                 then we assume that the mixer is the sum of X gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
+            store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
+                each application of a two-qubit gate should be stored. Defaults to `False`.
 
         Returns:
             QAOACircuitMPSRepresentation: instance of the QAOACircuitMPSRepresentation
@@ -156,6 +171,7 @@ class QAOACircuitTNSRepresentation(ABC):
             swap_strategy=swap_strategy,
             mixer=mixer,
             initial_state=initial_state,
+            store_intermediate_schmidt_values=store_intermediate_schmidt_values,
         )
 
     @classmethod
@@ -168,6 +184,7 @@ class QAOACircuitTNSRepresentation(ABC):
         swap_strategy: Optional[SwapStrategy] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Constructor taking as input explicitly a list of edges/weight.
 
@@ -211,6 +228,7 @@ class QAOACircuitTNSRepresentation(ABC):
             list_of_hyperedges=list_of_higher_order_terms,
             mixer=mixer,
             initial_state=initial_state,
+            store_intermediate_schmidt_values=store_intermediate_schmidt_values,
         )
 
     @property
@@ -232,6 +250,10 @@ class QAOACircuitTNSRepresentation(ABC):
     def compute_expectation_value_single_pauli_string(self, pauli_string: str) -> float:
         """Calculates the expectation value of a single Pauli string."""
         pass
+
+    def get_intermediate_schmidt_values(self) -> List[List[float]]:
+        """Getter for the intermediate Schmidt values."""
+        return self._list_of_schmidt
 
     def compute_cost_function(self, cost_function: QAOACostFunction) -> complex:
         """Calculates the QAOA cost associated with the circuit
@@ -273,7 +295,7 @@ class QAOACircuitTNSRepresentation(ABC):
             for inst in circuit.data:
                 self._mps_representation.apply_gate(inst.name, inst.params, i_qubit)
 
-    def apply_qaoa_layer(self, betas: List[float], gammas: List[float]) -> None:
+    def apply_qaoa_layer(self, betas: List[float], gammas: List[float]):
         """Applies a full layer of the QAOA ansatz.
 
         Note that this method is not abstract because it just calls the underlying
@@ -284,9 +306,11 @@ class QAOACircuitTNSRepresentation(ABC):
             betas (List[float]): proportionality term for the mixing factor(s).
             gammas (List[float]): proportionality term for the Hamiltonian evolution(s).
         """
+
         self._apply_initial_layer()
 
         rep = 1  # determines if even or odd layer.
+
         for gamma_value, beta_value in zip(gammas, betas):
             if self._swap_strat is None:
                 self._apply_ansatz_layer(gamma_value)
@@ -316,11 +340,16 @@ class QAOACircuitTNSRepresentation(ABC):
         pass
 
     @abstractmethod
-    def _apply_ansatz_layer(self, scaling_factor: float):
+    def _apply_ansatz_layer(self, scaling_factor: float) -> List[np.ndarray]:
         """Applies the circuit ansatz onto the circuit.
 
         Args:
             scaling_factor (float): scaling term appearing in the exponent.
+
+        Returns:
+            List[np.ndarray]: list containing the Schmidt values that are retained after
+                each two-qubit application. Note that this includes also the "virtual"
+                SWAP gates that are implicitly applied for non-nearest two-qubit interactions.
         """
         pass
 
@@ -382,6 +411,7 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
         list_of_hyperedges: Optional[List[Tuple[List[int], float]]] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Class constructor
 
@@ -404,6 +434,8 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
                 then we assume that the mixer is the sum of X gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
+            store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
+                each application of a two-qubit gate should be stored. Defaults to `False`.
         """
         self._mps_representation = CircuitMPS(n_qubits)
         self._canonization_center = 0
@@ -416,6 +448,7 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
             list_of_hyperedges=list_of_hyperedges,
             mixer=mixer,
             initial_state=initial_state,
+            store_intermediate_schmidt_values=store_intermediate_schmidt_values,
         )
 
     def get_underlying_tn(self) -> MatrixProductState:
@@ -533,9 +566,10 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
         self._apply_one_local(scaling_factor)
 
         # Now loops over the pairs to apply the Z_i Z_j terms and applies them.
-        input_mps = self._mps_representation.psi.copy()
+        swap_gate = parse_to_gate("SWAP", 0, 1).build_array()
 
         for i_pairs in list_of_coupled_pairs:
+
             # Determines the gate
             j_qubit = min(i_pairs[0], i_pairs[1])
             i_qubit = max(i_pairs[0], i_pairs[1])
@@ -545,55 +579,95 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
 
             # Canonizes wrt the *first* site. Note that the SWAP gates should not
             # influence the canonization (the sites are just swapped back and forth)
-            input_mps.canonicalize_(j_qubit)
-            self._canonization_center = j_qubit
+
+            for swap_site in range(j_qubit, i_qubit - 1):
+                list_of_schmidt = self._apply_two_qubit_gate(swap_site, swap_gate, False)
+                if self._store_schmidt:
+                    self._list_of_schmidt.append(list_of_schmidt)
 
             # Applies the original gate
-            info_dict = {"cur_orthog": self._canonization_center}
-            input_mps.gate_with_auto_swap(
-                rzz_gate.array,
-                (j_qubit, i_qubit),
-                cutoff=self._threshold,
-                max_bond=self._max_bond,
-                inplace=True,
-                info=info_dict,
-            )
+            list_of_schmidt_gate = self._apply_two_qubit_gate(i_qubit - 1, rzz_gate.array, True)
+            if self._store_schmidt:
+                self._list_of_schmidt.append(list_of_schmidt_gate)
 
-            self._canonization_center = info_dict["cur_orthog"][0]
-
-        # The part below is commented out because it currently does not work.
-        # However, we keep it in case generating the dense representation of
-        # the gate and applying it directly on the MPS becomes too costly.
-
-        # # Proceeds to the application of the higher-order terms
-        # for i_higher_order in self._list_of_hyperedges:
-
-        #     # Gets the MPO representation of the high-order correlator
-        #     mpo_representation = i_higher_order.get_mpo_representation(scaling_factor)
-        #     mpo_representation.reindex_(
-        #         {
-        #             "ket" + str(i): new_val
-        #             for i, new_val in zip(range(self._n_qubits), input_mps.outer_inds())
-        #         }
-        #     )
-        #     input_mps.gate_with_mpo(
-        #         mpo_representation,
-        #         max_bond=self._max_bond,
-        #         cutoff=self._threshold,
-        #         transpose=False,
-        #         inplace=True,
-        #         canonize=True,
-        #     )
-        #     self._canonization_center = self._n_qubits - 1
-
-        # Copies back the MPS
-        self._mps_representation = CircuitMPS(self._n_qubits, psi0=input_mps)
+            # Swaps back
+            for swap_site in range(i_qubit - 2, j_qubit - 1, -1):
+                list_of_schmidt = self._apply_two_qubit_gate(swap_site, swap_gate, True)
+                if self._store_schmidt:
+                    self._list_of_schmidt.append(list_of_schmidt)
 
         # Proceeds to the application of the higher-order terms
         for i_higher_order in self._list_of_hyperedges:
             # Gets the MPO representation of the high-order correlator
             mpo_representation = i_higher_order.get_dense_representation(scaling_factor)
             self._mps_representation.apply_gate_raw(mpo_representation, i_higher_order.i_qubits)
+
+    def _apply_two_qubit_gate(self, i_qubit: int, array: np.array, absorb_left: bool) -> np.ndarray:
+        """Applies a two-qubit gate on the circuit.
+
+        Note that the two-qubit gate is assumed to be nearest-neighbour,
+        so it is applied on qubits `i_qubit` and `i_qubit + 1`
+
+        Args:
+            i_qubit (int): qubit on which the gate is applied
+            array (np.array): 4x4 array representation of the gate
+            absort_left (bool): whether the singular values should be
+                absorbed in the left tensor, with index `i_qubit`.
+                If `False`, the singular values are absorbed in the tensor
+                with index `i_qubit+1`.
+
+        Returns:
+            np.ndarray: array containing the overall set of retained Schmidt
+            values.
+
+        Raises:
+            ValueError: if the qubit index is unphysical
+        """
+        # Standard checks
+        if i_qubit < 0:
+            raise ValueError("Qubit index cannot be a negative number")
+        if i_qubit >= self._n_qubits - 1:
+            raise ValueError("Qubit index too large")
+
+        # Proceeds to the gate application
+        input_mps = self._mps_representation.psi.copy()
+        input_mps.shift_orthogonality_center(current=self._canonization_center, new=i_qubit)
+        phys_indices = self._mps_representation.psi.outer_inds()
+        aux_indices = self._mps_representation.psi.inner_inds()
+        tensor_indices = ["I" + str(i) for i in range(self._n_qubits)]
+
+        info = {}
+        tensor_network_gate_inds(
+            input_mps,
+            G=array,
+            inds=[phys_indices[i_qubit], phys_indices[i_qubit + 1]],
+            contract="reduce-split",
+            inplace=True,
+            info=info,
+            absorb=None,
+            cutoff=self._threshold,
+            max_bond=self._max_bond,
+        )
+
+        # We renormalize the S matrix to ensure that the state is normalized even
+        # if we neglect non-zero singular values
+        diagonal_elements = info[("singular_values", aux_indices[i_qubit])]
+        sqrt_normalization = sqrt(sum(i**2 for i in diagonal_elements))
+        diagonal_elements_normalized = np.array(diagonal_elements) / sqrt_normalization
+        if absorb_left:
+            input_mps[tensor_indices[i_qubit]].multiply_index_diagonal(
+                aux_indices[i_qubit], diagonal_elements_normalized, inplace=True
+            )
+            self._canonization_center = i_qubit
+        else:
+            input_mps[tensor_indices[i_qubit + 1]].multiply_index_diagonal(
+                aux_indices[i_qubit], diagonal_elements_normalized, inplace=True
+            )
+            self._canonization_center = i_qubit + 1
+
+        # Copies back the MPS
+        self._mps_representation = CircuitMPS(self._n_qubits, psi0=input_mps)
+        return diagonal_elements
 
     def _apply_layer_ansatz_swap_strat(self, scaling_factor: float, rep: int):
         """Apply the cost operator using a SWAP strategy.
@@ -615,28 +689,28 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
 
         # There are len(layer_order) layers of Rzz gates and len(layer_order) - 1 layers
         # of SWAP gates.
+        swap_gate = parse_to_gate("SWAP").build_array()
         for layer_idx in layer_order:
+
             permutation = self._swap_strat.inverse_composed_permutation(layer_idx)
+
             # 1. Apply the gates.
             for i_pairs in self._swap_layer_pairs[layer_idx]:
                 j_qubit, i_qubit = i_pairs[0], i_pairs[1]
                 tn_i = permutation.index(i_qubit)
                 tn_j = permutation.index(j_qubit)
 
-                tn_j_qubit = max(tn_i, tn_j)
+                tn_i_qubit = min(tn_i, tn_j)
 
-                self._mps_representation.psi.canonize(tn_j_qubit, self._canonization_center)
-                self._canonization_center = tn_j_qubit
-
-                self._mps_representation.apply_gate(
+                rzz_gate = parse_to_gate(
                     "RZZ",
                     2.0 * scaling_factor * self._adj_matrix[i_qubit, j_qubit],
-                    tn_j_qubit - 1,
-                    tn_j_qubit,
-                    contract="swap+split",
-                    cutoff=self._threshold,
-                    max_bond=self._max_bond,
+                    j_qubit,
+                    i_qubit,
                 )
+                list_of_schmidt_gate = self._apply_two_qubit_gate(tn_i_qubit, rzz_gate.array, True)
+                if self._store_schmidt:
+                    self._list_of_schmidt.append(list_of_schmidt_gate)
 
             if rep % 2 == 0:
                 swap_layer_idx = layer_idx - 1
@@ -646,17 +720,15 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
             # 2. Apply the SWAPs.
             if 0 <= swap_layer_idx < len(self._swap_strat):
                 for swap_pairs in self._swap_strat.swap_layer(swap_layer_idx):
-                    self._mps_representation.psi.canonize(swap_pairs[1], self._canonization_center)
-                    self._canonization_center = swap_pairs[1]
 
-                    self._mps_representation.apply_gate(
-                        "SWAP",
-                        swap_pairs[0],
-                        swap_pairs[1],
-                        contract="swap+split",
-                        cutoff=self._threshold,
-                        max_bond=self._max_bond,
+                    if swap_pairs[1] != swap_pairs[0] + 1:
+                        raise ValueError("Inconsistency found in SWAP strategy")
+
+                    list_of_schmidt_swap = self._apply_two_qubit_gate(
+                        swap_pairs[0], swap_gate, True
                     )
+                    if self._store_schmidt:
+                        self._list_of_schmidt.append(list_of_schmidt_swap)
 
 
 class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
@@ -689,6 +761,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
         list_of_hyperedges: Optional[List[Tuple[List[int], float]]] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
+        store_intermediate_schmidt_values: bool = False,
     ):
         """Class initialization.
 
@@ -714,6 +787,8 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
                 then we assume that the mixer is the sum of X gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
+            store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
+                each application of a two-qubit gate should be stored. Defaults to `False`.
         """
 
         self._mps_representation = CircuitMPSVidalCanonization.construct_empty_circuit(
@@ -728,6 +803,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
             list_of_hyperedges=list_of_hyperedges,
             mixer=mixer,
             initial_state=initial_state,
+            store_intermediate_schmidt_values=store_intermediate_schmidt_values,
         )
 
     def get_underlying_tn(self) -> MatrixProductState:
@@ -786,7 +862,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
                 value = 2.0 * scaling_factor * self._adj_matrix[i_qubit, i_qubit]
                 self._mps_representation.apply_rz_gate(i_qubit, value)
 
-    def _apply_ansatz_layer(self, scaling_factor: float):
+    def _apply_ansatz_layer(self, scaling_factor: float) -> List[np.ndarray]:
         """Applies the circuit ansatz onto the circuit.
 
         Since the circuit ansatz is, by default, constructed from the Trotter approximation
@@ -848,9 +924,11 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
         for i_pairs in list_of_coupled_pairs:
             j_qubit = i_pairs[0]
             i_qubit = i_pairs[1]
-            self._mps_representation.apply_rzz_gate(
+            list_of_schmidt = self._mps_representation.apply_rzz_gate(
                 j_qubit, i_qubit, 2.0 * scaling_factor * self._adj_matrix[i_qubit, j_qubit]
             )
+            if self._store_schmidt:
+                self._list_of_schmidt.extend(list_of_schmidt)
 
         # HOBO term
         for i_hyper_edge in self._list_of_hyperedges:
@@ -877,10 +955,12 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
             for node0, node1 in self._swap_layer_pairs[layer_idx]:
                 tn_j_qubit = min(permutation.index(node0), permutation.index(node1))
 
-                self._mps_representation.apply_rzz_gate_nn(
+                list_of_schmidt = self._mps_representation.apply_rzz_gate_nn(
                     tn_j_qubit,
                     2.0 * scaling_factor * self._adj_matrix[node0, node1],
                 )
+                if self._store_schmidt:
+                    self._list_of_schmidt.append(list_of_schmidt)
 
             if rep % 2 == 0:
                 swap_layer_idx = layer_idx - 1
@@ -890,7 +970,9 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
             # 2. Apply the SWAPs.
             if 0 <= swap_layer_idx < len(self._swap_strat):
                 for swap_pairs in self._swap_strat.swap_layer(swap_layer_idx):
-                    self._mps_representation.apply_swap_gate(swap_pairs[0])
+                    list_of_schmidt_swap = self._mps_representation.apply_swap_gate(swap_pairs[0])
+                    if self._store_schmidt:
+                        self._list_of_schmidt.append(list_of_schmidt_swap)
 
     def compute_expectation_value_single_pauli_string(self, pauli_string: str) -> float:
         """Calculates the expectation value of a single Pauli string.

@@ -474,33 +474,50 @@ class CircuitMPSVidalCanonization:
 
         getattr(self, f"apply_{name}_gate")(*args)
 
-    def apply_swap_gate(self, i_qubit: int) -> None:
+    def apply_swap_gate(self, i_qubit: int) -> np.ndarray:
         """Applies a swap gate between nearest-neighbouring sites
 
         The swap gate is applied between qubits `i_qubit` and `i_qubit + 1`
 
         Args:
             i_qubit (int): index of the qubit on which the Swap gate is applied
-        """
-        self._apply_two_qubit_gate(i_qubit, CircuitMPSVidalCanonization._swap_gate)
 
-    def apply_rzz_gate(self, i_qubit: int, j_qubit: int, theta: float) -> None:
+        Returns:
+            np.ndarray: array containing the overall set of retained Schmidt
+            values.
+        """
+        return self._apply_two_qubit_gate(i_qubit, CircuitMPSVidalCanonization._swap_gate)
+
+    def apply_rzz_gate(self, i_qubit: int, j_qubit: int, theta: float) -> List[np.ndarray]:
         """Applies a RZZ gate between non-neighbouring qubits.
 
         Args:
             i_qubit (int): first qubit of the RZZ gate
             j_qubit (int): second qubit of the RZZ gate
             theta (float): rotation angle
+
+        Returns:
+             List[np.ndarray]: tuple storing the Schmidt values that
+                are retained at each application of a two-qubit gate.
+                If `i_qubit` and `j_qubit` are not nearest-neighbour,
+                the Schmidt values are returned also for the SWAP gates
+                that are implicitly applied to bring the qubits close.
         """
         min_qubit = min(i_qubit, j_qubit)
         max_qubit = max(i_qubit, j_qubit)
-        for i_swap in range(min_qubit, max_qubit - 1):
-            self.apply_swap_gate(i_swap)
-        self.apply_rzz_gate_nn(max_qubit - 1, theta)
-        for i_swap in range(max_qubit - 2, min_qubit - 1, -1):
-            self.apply_swap_gate(i_swap)
+        list_of_schmidt_values = []
 
-    def apply_rzz_gate_nn(self, i_qubit: int, theta: float) -> None:
+        for i_swap in range(min_qubit, max_qubit - 1):
+            list_of_schmidt_values.append(self.apply_swap_gate(i_swap))
+
+        list_of_schmidt_values.append(self.apply_rzz_gate_nn(max_qubit - 1, theta))
+
+        for i_swap in range(max_qubit - 2, min_qubit - 1, -1):
+            list_of_schmidt_values.append(self.apply_swap_gate(i_swap))
+
+        return list_of_schmidt_values
+
+    def apply_rzz_gate_nn(self, i_qubit: int, theta: float) -> np.ndarray:
         """Apply a nearest-neighbour two-qubit Rzz gate onto the circuit.
 
         Note that the two-qubit gate is applied to the pair of qubits
@@ -511,8 +528,12 @@ class CircuitMPSVidalCanonization:
         Args:
             i_qubit (int): index of the first qubit on which the gate is applied.
             theta (float): rotation angle.
+
+        Returns:
+            np.ndarray: array containing the overall set of retained Schmidt
+            values.
         """
-        self._apply_two_qubit_gate(i_qubit, CircuitMPSVidalCanonization._rzz_gate(theta))
+        return self._apply_two_qubit_gate(i_qubit, CircuitMPSVidalCanonization._rzz_gate(theta))
 
     def get_s_diagonal_elements_values(self, i_site: int) -> np.ndarray:
         """Gets the Schmidt values for a given bond
@@ -706,7 +727,7 @@ class CircuitMPSVidalCanonization:
             [matrix_product_state[self._get_tensor_tag(i)].data for i in range(self._n_qubits)]
         )
 
-    def _apply_two_qubit_gate(self, i_qubit: int, array: np.array):
+    def _apply_two_qubit_gate(self, i_qubit: int, array: np.array) -> np.ndarray:
         """Applies a two-qubit gate on the circuit.
 
         Note that the two-qubit gate is assumed to be nearest-neighbour,
@@ -715,6 +736,10 @@ class CircuitMPSVidalCanonization:
         Args:
             i_qubit (int): qubit on which the gate is applied
             array (np.array): 4x4 array representation of the gate
+
+        Returns:
+            np.ndarray: array containing the overall set of retained Schmidt
+            values.
 
         Raises:
             ValueError: if the qubit index is unphysical
@@ -744,15 +769,15 @@ class CircuitMPSVidalCanonization:
         # if we neglect non-zero singular values
         diagonal_elements = info[("singular_values", self._get_bond_label_right(i_qubit + 1))]
         sqrt_normalization = sqrt(sum(i**2 for i in diagonal_elements))
-        diagonal_elements = np.array(diagonal_elements) / sqrt_normalization
+        diagonal_elements_normalized = np.array(diagonal_elements) / sqrt_normalization
         inverse_diagonal_elements = np.array(
-            [1 / i if abs(i) > 1.0e-15 else i for i in diagonal_elements]
+            [1 / i if abs(i) > 1.0e-15 else i for i in diagonal_elements_normalized]
         )
         self._tn[self._get_tensor_tag(i_qubit)].multiply_index_diagonal(
-            self._get_bond_label_right(i_qubit + 1), diagonal_elements, inplace=True
+            self._get_bond_label_right(i_qubit + 1), diagonal_elements_normalized, inplace=True
         )
         self._tn[self._get_tensor_tag(i_qubit + 1)].multiply_index_diagonal(
-            self._get_bond_label_right(i_qubit + 1), diagonal_elements, inplace=True
+            self._get_bond_label_right(i_qubit + 1), diagonal_elements_normalized, inplace=True
         )
         self._tn.insert_operator(
             np.diag(inverse_diagonal_elements.data),
@@ -771,3 +796,4 @@ class CircuitMPSVidalCanonization:
             {self._get_bond_label_right(i_qubit + 1): self._get_bond_label_left(i_qubit)}
         )
         self._tn.reindex_({bnd_index: self._get_bond_label_right(i_qubit + 1)})
+        return diagonal_elements
