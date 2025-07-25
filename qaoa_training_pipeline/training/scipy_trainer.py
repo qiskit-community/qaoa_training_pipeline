@@ -20,8 +20,8 @@ from scipy.optimize import minimize
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.functions import (
-    BaseAnglesFunction, 
-    IdentityFunction, 
+    BaseAnglesFunction,
+    IdentityFunction,
     FUNCTIONS,
 )
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
