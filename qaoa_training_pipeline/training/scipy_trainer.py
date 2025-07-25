@@ -19,6 +19,7 @@ from scipy.optimize import minimize
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training import FUNCTIONS
 from qaoa_training_pipeline.training.functions import BaseAnglesFunction
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
@@ -54,6 +55,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         self._minimize_args.update(minimize_args)
 
         # Sign to control whether we minimize or maximize the energy
+        self._energy_minimization = energy_minimization
         self._sign = 1 if energy_minimization else -1
 
     @property
@@ -154,10 +156,14 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         """Create a scipy trainer based on a config."""
 
         evaluator_cls = EVALUATORS[config["evaluator"]]
-        evaluator = evaluator_cls.from_config(config["evaluator_init"])
-        minimize_args = config["minimize_args"]
+        function_cls = FUNCTIONS[config["qaoa_angles_function"]]
 
-        return cls(evaluator, minimize_args)
+        return cls(
+            evaluator_cls.from_config(config["evaluator_init"]), 
+            config["minimize_args"], 
+            energy_minimization=config["energy_minimization"], 
+            qaoa_angles_function=function_cls.from_config(config["qaoa_angles_function_init"]),
+        )
 
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
         """Parse any train arguments from a string.

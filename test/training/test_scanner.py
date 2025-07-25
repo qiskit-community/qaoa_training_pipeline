@@ -14,6 +14,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
+from qaoa_training_pipeline.training.functions import IdentityFunction
 
 
 class TestDepthOneScanTrainer(TrainingPipelineTestCase):
@@ -26,3 +27,19 @@ class TestDepthOneScanTrainer(TrainingPipelineTestCase):
         trainer = DepthOneScanTrainer(EfficientDepthOneEvaluator())
         result = trainer.train(cost_op, num_points=3)
         self.assertTrue(len(result["energy_history"]) == 9)
+
+    def test_from_config(self):
+        """Test the serialization."""
+        config = {
+            "evaluator": "EfficientDepthOneEvaluator",
+            "evaluator_init": {},
+            "energy_minimization": True,
+            "qaoa_angles_function": "IdentityFunction",
+            "qaoa_angles_function_init": {},
+        }
+
+        trainer = DepthOneScanTrainer.from_config(config)
+
+        self.assertTrue(isinstance(trainer, DepthOneScanTrainer))
+        self.assertTrue(trainer._energy_minimization)
+        self.assertTrue(isinstance(trainer.qaoa_angles_function, IdentityFunction))
