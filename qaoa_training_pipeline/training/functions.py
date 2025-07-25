@@ -21,6 +21,10 @@ class BaseAnglesFunction(ABC):
     def __call__(self, x: list) -> list:
         """Compute the QAOA angles from the optimization variables x."""
 
+    def to_config(self) -> dict:
+        """Creates a serializeable dictionary of the class."""
+        return {"function_name": self.__class__.__name__}
+
 
 class IdentityFunction(BaseAnglesFunction):
     """Identity function."""
@@ -28,6 +32,11 @@ class IdentityFunction(BaseAnglesFunction):
     def __call__(self, x: list) -> list:
         """Identity function."""
         return x
+
+    @classmethod
+    def from_config(cls, config: dict) -> None:
+        """Initialize the Identity function."""
+        return cls()
 
 
 class FourierFunction(BaseAnglesFunction):
@@ -67,6 +76,15 @@ class FourierFunction(BaseAnglesFunction):
             gammas.append(gamma_i)
 
         return betas + gammas
+
+    def to_config(self) -> dict:
+        """Creates a serializeable dictionary of the class."""
+        return {"function_name": self.__class__.__name__}
+
+    @classmethod
+    def from_config(cls, config: dict) -> None:
+        """Initialize the Fourier function."""
+        return cls(config["depth"])
 
     def plot_angles(
         self, x: list, axis: Optional[plt.Axes] = None, plot_args: Optional[Dict] = None
