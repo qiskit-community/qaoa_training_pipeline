@@ -16,19 +16,30 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.training.functions import BaseAnglesFunction, IdentityFunction
 
 
 class BaseTrainer(ABC):
     """An interface that all the trainers should satisfy"""
 
-    def __init__(self, evaluator: Optional[BaseEvaluator] = None) -> None:
+    def __init__(
+        self,
+        evaluator: Optional[BaseEvaluator] = None,
+        qaoa_angles_function: Optional = None,
+    ) -> None:
         """Initialise the trainer."""
         self._evaluator = evaluator
+        self._qaoa_angles_function = qaoa_angles_function or IdentityFunction()
 
     @property
     def evaluator(self) -> BaseEvaluator:
         """Return the evaluator of the trainer."""
         return self._evaluator
+
+    @property
+    def qaoa_angles_function(self) -> BaseAnglesFunction:
+        """Return the QAOA angles function of the trainer."""
+        return self._qaoa_angles_function
 
     @property
     @abstractmethod

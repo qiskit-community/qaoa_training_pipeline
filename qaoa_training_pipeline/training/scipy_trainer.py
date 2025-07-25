@@ -17,9 +17,10 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from scipy.optimize import minimize
 
-from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.evaluation import EVALUATORS
+from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training.functions import BaseAnglesFunction
+from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
 
@@ -32,6 +33,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         evaluator: BaseEvaluator,
         minimize_args: Optional[Dict[str, Any]] = None,
         energy_minimization: bool = False,
+        qaoa_angles_function: Optional[BaseAnglesFunction] = None,
     ):
         """Initialize the trainer.
 
@@ -43,7 +45,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
         """
-        BaseTrainer.__init__(self, evaluator)
+        BaseTrainer.__init__(self, evaluator, qaoa_angles_function)
         HistoryMixin.__init__(self)
 
         self._minimize_args = {"method": "COBYLA"}
@@ -88,9 +90,12 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         def _energy(x):
             """Maximize the energy by minimizing the negative energy."""
             estart = time()
+
+            qaoa_angles = self._qaoa_angles_function(x)
+
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
-                params=x,
+                params=qaoa_angles,
                 mixer=mixer,
                 initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
