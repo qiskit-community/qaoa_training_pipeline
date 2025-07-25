@@ -17,8 +17,11 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training import FUNCTIONS
-from qaoa_training_pipeline.training.functions import BaseAnglesFunction, IdentityFunction
+from qaoa_training_pipeline.training.functions import (
+    BaseAnglesFunction, 
+    IdentityFunction, 
+    FUNCTIONS,
+)
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
