@@ -20,7 +20,7 @@ from scipy.optimize import minimize
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training import FUNCTIONS
-from qaoa_training_pipeline.training.functions import BaseAnglesFunction
+from qaoa_training_pipeline.training.functions import BaseAnglesFunction, IdentityFunction
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
@@ -156,13 +156,18 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         """Create a scipy trainer based on a config."""
 
         evaluator_cls = EVALUATORS[config["evaluator"]]
-        function_cls = FUNCTIONS[config["qaoa_angles_function"]]
+
+        if "qaoa_angles_function" not in config:
+            function = IdentityFunction()
+        else:
+            function_cls = FUNCTIONS[config["qaoa_angles_function"]]
+            function = function_cls.from_config(config["qaoa_angles_function_init"])
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
             config["minimize_args"],
-            energy_minimization=config["energy_minimization"],
-            qaoa_angles_function=function_cls.from_config(config["qaoa_angles_function_init"]),
+            energy_minimization=config.get("energy_minimization", None),
+            qaoa_angles_function=function,
         )
 
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:

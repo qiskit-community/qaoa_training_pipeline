@@ -18,7 +18,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training import FUNCTIONS
-from qaoa_training_pipeline.training.functions import BaseAnglesFunction
+from qaoa_training_pipeline.training.functions import BaseAnglesFunction, IdentityFunction
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
@@ -177,12 +177,17 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         """Create an intance from a config."""
 
         evaluator_cls = EVALUATORS[config["evaluator"]]
-        function_cls = FUNCTIONS[config["qaoa_angles_function"]]
+
+        if "qaoa_angles_function" not in config:
+            function = IdentityFunction()
+        else:
+            function_cls = FUNCTIONS[config["qaoa_angles_function"]]
+            function = function_cls.from_config(config["qaoa_angles_function_init"])
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
-            config["energy_minimization"],
-            function_cls.from_config(config["qaoa_angles_function_init"]),
+            config.get("energy_minimization", None),
+            function,
         )
 
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
