@@ -180,8 +180,8 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         function_cls = FUNCTIONS[config["qaoa_angles_function"]]
 
         return cls(
-            evaluator_cls.from_config(config["evaluator_init"]), 
-            config["energy_minimization"], 
+            evaluator_cls.from_config(config["evaluator_init"]),
+            config["energy_minimization"],
             function_cls.from_config(config["qaoa_angles_function_init"]),
         )
 

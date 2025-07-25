@@ -10,11 +10,7 @@
 
 from .functions import IdentityFunction
 from .functions import FourierFunction
-
-FUNCTIONS = {
-    "IdentityFunction": IdentityFunction,
-    "FourierFunction": FourierFunction,
-}
+from .functions import FUNCTIONS
 
 from .fixed_angle_conjecture import FixedAngleConjecture
 from .models.random_regular_fit import RandomRegularDepthOneFit

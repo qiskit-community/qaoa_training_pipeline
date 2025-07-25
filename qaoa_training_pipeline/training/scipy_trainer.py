@@ -159,9 +159,9 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         function_cls = FUNCTIONS[config["qaoa_angles_function"]]
 
         return cls(
-            evaluator_cls.from_config(config["evaluator_init"]), 
-            config["minimize_args"], 
-            energy_minimization=config["energy_minimization"], 
+            evaluator_cls.from_config(config["evaluator_init"]),
+            config["minimize_args"],
+            energy_minimization=config["energy_minimization"],
             qaoa_angles_function=function_cls.from_config(config["qaoa_angles_function_init"]),
         )
 

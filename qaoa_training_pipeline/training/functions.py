@@ -33,6 +33,7 @@ class IdentityFunction(BaseAnglesFunction):
         """Identity function."""
         return x
 
+    # pylint: disable=unused-argument
     @classmethod
     def from_config(cls, config: dict) -> None:
         """Initialize the Identity function."""
@@ -161,3 +162,9 @@ class FourierFunction(BaseAnglesFunction):
         axis.legend()
 
         return axis
+
+
+FUNCTIONS = {
+    "IdentityFunction": IdentityFunction,
+    "FourierFunction": FourierFunction,
+}
