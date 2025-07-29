@@ -159,7 +159,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
         The only argument that can be contained here is params0. It is the values
         of the betas and gammas that make up the initial point given to Scipy's
-        minimize function. We give this as a string in the format `params0:v1/v2/v3?v4...`.
+        minimize function. We give this as a string in the format `params0:v1/v2/v3/v4...`.
         """
         train_kwargs = dict()
         for key, val in self.extract_train_kwargs(args_str).items():

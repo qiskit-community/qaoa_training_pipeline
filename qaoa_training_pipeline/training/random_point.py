@@ -109,9 +109,8 @@ class RandomPoint(BaseTrainer):
         """Parse arguments for the train method from a string.
 
         Args:
-            args_str: A string of the form reps_low_high_seed where low and high are the
-                lower and upper bounds on the parameters respectively. seed can be an
-                int or the stirng "None".
+            args_str: A string of keyword arguments of the form `k1:v1:k2:v2`.
+                The possible keywords are `reps`, `seed`, `lower_bound`, and `upper_bound`.
         """
         train_kwargs = dict()
         for key, val in self.extract_train_kwargs(args_str).items():

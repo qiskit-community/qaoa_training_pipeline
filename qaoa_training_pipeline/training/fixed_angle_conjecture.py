@@ -177,9 +177,8 @@ class FixedAngleConjecture(BaseTrainer):
 
         Args:
             args_str: The input args are the number of repetitions and optionally the
-            desired degree. The arguments string takes the form `reps_degree`. If no
-            degree is desired then use `none`, for example, `2_none` for depth-two QAOA
-            and degree to be infered from the graph.
+                desired degree. The arguments string takes the form `reps:val:degree:val`. If no
+            degree is desired then do not provide it and it will be infered from the graph.
         """
         train_kwargs = dict()
         for key, val in self.extract_train_kwargs(args_str).items():
