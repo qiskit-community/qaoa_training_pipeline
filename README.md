@@ -147,6 +147,8 @@ This repository is still in development: new functionality is being added and th
 | 1       | Track system information    |           #8 |
 | 2       | Add history mix-in          |          #11 |
 | 3       | Add fidelity bounds for MPS |           #6 |
+| 4       | Add QAOA angles functions   |          #14 |
+| 5       | Switch to qaoa_ansatz       |          #16 |
 
 ## IBM Public Repository Disclosure
 
