@@ -9,7 +9,7 @@
 """Base trainer interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Callable, Optional
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -25,9 +25,18 @@ class BaseTrainer(ABC):
     def __init__(
         self,
         evaluator: Optional[BaseEvaluator] = None,
-        qaoa_angles_function: Optional = None,
+        qaoa_angles_function: Optional[Callable] = None,
     ) -> None:
-        """Initialise the trainer."""
+        """Initialise the trainer.
+        
+        Args:
+            evaluator: The class with which the energy should be evaluated.
+            qaoa_angles_function: A function to convert optimization parameters into QAOA
+                angles. By default, this is the identity function. Ideally, this argument is
+                an instance of `BaseAnglesFunction` but we allow any callable here that maps
+                optimization parameters to QAOA angles.
+
+        """
         self._evaluator = evaluator
         self._qaoa_angles_function = qaoa_angles_function or IdentityFunction()
 
