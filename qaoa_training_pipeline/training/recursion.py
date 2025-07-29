@@ -165,7 +165,7 @@ class RecursionTrainer(BaseTrainer):
         recursion_idx = sorted(self._all_results.keys())
         energies = [self._all_results[key]["energy"] for key in recursion_idx]
 
-        axis.plot(recurcion_idx, energies, label="Energy", **plot_args)
+        axis.plot(recursion_idx, energies, label="Energy", **plot_args)
         axis.set_xlabel("Recursion level")
         axis.set_ylabel("Energy")
         axis.legend()
