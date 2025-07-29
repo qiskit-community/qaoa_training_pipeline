@@ -76,8 +76,13 @@ class PPEvaluator(BaseEvaluator):
     def __init__(self, pp_kwargs: dict):
         """Initialize the Pauli propagation evaluator.
 
-        TODO: variables that control the approximation should go here as is done in MPSEvaluator.
-        TODO: Link to docs and also justify why we use kwargs.
+        Args:
+            pp_kwargs: Keyword arguments that will be passed to PauliPropagation.jl.
+            The parameters that can be passed to the function are documented in
+            https://msrudolph.github.io/PauliPropagation.jl/stable/api/Propagation/#PauliPropagation.propagate.
+            And all the types must be compatible with juliacall
+            https://juliapy.github.io/PythonCall.jl/stable/conversion-to-julia/.
+
         """
 
         # Importing Julia can cause the kernel to crash, typically, on windows.
@@ -201,6 +206,3 @@ class PPEvaluator(BaseEvaluator):
         # TODO: parsing happens here
 
         return dict()
-
-
-# TODO: small test. Compare output to statevector.
