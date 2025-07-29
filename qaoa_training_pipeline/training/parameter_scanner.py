@@ -179,20 +179,3 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
                 raise ValueError("Unknown key in provided train_kwargs.")
 
         return train_kwargs
-
-        if args_str is None:
-            return dict()
-
-        split_args = args_str.split("_")
-        num_points = int(split_args[0])
-
-        param_ranges = []
-        for idx in range(1, len(split_args), 2):
-            low = float(split_args[idx])
-            high = float(split_args[idx + 1])
-            param_ranges.append((low, high))
-
-        return {
-            "num_points": num_points,
-            "parameter_ranges": param_ranges,
-        }
