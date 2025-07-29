@@ -9,7 +9,7 @@
 """Base trainer interface."""
 
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -87,3 +87,28 @@ class BaseTrainer(ABC):
     @abstractmethod
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
         """Extract training key word arguments from a string."""
+
+    @staticmethod
+    def extract_train_kwargs(kwargs_str: Optional[str] = None) -> dict:
+        """A standardized manner to parse keyword arguments.
+
+        The kwarg string is given, e.g., in form `k1:v1:k2:v2`. If the value is
+        a list then the values in the list must be spaced by a `/`, for example,
+        `params0:1.234/4.56`.
+        """
+        if kwargs_str is None:
+            return dict()
+
+        items = kwargs_str.split(":")
+
+        if len(items) % 2 != 0:
+            raise ValueError(
+                f"Malformed keyword arguments {kwargs_str}: should be k1:v1:k2:v2_...."
+            )
+
+        return {items[idx]: items[idx + 1] for idx in range(0, len(items), 2)}
+
+    @staticmethod
+    def extract_list(list_str: str, dtype: type = float) -> List:
+        """Extract a list of elements from a string in format v0/v1/v2"""
+        return [dtype(val) for val in list_str.split("/")]

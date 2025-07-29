@@ -21,7 +21,7 @@ class TestOptimizedParameterLoader(TrainingPipelineTestCase):
 
         loader = OptimizedParametersLoader()
 
-        kwargs = loader.parse_train_kwargs("test/data/@20nodes_random7regular")
+        kwargs = loader.parse_train_kwargs("folder:test/data/:file_pattern:20nodes_random7regular")
 
         result = loader.train(None, **kwargs)
 
@@ -29,3 +29,10 @@ class TestOptimizedParameterLoader(TrainingPipelineTestCase):
             result["optimized_params"],
             [0.44901865190957657, 0.19974528971646474],
         )
+
+    def test_parse_train_kwargs(self):
+        """Test parsing of training args."""
+        trainer = OptimizedParametersLoader()
+
+        kwargs = trainer.parse_train_kwargs("folder:my_folder:file_pattern:*.json")
+        self.assertDictEqual(kwargs, {"folder": "my_folder", "file_pattern": "*.json"})

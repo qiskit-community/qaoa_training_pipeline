@@ -120,8 +120,8 @@ class ReweightingTrainer(BaseTrainer):
 
         result2 = self._trainer_weighted.train(cost_op, params0=params0)
 
-        # Add to the result the intermediate step.
-        result2["unweighted_optimization"] = result1
+        # Add to the result the intermediate step ParamResult is not serializable but its dict is.
+        result2["unweighted_optimization"] = result1.data
         result2["scaled_initial_point"] = params0
         result2["trainer"] = self.to_config()
         result2["train_duration"] = time() - start
