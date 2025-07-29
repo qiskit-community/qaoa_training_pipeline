@@ -8,6 +8,10 @@
 
 """This module collects all the methods to train the parameters of a QAOA circuit."""
 
+from .functions import IdentityFunction
+from .functions import FourierFunction
+from .functions import FUNCTIONS
+
 from .fixed_angle_conjecture import FixedAngleConjecture
 from .models.random_regular_fit import RandomRegularDepthOneFit
 from .optimized_parameter_loader import OptimizedParametersLoader
