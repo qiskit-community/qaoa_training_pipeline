@@ -14,7 +14,7 @@ import numpy as np
 from qiskit import transpile
 
 from qiskit.circuit import QuantumCircuit
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import StatevectorEstimator
 
@@ -150,7 +150,7 @@ class LightConeEvaluator(BaseEvaluator):
 
         paulis, src_edge = self.make_sub_correlators(edges, edge, len(self.graph))
 
-        ansatz = QAOAAnsatz(
+        ansatz = qaoa_ansatz(
             cost_operator=SparsePauliOp.from_list(paulis),
             reps=len(params) // 2,
             initial_state=initial_state,

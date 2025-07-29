@@ -103,7 +103,7 @@ class RecursionTrainer(BaseTrainer):
 
             params0 = result["optimized_params"]
             energy = result["energy"]
-            all_results[current_reps] = result
+            all_results[current_reps] = result.data
 
         param_result = ParamResult(params0, time() - start, self, energy)
         param_result.update(all_results)

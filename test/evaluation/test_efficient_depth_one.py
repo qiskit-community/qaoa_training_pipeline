@@ -15,7 +15,7 @@ import numpy as np
 
 from qiskit import transpile, QuantumCircuit
 from qiskit.circuit import Parameter
-from qiskit.circuit.library import QAOAAnsatz, PauliEvolutionGate
+from qiskit.circuit.library import qaoa_ansatz, PauliEvolutionGate
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp, Pauli, Operator
 
@@ -39,7 +39,7 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         """This is the baseline simulation based on Qiskit."""
         circ_op = circ_op or cost_op
 
-        depth_one_qaoa = QAOAAnsatz(
+        depth_one_qaoa = qaoa_ansatz(
             circ_op,
             reps=1,
         ).decompose()
@@ -168,7 +168,7 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         ansatz.rzz(2 * gamma_param, 2, 1)
 
         # Construct the QAOA circuit corresponding to the ansatz.
-        qaoa_circuit = QAOAAnsatz(SparsePauliOp.from_list([("ZIIZ", 1), ("IZZI", 1)]))
+        qaoa_circuit = qaoa_ansatz(SparsePauliOp.from_list([("ZIIZ", 1), ("IZZI", 1)]))
         qaoa_circuit = transpile(qaoa_circuit, basis_gates=["rzz", "h", "rx", "rz"])
 
         beta, gamma = 1, 2
