@@ -41,7 +41,7 @@ class IdentityFunction(BaseAnglesFunction):
 
 
 class FourierFunction(BaseAnglesFunction):
-    """Computes the QAOA angles from the optimization variables x using a Fourier series.
+    r"""Computes the QAOA angles from the optimization variables x using a Fourier series.
 
     This is the function that is implemented in Zhou et al. PRX 10, 021067 (2020). It computes
     the beta and gamma angles as follows for a depth-`p` QAOA circuit
