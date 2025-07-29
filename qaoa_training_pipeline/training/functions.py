@@ -96,7 +96,8 @@ class FourierFunction(BaseAnglesFunction):
         """Plot the QAOA angles.
 
         Args:
-            x: The coefficients in of the Fourrier basis.
+            x: The coefficients in the Fourier basis. The first half store the coefficients for
+                beta and the second half store the coefficients for gamma.
             axis: The axis on which to plot.
             plot_args: Additional arguments to pass to the plot. These are split into
                 two sub-dictionaries with keys `beta` and `gamma`.
@@ -124,7 +125,8 @@ class FourierFunction(BaseAnglesFunction):
         """Plot the Fourier basis functions.
 
         Args:
-            x: The coefficients in of the Fourier basis.
+            x: The coefficients in the Fourier basis. The first half store the coefficients for
+                beta and the second half store the coefficients for gamma.
             axis: The axis on which to plot.
             plot_args: Additional arguments to pass to the plot. These are split into
                 two sub-dictionaries with keys `beta` and `gamma`.
