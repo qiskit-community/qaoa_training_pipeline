@@ -46,8 +46,9 @@ class FourierFunction(BaseAnglesFunction):
     This is the function that is implemented in Zhou et al. PRX 10, 021067 (2020). It computes
     the beta and gamma angles as follows
 
-    gamma_i = sum u_k sin[(k-1/2)(1-1/2)pi/p]
-    gamma_i = sum v_k cos[(k-1/2)(1-1/2)pi/p]
+    .. math::
+        \beta_i = \sum_k u_k \sin[(k-1/2)(i-1/2)\pi/p]
+        \gamma_i = \sum_k v_k \cos[(k-1/2)(i-1/2)\pi/p]
     """
 
     def __init__(self, depth: int) -> None:
