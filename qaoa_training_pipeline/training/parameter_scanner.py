@@ -130,7 +130,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
                 self._energy_evaluation_time.append(time() - estart)
                 self._energy_history.append(float(np.real(energy)))
-                self._parameter_history.append([param1, param2])
+                self._parameter_history.append([float(param1), float(param2)])
 
         min_idx, opt_energy = self._extrema_locator(self._energies)
         min_idxb, min_idxg = min_idx // num_points, min_idx % num_points
@@ -201,23 +201,20 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         """Parse the trainig arguments.
 
         These are given in the form:
-        num_points_low_high_low_high_...
+        num_points:val:parameter_ranges:low/high/low/high_...
         For instance training with 20 points from 0 to 2pi is given as
-        20_0_6.283185_0_6.283185.
+        num_points:20:parameter_ranges:0/6.283185/0/6.283185.
         """
-        if args_str is None:
-            return dict()
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key == "num_points":
+                train_kwargs[key] = int(val)
+            elif key == "parameter_ranges":
+                val_ = self.extract_list(val, dtype=float)
+                train_kwargs[key] = [
+                    (float(val_[idx]), float(val_[idx + 1])) for idx in range(0, len(val_), 2)
+                ]
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        split_args = args_str.split("_")
-        num_points = int(split_args[0])
-
-        param_ranges = []
-        for idx in range(1, len(split_args), 2):
-            low = float(split_args[idx])
-            high = float(split_args[idx + 1])
-            param_ranges.append((low, high))
-
-        return {
-            "num_points": num_points,
-            "parameter_ranges": param_ranges,
-        }
+        return train_kwargs

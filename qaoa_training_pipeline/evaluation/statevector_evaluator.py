@@ -11,7 +11,7 @@
 from typing import Dict, List, Optional
 
 from qiskit import QuantumCircuit
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import StatevectorEstimator
 
@@ -59,7 +59,7 @@ class StatevectorEvaluator(BaseEvaluator):
         if ansatz_circuit is not None:
             raise NotImplementedError("Custom ansatz circuits are not yet supported.")
 
-        circuit = QAOAAnsatz(
+        circuit = qaoa_ansatz(
             cost_op,
             reps=len(params) // 2,
             mixer_operator=mixer,

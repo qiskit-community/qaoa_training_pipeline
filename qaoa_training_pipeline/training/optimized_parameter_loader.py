@@ -107,16 +107,13 @@ class OptimizedParametersLoader(BaseTrainer):
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
         """Parse the train args, i.e., get file and folder names.
 
-        Note: since underscore is a common delimiter in file names here we will use
-        the @ character to split folder and file name. Therefore we expect strings
-        of the form "my_folder_name@my_file_pattern."
+        The string should have the format `folder:folder_name:file_pattern:pattern`.
         """
-        if args_str is None:
-            return dict()
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key in ["folder", "file_pattern"]:
+                train_kwargs[key] = str(val)
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        split_args = args_str.split("@")
-
-        return {
-            "folder": split_args[0],
-            "file_pattern": split_args[1],
-        }
+        return train_kwargs
