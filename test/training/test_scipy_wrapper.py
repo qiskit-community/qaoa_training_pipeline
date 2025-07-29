@@ -21,6 +21,7 @@ from qaoa_training_pipeline.evaluation import (
     EfficientDepthOneEvaluator,
     MPSEvaluator,
 )
+from qaoa_training_pipeline.training.functions import FourierFunction
 from qaoa_training_pipeline.training import ScipyTrainer
 
 
@@ -142,11 +143,16 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
             "evaluator": "LightConeEvaluator",
             "evaluator_init": {},
             "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}},
+            "energy_minimization": False,
+            "qaoa_angles_function": "FourierFunction",
+            "qaoa_angles_function_init": {"depth": 2},
         }
 
         trainer = ScipyTrainer.from_config(config)
 
         self.assertTrue(isinstance(trainer, ScipyTrainer))
+        self.assertFalse(trainer._energy_minimization)
+        self.assertTrue(isinstance(trainer.qaoa_angles_function, FourierFunction))
 
     def test_parse_train_kwargs(self):
         """Test parsing of training args."""

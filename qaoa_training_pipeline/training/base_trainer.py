@@ -9,26 +9,46 @@
 """Base trainer interface."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.training.functions import BaseAnglesFunction, IdentityFunction
 
 
 class BaseTrainer(ABC):
     """An interface that all the trainers should satisfy"""
 
-    def __init__(self, evaluator: Optional[BaseEvaluator] = None) -> None:
-        """Initialise the trainer."""
+    def __init__(
+        self,
+        evaluator: Optional[BaseEvaluator] = None,
+        qaoa_angles_function: Optional[Callable] = None,
+    ) -> None:
+        """Initialise the trainer.
+
+        Args:
+            evaluator: The class with which the energy should be evaluated.
+            qaoa_angles_function: A function to convert optimization parameters into QAOA
+                angles. By default, this is the identity function. Ideally, this argument is
+                an instance of `BaseAnglesFunction` but we allow any callable here that maps
+                optimization parameters to QAOA angles.
+
+        """
         self._evaluator = evaluator
+        self._qaoa_angles_function = qaoa_angles_function or IdentityFunction()
 
     @property
     def evaluator(self) -> BaseEvaluator:
         """Return the evaluator of the trainer."""
         return self._evaluator
+
+    @property
+    def qaoa_angles_function(self) -> BaseAnglesFunction:
+        """Return the QAOA angles function of the trainer."""
+        return self._qaoa_angles_function
 
     @property
     @abstractmethod

@@ -49,7 +49,21 @@ def extend(optimized_params: List[float]) -> List[float]:
     return betas + gammas
 
 
+def trivial_extend(optimized_params: List[float]) -> List[float]:
+    """Simply extend the vector of parameters by one by adding a zero.
+
+    This function is used, for example, to add an additional Fourier mode to optimize.
+    See, for example, Zhou et al. in PRX 10, 021067 (2020).
+    """
+    reps = len(optimized_params) // 2
+    betas = optimized_params[0:reps] + [0]
+    gammas = optimized_params[reps:] + [0]
+
+    return betas + gammas
+
+
 PARAMETEREXTENDERS = {
     "interpolate": interpolate,
     "extend": extend,
+    "trivial_extend": trivial_extend,
 }

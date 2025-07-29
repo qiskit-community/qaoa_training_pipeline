@@ -52,6 +52,9 @@ class ParamResult:
 
         # Convert, e.g., np.float to float
         self.data["optimized_params"] = [float(val) for val in optimized_params]
+        self.data["optimized_qaoa_angles"] = [
+            float(val) for val in trainer.qaoa_angles_function(optimized_params)
+        ]
         self.data["train_duration"] = duration
         self.data["energy"] = float(energy) if isinstance(energy, np.floating) else energy
         self.data["trainer"] = trainer.to_config()
