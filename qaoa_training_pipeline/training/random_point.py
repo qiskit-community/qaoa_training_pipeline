@@ -113,22 +113,16 @@ class RandomPoint(BaseTrainer):
                 lower and upper bounds on the parameters respectively. seed can be an
                 int or the stirng "None".
         """
-        if args_str is None:
-            return dict()
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key in ["reps", "seed"]:
+                train_kwargs[key] = int(val)
+            elif key in ["lower_bound", "upper_bound"]:
+                train_kwargs[key] = float(val)
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        args = args_str.split("_")
-
-        if args[3].lower() == "none":
-            seed = None
-        else:
-            seed = int(args[3])
-
-        return {
-            "reps": int(args[0]),
-            "lower_bound": float(args[1]),
-            "upper_bound": float(args[2]),
-            "seed": seed,
-        }
+        return train_kwargs
 
     def to_config(self) -> dict:
         """Creates a serializeable dictionary to keep track of how results are created.

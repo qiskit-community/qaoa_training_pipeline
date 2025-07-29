@@ -162,10 +162,24 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         """Parse the trainig arguments.
 
         These are given in the form:
-        num_points_low_high_low_high_...
+        num_points:val:parameter_ranges:low/high/low/high_...
         For instance training with 20 points from 0 to 2pi is given as
-        20_0_6.283185_0_6.283185.
+        num_points:20:parameter_ranges:0/6.283185/0/6.283185.
         """
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key == "num_points":
+                train_kwargs[key] = int(val)
+            elif key == "parameter_ranges":
+                val_ = self.extract_list(val, dtype=float)
+                train_kwargs[key] = [
+                    (float(val_[idx]), float(val_[idx + 1])) for idx in range(0, len(val_), 2)
+                ]
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
+
+        return train_kwargs
+
         if args_str is None:
             return dict()
 

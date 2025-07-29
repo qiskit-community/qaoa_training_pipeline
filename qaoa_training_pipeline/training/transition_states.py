@@ -253,10 +253,13 @@ class TransitionStatesTrainer(BaseTrainer):
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
         """Parse a string into the training kwargs.
 
-        Note: This trainer does not take any arguments aside from the default
-        ones. We therefore ask the sub-trainer to parse the key word arguments.
+        The string is of the form `previous_optimal_point:v1/v2/v3/v4...`.
         """
-        if args_str is None:
-            return dict()
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key == "previous_optimal_point":
+                train_kwargs[key] = self.extract_list(val)
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        return self._trainer.parse_train_kwargs(args_str)
+        return train_kwargs

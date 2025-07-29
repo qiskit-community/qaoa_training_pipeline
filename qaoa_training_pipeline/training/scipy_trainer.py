@@ -159,13 +159,16 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
         The only argument that can be contained here is params0. It is the values
         of the betas and gammas that make up the initial point given to Scipy's
-        minimize function. We give `params0` as in string describing floats seperated
-        by uderscores, e.g., 1.2_30.12_0.0
+        minimize function. We give this as a string in the format `params0:v1/v2/v3?v4...`.
         """
-        if args_str is None:
-            return dict()
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key == "params0":
+                train_kwargs[key] = self.extract_list(val, dtype=float)
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        return [float(val) for val in args_str.split("_")]
+        return train_kwargs
 
     def to_config(self) -> dict:
         """Creates a serializeable dictionary to keep track of how results are created.
