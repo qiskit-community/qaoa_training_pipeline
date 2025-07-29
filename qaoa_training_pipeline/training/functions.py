@@ -44,7 +44,7 @@ class FourierFunction(BaseAnglesFunction):
     """Computes the QAOA angles from the optimization variables x using a Fourier series.
 
     This is the function that is implemented in Zhou et al. PRX 10, 021067 (2020). It computes
-    the beta and gamma angles as follows
+    the beta and gamma angles as follows for a depth-`p` QAOA circuit
 
     .. math::
         \beta_i = \sum_{k=1}^{q} u_k \sin[(k-1/2)(i-1/2)\pi/p]
