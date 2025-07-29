@@ -162,8 +162,8 @@ class RecursionTrainer(BaseTrainer):
         if axis is None or fig is None:
             fig, axis = plt.subplots(1, 1)
 
-        recurcion_idx = sorted(self._all_results.keys())
-        energies = [self._all_results[key]["energy"] for key in recurcion_idx]
+        recursion_idx = sorted(self._all_results.keys())
+        energies = [self._all_results[key]["energy"] for key in recursion_idx]
 
         axis.plot(recurcion_idx, energies, label="Energy", **plot_args)
         axis.set_xlabel("Recursion level")
