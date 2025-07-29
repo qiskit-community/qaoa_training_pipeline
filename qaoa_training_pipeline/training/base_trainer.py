@@ -28,7 +28,7 @@ class BaseTrainer(ABC):
         qaoa_angles_function: Optional[Callable] = None,
     ) -> None:
         """Initialise the trainer.
-        
+
         Args:
             evaluator: The class with which the energy should be evaluated.
             qaoa_angles_function: A function to convert optimization parameters into QAOA
