@@ -13,7 +13,7 @@ from test import TrainingPipelineTestCase
 from ddt import ddt, data
 import numpy as np
 
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp, Statevector
 
 from qaoa_training_pipeline.evaluation import (
@@ -117,7 +117,7 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
         initial_guess = [0.2, 0.3, 0.4, 0.5]
 
-        ansatz = QAOAAnsatz(cost_operator=cost_op, reps=len(initial_guess) // 2)
+        ansatz = qaoa_ansatz(cost_operator=cost_op, reps=len(initial_guess) // 2)
         ansatz_state_vector = Statevector(ansatz.assign_parameters(initial_guess))
         initial_energy_state_vector = ansatz_state_vector.expectation_value(cost_op)
 
@@ -147,3 +147,10 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         trainer = ScipyTrainer.from_config(config)
 
         self.assertTrue(isinstance(trainer, ScipyTrainer))
+
+    def test_parse_train_kwargs(self):
+        """Test parsing of training args."""
+        kwargs_str = "params0:1.2/3.4"
+        kwargs = ScipyTrainer(EfficientDepthOneEvaluator()).parse_train_kwargs(kwargs_str)
+
+        self.assertDictEqual(kwargs, {"params0": [1.2, 3.4]})

@@ -26,3 +26,13 @@ class TestDepthOneScanTrainer(TrainingPipelineTestCase):
         trainer = DepthOneScanTrainer(EfficientDepthOneEvaluator())
         result = trainer.train(cost_op, num_points=3)
         self.assertTrue(len(result["energy_history"]) == 9)
+
+    def test_parse_train_kwargs(self):
+        """Test parsing of training args."""
+        trainer = DepthOneScanTrainer(EfficientDepthOneEvaluator())
+
+        kwargs = trainer.parse_train_kwargs("num_points:8")
+        self.assertDictEqual(kwargs, {"num_points": 8})
+
+        kwargs = trainer.parse_train_kwargs("parameter_ranges:1.2/2.2/3.3/4.5")
+        self.assertDictEqual(kwargs, {"parameter_ranges": [(1.2, 2.2), (3.3, 4.5)]})

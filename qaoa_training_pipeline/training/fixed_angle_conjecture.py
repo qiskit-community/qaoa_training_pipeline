@@ -181,14 +181,11 @@ class FixedAngleConjecture(BaseTrainer):
             degree is desired then use `none`, for example, `2_none` for depth-two QAOA
             and degree to be infered from the graph.
         """
-        if args_str is None:
-            return dict()
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key in ["reps", "degree"]:
+                train_kwargs[key] = int(val)
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        args = args_str.split("_")
-
-        if args[1].lower() == "none":
-            degree = None
-        else:
-            degree = int(args[1])
-
-        return {"reps": int(args[0]), "degree": degree}
+        return train_kwargs

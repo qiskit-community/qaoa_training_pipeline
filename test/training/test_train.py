@@ -41,7 +41,7 @@ class TestTrain(TrainingPipelineTestCase):
             "--config",
             "data/methods/train_method_0.json",
             "--train_kwargs0",
-            "10_3_6_3_6",
+            "num_points:10:parameter_ranges:3/6/3/6",
             "--save",
             "--save_file",
             file_name,
@@ -52,7 +52,10 @@ class TestTrain(TrainingPipelineTestCase):
             args, _ = get_script_args()
             result = train(args)
 
-            self.assertEqual(result["args"]["train_kwargs0"], "10_3_6_3_6")
+            self.assertEqual(
+                result["args"]["train_kwargs0"],
+                "num_points:10:parameter_ranges:3/6/3/6",
+            )
 
     def test_call_train_schmidt(self):
         """Test that the Schmidt values are returned with an MPS-based training."""
