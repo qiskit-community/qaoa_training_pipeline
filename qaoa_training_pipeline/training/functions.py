@@ -47,8 +47,8 @@ class FourierFunction(BaseAnglesFunction):
     the beta and gamma angles as follows
 
     .. math::
-        \beta_i = \sum_k u_k \sin[(k-1/2)(i-1/2)\pi/p]
-        \gamma_i = \sum_k v_k \cos[(k-1/2)(i-1/2)\pi/p]
+        \beta_i = \sum_{k=1}^{q} u_k \sin[(k-1/2)(i-1/2)\pi/p]
+        \gamma_i = \sum_{k=1}^{q} v_k \cos[(k-1/2)(i-1/2)\pi/p]
     """
 
     def __init__(self, depth: int) -> None:
@@ -67,6 +67,8 @@ class FourierFunction(BaseAnglesFunction):
         betas, gammas = [], []
         for i_idx in range(self._depth):
             beta_i = 0
+
+            # Note the +0.5 which accounts for the indices starting at 0.
             for k_idx, val in enumerate(x[:n_coeffs]):
                 beta_i += val * np.cos((k_idx + 0.5) * (i_idx + 0.5) * np.pi / self._depth)
 
