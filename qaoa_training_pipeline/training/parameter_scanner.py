@@ -45,6 +45,10 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
+            qaoa_angles_function: A function to convert optimization parameters into QAOA
+                angles. By default, this is the identity function. Ideally, this argument is
+                an instance of `BaseAnglesFunction` but we allow any callable here that maps
+                optimization parameters to QAOA angles.
         """
         BaseTrainer.__init__(self, evaluator=evaluator, qaoa_angles_function=qaoa_angles_function)
         HistoryMixin.__init__(self)
