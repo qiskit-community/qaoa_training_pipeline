@@ -82,9 +82,20 @@ class TestTrain(TrainingPipelineTestCase):
             # case, is the only one)
             self.assertIn("schmidt_values", result[0].keys())
 
-    @data(0, 1, 2)
+    @data(0, 1, 2, 3, 4, 5, 6)
     def test_methods(self, method_idx: int):
         """Test that the different methods run without input args."""
+
+        # First value is the trainer index in the chain and the second one is the param length.
+        expected_param_len = {
+            0: (0, 2),
+            1: (1, 2),
+            2: (1, 2),
+            3: (0, 2),
+            4: (0, 2),
+            5: (0, 2),
+            6: (1, 6),
+        }
 
         file_name = "dmp_file_test_methods_" + str(method_idx)
 
@@ -103,4 +114,7 @@ class TestTrain(TrainingPipelineTestCase):
         with patch.object(sys, "argv", test_args):
             args, _ = get_script_args()
             result = train(args)
-            self.assertTrue("optimized_params" in result[0])
+
+            trainer_idx, exp_len = expected_param_len[method_idx]
+            opt_params = result[trainer_idx]["optimized_params"]
+            self.assertEqual(len(opt_params), exp_len)

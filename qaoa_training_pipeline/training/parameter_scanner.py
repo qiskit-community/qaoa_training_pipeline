@@ -110,7 +110,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
                 self._energy_evaluation_time.append(time() - estart)
                 self._energy_history.append(float(np.real(energy)))
-                self._parameter_history.append([beta, gamma])
+                self._parameter_history.append([float(beta), float(gamma)])
 
         min_idx, opt_energy = self._extrema_locator(self._energies)
         min_idxb, min_idxg = min_idx // num_points, min_idx % num_points
