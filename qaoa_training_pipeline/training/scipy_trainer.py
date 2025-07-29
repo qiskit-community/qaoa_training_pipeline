@@ -163,6 +163,13 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         if "qaoa_angles_function" not in config:
             function = IdentityFunction()
         else:
+            function_name = config["qaoa_angles_function"]
+            if function_name not in FUNCTIONS:
+                raise ValueError(
+                    f"{function_name} is not a supported function. "
+                    "Please see training/functions.py for supported functions."
+                )
+
             function_cls = FUNCTIONS[config["qaoa_angles_function"]]
             function = function_cls.from_config(config["qaoa_angles_function_init"])
 
