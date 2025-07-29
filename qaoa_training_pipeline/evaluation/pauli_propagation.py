@@ -1,0 +1,206 @@
+# (C) Copyright IBM 2025.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""Pauli propagation-based QAOA evaluator."""
+
+from qiskit import transpile
+from qiskit.circuit import QuantumCircuit
+from qiskit.circuit.classical.expr import Value
+from qiskit.compiler import transpile
+from qiskit.converters import circuit_to_dag
+from qiskit.dagcircuit import DAGCircuit
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.circuit.library import QAOAAnsatz
+
+from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+
+import importlib
+
+# Safely import Julia if is is installed.
+jl_loader = importlib.util.find_spec("juliacall")
+HAS_JL = jl_loader is not None
+if HAS_JL:
+    from juliacall import Main as jl
+    from juliacall import Pkg as jlPkg
+    from juliacall import convert
+
+    jlPkg.activate("PauliPropagation")
+    jl.seval("using PauliPropagation")
+    pp = jl.PauliPropagation
+
+    # Here is the mapping between the supported qiskit gates and the corresponding PP gates.
+    pauli_rotations = {
+        "rx": (convert(jl.Symbol, "X"),),
+        "ry": (convert(jl.Symbol, "Y"),),
+        "rz": (convert(jl.Symbol, "Z"),),
+        "rxx": (
+            convert(jl.Symbol, "X"),
+            convert(jl.Symbol, "X"),
+        ),
+        "ryy": (
+            convert(jl.Symbol, "Y"),
+            convert(jl.Symbol, "Y"),
+        ),
+        "rzz": (
+            convert(jl.Symbol, "Z"),
+            convert(jl.Symbol, "Z"),
+        ),
+    }
+    clifford_gates = {
+        "h": convert(jl.Symbol, "H"),
+        "x": convert(jl.Symbol, "X"),
+        "y": convert(jl.Symbol, "Y"),
+        "z": convert(jl.Symbol, "Y"),
+        "s": convert(jl.Symbol, "S"),
+        "cx": convert(jl.Symbol, "CNOT"),
+        "swap": convert(jl.Symbol, "swap"),
+    }
+
+    supported_gates = list(clifford_gates.keys()) + list(pauli_rotations.keys())
+
+
+class PPEvaluator(BaseEvaluator):
+    """Evaluator based on the Pauli propagation method.
+
+    This class requires that the system has the Pauli propagation toolkit
+    https://github.com/MSRudolph/PauliPropagation.jl installed. Note that this
+    toolkit also require Julia. Therefore, it is not supported by the default
+    requirements of the QAOA training pipeline and people need to install
+    PauliPropagation and Julia themselves.
+    """
+
+    # pylint: disable=too-many-positional-arguments
+    def __init__(self, pp_kwargs: dict):
+        """Initialize the Pauli propagation evaluator.
+
+        TODO: variables that control the approximation should go here as is done in MPSEvaluator.
+        TODO: Link to docs and also justify why we use kwargs.
+        """
+
+        # Importing Julia can cause the kernel to crash, typically, on windows.
+        # Therefore we first gracefully check for it before importing
+        if not HAS_JL:
+            raise ImportError(
+                f"{self.__class__.__name__} requires Julia and the PauliPropagation.jl package."
+                f"Please install Julia and the PauliPropagation.jl package."
+                f"See https://github.com/MSRudolph/PauliPropagation.jl for more details."
+            )
+        self.pp_kwargs = pp_kwargs
+
+        # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+
+    def evaluate(
+        self,
+        cost_op: SparsePauliOp,
+        params: list[float],
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+    ) -> float:
+        """Evaluate the QAOA circuit parameters."""
+
+        if ansatz_circuit is not None:
+            raise NotImplementedError(
+                f"Custom Ansatz circuits are currently not supported in {self.__class__.__name__}."
+            )
+
+        circuit = QAOAAnsatz(
+            cost_op,
+            reps=len(params) // 2,
+            initial_state=initial_state,
+            mixer_operator=mixer,
+        )
+        bound_circuit = circuit.assign_parameters(params, inplace=False)
+        # Transpile the circuit to the set of supported gates
+        circuit = transpile(bound_circuit, basis_gates=supported_gates)
+        # pp_kwargs= dict(max_weight=9, min_abs_coeff=1e-5)
+
+        pp_circuit, parameter_map = self.qc_to_pp(circuit)
+        pp_observable = self.sparsepauliop_to_pp(cost_op)
+
+        pp_params = [params[i] if isinstance(i, int) else i for i in parameter_map]
+        pauli_sum = pp.propagate(pp_circuit, pp_observable, pp_params, **self.pp_kwargs)
+        return pp.overlapwithzero(pauli_sum)
+
+    def sparsepauliop_to_pp(self, op: SparsePauliOp):
+        """Returns the PP PauliSum representation of the SparsePauliOp."""
+        nqubits = op.num_qubits
+        pp_paulisum = pp.PauliSum(nqubits)
+        for pauli, qubits, coefficient in op.to_sparse_list():
+            pauli_symbols = pp.seval("Vector{Symbol}")()
+            for p in pauli:
+                jl.push_b(pauli_symbols, convert(jl.Symbol, str(p)))
+            pp_qubits = pp.seval("Vector{Int}")()
+            for q in qubits:
+                jl.push_b(pp_qubits, q + 1)
+            # Here I am assuming the coefficient will be real. I could be wrong.
+            pp.add_b(pp_paulisum, pauli_symbols, pp_qubits, coefficient.real)
+        return pp_paulisum
+
+    def qc_to_pp(
+        self, circuit: QuantumCircuit
+    ) -> tuple[list[tuple[str, list[int]]], list[int]]:
+        """
+        Args:
+            circuit: The Qiskit cirucit with no free parameters.
+
+        Returns:
+            A representation of the circuit on which we can call the Pauli propagation code.
+            That is a list of tuples with the name of the gate and the qubits it acts on and a
+            list with all the position of non-clifford gates.
+        """
+        if len(circuit.parameters) > 0:
+            raise ValueError("The provided quantum circuit has unassigned parameters.")
+
+        dag = circuit_to_dag(circuit, False)
+
+        # The circuit must only contain supported gates.
+        op_nodes = list(dag.topological_op_nodes())
+        pp_circuit = pp.seval("Vector{Gate}")()
+        parameter_map = []
+        for position, node in enumerate(op_nodes):
+            q_indices = tuple(dag.find_bit(qarg).index + 1 for qarg in node.qargs)
+            name = node.op.name
+            if name in pauli_rotations:
+                pauli_rot = pp.PauliRotation(pauli_rotations[name], q_indices)
+                pp.push_b(pp_circuit, pauli_rot)
+                if isinstance(node.op.params[0], float):
+                    parameter_map.append(node.op.params[0])
+                else:
+                    # TODO: This should never be accessed now
+                    # parameter_map.append(node.op.params[0].index)
+                    raise ValueError(
+                        f"""Something went wrong. All node parameters of pauli rotations
+                        should be of type float.
+                        However, {node.op.params[0]} is of type {type(node.op.params[0])}.
+                        """
+                    )
+            elif name in clifford_gates:
+                clifford_gate = pp.CliffordGate(clifford_gates[name], q_indices)
+                pp.push_b(pp_circuit, clifford_gate)
+            else:
+                print(f"We did not find a gate for {node.op.name}. Skipping Gate.")
+
+        return pp_circuit, parameter_map
+
+    def to_config(self) -> dict:
+        """Json serializable config to keep track of how results are generated."""
+        config = super().to_config()
+
+        # TODO: variables set at init must go here.
+
+        return config
+
+    @classmethod
+    def parse_init_kwargs(cls, init_kwargs: str | None = None) -> dict:
+        """Parse initialization kwargs."""
+
+        # TODO: parsing happens here
+
+        return dict()
+
+
+# TODO: small test. Compare output to statevector.
