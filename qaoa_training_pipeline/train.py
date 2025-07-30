@@ -49,6 +49,13 @@ def get_script_args():
     )
 
     parser.add_argument(
+        "--problem_class",
+        required=False,
+        type=str,
+        help="A string to create instances of known optimization problems.",
+    )
+
+    parser.add_argument(
         "--pre_factor",
         required=False,
         default=1.0,
@@ -134,7 +141,19 @@ def train(args: Optional[List]):
     """
 
     # Load the input.
-    input_problem = input_to_operator(load_input(args.input), pre_factor=args.pre_factor)
+    class_str = getattr(args, "problem_class", None)
+    if input_class is not None:
+        class_info = class_str.split(":")
+        class_name = class_info[0]
+        
+        class_init_str = ""
+        if len(class_info) > 1:
+            class_init_str = class_info[1]
+
+        problem_class = PROBLEM_CLASSES[class_name].from_str(class_init_str)
+        input_problem = problem_class.cost_operator(load_input(args.input))
+    else:
+        input_problem = input_to_operator(load_input(args.input), pre_factor=args.pre_factor)
 
     # Load the training config and prepare the trainer.
     with open(args.config, "r") as fin:
@@ -145,10 +164,7 @@ def train(args: Optional[List]):
     all_results, result = {}, {}
 
     # Save files specified from the cmd line override file names in the json config.
-    if hasattr(args, "save_file"):
-        save_file = args.save_file
-    else:
-        save_file = None
+    save_file = getattr(args, "save_file", None)
 
     # Loop over all the trainers.
     for train_idx, conf in enumerate(trainer_chain_config):
