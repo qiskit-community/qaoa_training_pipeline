@@ -32,7 +32,7 @@ if HAS_JL:
     pp = jl.PauliPropagation
 
     # Here is the mapping between the supported qiskit gates and the corresponding PP gates.
-    pauli_rotations = {
+    PAULI_ROTATIONS = {
         "rx": (convert(jl.Symbol, "X"),),
         "ry": (convert(jl.Symbol, "Y"),),
         "rz": (convert(jl.Symbol, "Z"),),
@@ -49,7 +49,8 @@ if HAS_JL:
             convert(jl.Symbol, "Z"),
         ),
     }
-    clifford_gates = {
+
+    CLIFFORD_GATES = {
         "h": convert(jl.Symbol, "H"),
         "x": convert(jl.Symbol, "X"),
         "y": convert(jl.Symbol, "Y"),
@@ -59,7 +60,7 @@ if HAS_JL:
         "swap": convert(jl.Symbol, "swap"),
     }
 
-    supported_gates = list(clifford_gates.keys()) + list(pauli_rotations.keys())
+    SUPPORTED_GATES = list(CLIFFORD_GATES.keys()) + list(PAULI_ROTATIONS.keys())
 
 
 class PPEvaluator(BaseEvaluator):
@@ -120,7 +121,7 @@ class PPEvaluator(BaseEvaluator):
         )
         bound_circuit = circuit.assign_parameters(params, inplace=False)
         # Transpile the circuit to the set of supported gates
-        circuit = transpile(bound_circuit, basis_gates=supported_gates)
+        circuit = transpile(bound_circuit, basis_gates=SUPPORTED_GATES)
         # pp_kwargs= dict(max_weight=9, min_abs_coeff=1e-5)
 
         pp_circuit, parameter_map = self.qc_to_pp(circuit)
@@ -145,9 +146,7 @@ class PPEvaluator(BaseEvaluator):
             pp.add_b(pp_paulisum, pauli_symbols, pp_qubits, coefficient.real)
         return pp_paulisum
 
-    def qc_to_pp(
-        self, circuit: QuantumCircuit
-    ) -> tuple[list[tuple[str, list[int]]], list[int]]:
+    def qc_to_pp(self, circuit: QuantumCircuit) -> tuple[list[tuple[str, list[int]]], list[int]]:
         """
         Args:
             circuit: The Qiskit cirucit with no free parameters.
@@ -169,8 +168,8 @@ class PPEvaluator(BaseEvaluator):
         for position, node in enumerate(op_nodes):
             q_indices = tuple(dag.find_bit(qarg).index + 1 for qarg in node.qargs)
             name = node.op.name
-            if name in pauli_rotations:
-                pauli_rot = pp.PauliRotation(pauli_rotations[name], q_indices)
+            if name in PAULI_ROTATIONS:
+                pauli_rot = pp.PauliRotation(PAULI_ROTATIONS[name], q_indices)
                 pp.push_b(pp_circuit, pauli_rot)
                 if isinstance(node.op.params[0], float):
                     parameter_map.append(node.op.params[0])
@@ -183,8 +182,8 @@ class PPEvaluator(BaseEvaluator):
                         However, {node.op.params[0]} is of type {type(node.op.params[0])}.
                         """
                     )
-            elif name in clifford_gates:
-                clifford_gate = pp.CliffordGate(clifford_gates[name], q_indices)
+            elif name in CLIFFORD_GATES:
+                clifford_gate = pp.CliffordGate(CLIFFORD_GATES[name], q_indices)
                 pp.push_b(pp_circuit, clifford_gate)
             else:
                 print(f"We did not find a gate for {node.op.name}. Skipping Gate.")
