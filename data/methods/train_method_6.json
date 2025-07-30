@@ -1,0 +1,36 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "DepthOneScanTrainer",
+            "trainer_init": {
+                "evaluator": "EfficientDepthOneEvaluator",
+                "evaluator_init": {}
+            },
+            "train_kwargs": {
+                "parameter_ranges": [[0, 3.1456], [0, 3.1456]],
+                "num_points": 15
+            }
+        },
+        {
+            "trainer":"RecursionTrainer",
+            "trainer_init": {
+                "trainer": "ScipyTrainer",
+                "trainer_init": {
+                    "evaluator": "StatevectorEvaluator",
+                    "evaluator_init": {},
+                    "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
+                },
+                "parameter_extender": "interpolate"
+
+            },
+            "train_kwargs": {
+                "reps": 3,
+                "result": {
+                    "optimized_params": "params0"
+                }
+            },
+            "save_file": "method_6.json"
+        }
+    ],
+    "description": "Use the efficient depth one evaluation with the scipy trainer followed by a recursing to depth 3 with linear interpolation."
+}

@@ -15,7 +15,7 @@ from ddt import ddt, data, unpack
 import networkx as nx
 
 from qiskit import transpile
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp, Pauli
 from qiskit.primitives import StatevectorEstimator
 
@@ -40,7 +40,7 @@ class TestLightConeEvaluator(TrainingPipelineTestCase):
     def qiskit_circuit_simulation(self, cost_op, params):
         """This is the baseline simulation based on Qiskit."""
 
-        ansatz = QAOAAnsatz(cost_op, reps=len(params) // 2)
+        ansatz = qaoa_ansatz(cost_op, reps=len(params) // 2)
 
         ansatz.assign_parameters(params, inplace=True)
         ansatz = transpile(ansatz, basis_gates=["cx", "sx", "x", "rz"])

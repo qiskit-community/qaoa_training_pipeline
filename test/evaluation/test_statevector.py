@@ -10,7 +10,7 @@
 
 from unittest import TestCase
 
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import StatevectorEstimator
 
@@ -29,7 +29,7 @@ class TestStatevectorEvaluator(TestCase):
     def qiskit_circuit_simulation(self, cost_op, params):
         """This is the baseline simulation based on Qiskit."""
 
-        ansatz = QAOAAnsatz(cost_op, reps=len(params) // 2)
+        ansatz = qaoa_ansatz(cost_op, reps=len(params) // 2)
         estimator = StatevectorEstimator()
         ansatz.assign_parameters(params, inplace=True)
         result = estimator.run([(ansatz, cost_op, [])]).result()
