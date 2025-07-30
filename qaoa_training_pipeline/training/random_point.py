@@ -109,26 +109,19 @@ class RandomPoint(BaseTrainer):
         """Parse arguments for the train method from a string.
 
         Args:
-            args_str: A string of the form reps_low_high_seed where low and high are the
-                lower and upper bounds on the parameters respectively. seed can be an
-                int or the stirng "None".
+            args_str: A string of keyword arguments of the form `k1:v1:k2:v2`.
+                The possible keywords are `reps`, `seed`, `lower_bound`, and `upper_bound`.
         """
-        if args_str is None:
-            return dict()
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key in ["reps", "seed"]:
+                train_kwargs[key] = int(val)
+            elif key in ["lower_bound", "upper_bound"]:
+                train_kwargs[key] = float(val)
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        args = args_str.split("_")
-
-        if args[3].lower() == "none":
-            seed = None
-        else:
-            seed = int(args[3])
-
-        return {
-            "reps": int(args[0]),
-            "lower_bound": float(args[1]),
-            "upper_bound": float(args[2]),
-            "seed": seed,
-        }
+        return train_kwargs
 
     def to_config(self) -> dict:
         """Creates a serializeable dictionary to keep track of how results are created.

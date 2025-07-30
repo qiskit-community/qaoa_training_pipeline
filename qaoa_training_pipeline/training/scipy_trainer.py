@@ -17,9 +17,14 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from scipy.optimize import minimize
 
-from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.evaluation import EVALUATORS
+from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training.functions import (
+    BaseAnglesFunction,
+    IdentityFunction,
+    FUNCTIONS,
+)
+from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
 
@@ -32,6 +37,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         evaluator: BaseEvaluator,
         minimize_args: Optional[Dict[str, Any]] = None,
         energy_minimization: bool = False,
+        qaoa_angles_function: Optional[BaseAnglesFunction] = None,
     ):
         """Initialize the trainer.
 
@@ -43,7 +49,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
         """
-        BaseTrainer.__init__(self, evaluator)
+        BaseTrainer.__init__(self, evaluator, qaoa_angles_function)
         HistoryMixin.__init__(self)
 
         self._minimize_args = {"method": "COBYLA"}
@@ -52,6 +58,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         self._minimize_args.update(minimize_args)
 
         # Sign to control whether we minimize or maximize the energy
+        self._energy_minimization = energy_minimization
         self._sign = 1 if energy_minimization else -1
 
     @property
@@ -88,9 +95,12 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         def _energy(x):
             """Maximize the energy by minimizing the negative energy."""
             estart = time()
+
+            qaoa_angles = self._qaoa_angles_function(x)
+
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
-                params=x,
+                params=qaoa_angles,
                 mixer=mixer,
                 initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
@@ -149,23 +159,42 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         """Create a scipy trainer based on a config."""
 
         evaluator_cls = EVALUATORS[config["evaluator"]]
-        evaluator = evaluator_cls.from_config(config["evaluator_init"])
-        minimize_args = config["minimize_args"]
 
-        return cls(evaluator, minimize_args)
+        if "qaoa_angles_function" not in config:
+            function = IdentityFunction()
+        else:
+            function_name = config["qaoa_angles_function"]
+            if function_name not in FUNCTIONS:
+                raise ValueError(
+                    f"{function_name} is not a supported function. "
+                    "Please see training/functions.py for supported functions."
+                )
+
+            function_cls = FUNCTIONS[config["qaoa_angles_function"]]
+            function = function_cls.from_config(config["qaoa_angles_function_init"])
+
+        return cls(
+            evaluator_cls.from_config(config["evaluator_init"]),
+            config["minimize_args"],
+            energy_minimization=config.get("energy_minimization", None),
+            qaoa_angles_function=function,
+        )
 
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
         """Parse any train arguments from a string.
 
         The only argument that can be contained here is params0. It is the values
         of the betas and gammas that make up the initial point given to Scipy's
-        minimize function. We give `params0` as in string describing floats seperated
-        by uderscores, e.g., 1.2_30.12_0.0
+        minimize function. We give this as a string in the format `params0:v1/v2/v3/v4...`.
         """
-        if args_str is None:
-            return dict()
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key == "params0":
+                train_kwargs[key] = self.extract_list(val, dtype=float)
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        return [float(val) for val in args_str.split("_")]
+        return train_kwargs
 
     def to_config(self) -> dict:
         """Creates a serializeable dictionary to keep track of how results are created.

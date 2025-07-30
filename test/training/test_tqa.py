@@ -61,3 +61,10 @@ class TestTQA(TrainingPipelineTestCase):
         self.assertTrue(isinstance(trainer.evaluator, MPSEvaluator))
 
         self.assertEqual(trainer.evaluator.to_config()["bond_dim_circuit"], 2)
+
+    def test_parse_train_kwargs(self):
+        """Test parsing of training args."""
+        kwargs_str = "reps:3"
+        kwargs = TQATrainer().parse_train_kwargs(kwargs_str)
+
+        self.assertDictEqual(kwargs, {"reps": 3})

@@ -41,7 +41,7 @@ from qaoa_training_pipeline.utils.tns_utils.qaoa_cost_function import QAOACostFu
 from qaoa_training_pipeline.utils.tns_utils.multi_qubit_gates import QAOAManyBodyCorrelator
 from qaoa_training_pipeline.utils.tns_utils.symbolic_mpo import SymbolicMPOConstruction
 
-from qaoa_training_pipeline.evaluation import MPSEvaluator
+from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
 
 
 class TestQAOAMPS(TrainingPipelineTestCase):

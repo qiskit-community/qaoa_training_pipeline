@@ -53,3 +53,11 @@ class TestRecursion(TrainingPipelineTestCase):
 
         trainer = RecursionTrainer.from_config(config)
         self.assertTrue(isinstance(trainer, RecursionTrainer))
+
+    def test_parse_train_kwargs(self):
+        """Test parsing of training args."""
+        scipy_trainer = ScipyTrainer(MPSEvaluator())
+        trainer = RecursionTrainer(scipy_trainer, interpolate)
+
+        kwargs = trainer.parse_train_kwargs("reps:8:params0:1/2")
+        self.assertDictEqual(kwargs, {"reps": 8, "params0": [1.0, 2.0]})
