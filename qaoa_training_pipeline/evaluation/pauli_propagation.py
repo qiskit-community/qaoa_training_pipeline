@@ -6,18 +6,18 @@
 
 """Pauli propagation-based QAOA evaluator."""
 
+import importlib
+from typing import Optional
+import warnings
+
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
-from qiskit.circuit.classical.expr import Value
-from qiskit.compiler import transpile
 from qiskit.converters import circuit_to_dag
-from qiskit.dagcircuit import DAGCircuit
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.circuit.library import QAOAAnsatz
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
-import importlib
 
 # Safely import Julia if is is installed.
 jl_loader = importlib.util.find_spec("juliacall")
@@ -61,6 +61,12 @@ if HAS_JL:
     }
 
     SUPPORTED_GATES = list(CLIFFORD_GATES.keys()) + list(PAULI_ROTATIONS.keys())
+else:
+    PAULI_ROTATIONS = dict()
+    CLIFFORD_GATES = dict()
+    SUPPORTED_GATES = []
+    # pylint: disable=invalid-name
+    pp = None
 
 
 class PPEvaluator(BaseEvaluator):
@@ -73,17 +79,17 @@ class PPEvaluator(BaseEvaluator):
     PauliPropagation and Julia themselves.
     """
 
-    # pylint: disable=too-many-positional-arguments
-    def __init__(self, pp_kwargs: dict):
+    def __init__(self, pp_kwargs: Optional[dict] = None):
         """Initialize the Pauli propagation evaluator.
 
         Args:
             pp_kwargs: Keyword arguments that will be passed to PauliPropagation.jl.
-            The parameters that can be passed to the function are documented in
-            https://msrudolph.github.io/PauliPropagation.jl/stable/api/Propagation/#PauliPropagation.propagate.
-            And all the types must be compatible with juliacall
-            https://juliapy.github.io/PythonCall.jl/stable/conversion-to-julia/.
-
+                The parameters that can be passed to the function are documented in
+                https://msrudolph.github.io/PauliPropagation.jl/stable/api/Propagation
+                under the PauliPropagation.propagate function. Furthermore, all the types
+                must be compatible with juliacall
+                https://juliapy.github.io/PythonCall.jl/stable/conversion-to-julia/.
+                If None is given then we default to `max_weight=9` and `min_abs_coeff=1e-5`.
         """
 
         # Importing Julia can cause the kernel to crash, typically, on windows.
@@ -94,17 +100,17 @@ class PPEvaluator(BaseEvaluator):
                 f"Please install Julia and the PauliPropagation.jl package."
                 f"See https://github.com/MSRudolph/PauliPropagation.jl for more details."
             )
-        self.pp_kwargs = pp_kwargs
 
-        # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+        self.pp_kwargs = pp_kwargs or {"max_weight": 9, "min_abs_coeff": 1e-5}
 
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
         params: list[float],
-        mixer: QuantumCircuit | None = None,
-        initial_state: QuantumCircuit | None = None,
-        ansatz_circuit: QuantumCircuit | None = None,
+        mixer: Optional[QuantumCircuit] = None,
+        initial_state: Optional[QuantumCircuit] = None,
+        ansatz_circuit: Optional[QuantumCircuit] = None,
     ) -> float:
         """Evaluate the QAOA circuit parameters."""
 
@@ -122,7 +128,6 @@ class PPEvaluator(BaseEvaluator):
         bound_circuit = circuit.assign_parameters(params, inplace=False)
         # Transpile the circuit to the set of supported gates
         circuit = transpile(bound_circuit, basis_gates=SUPPORTED_GATES)
-        # pp_kwargs= dict(max_weight=9, min_abs_coeff=1e-5)
 
         pp_circuit, parameter_map = self.qc_to_pp(circuit)
         pp_observable = self.sparsepauliop_to_pp(cost_op)
@@ -142,7 +147,7 @@ class PPEvaluator(BaseEvaluator):
             pp_qubits = pp.seval("Vector{Int}")()
             for q in qubits:
                 jl.push_b(pp_qubits, q + 1)
-            # Here I am assuming the coefficient will be real. I could be wrong.
+
             pp.add_b(pp_paulisum, pauli_symbols, pp_qubits, coefficient.real)
         return pp_paulisum
 
@@ -165,7 +170,7 @@ class PPEvaluator(BaseEvaluator):
         op_nodes = list(dag.topological_op_nodes())
         pp_circuit = pp.seval("Vector{Gate}")()
         parameter_map = []
-        for position, node in enumerate(op_nodes):
+        for node in op_nodes:
             q_indices = tuple(dag.find_bit(qarg).index + 1 for qarg in node.qargs)
             name = node.op.name
             if name in PAULI_ROTATIONS:
@@ -194,14 +199,16 @@ class PPEvaluator(BaseEvaluator):
         """Json serializable config to keep track of how results are generated."""
         config = super().to_config()
 
-        # TODO: variables set at init must go here.
+        config["pp_kwargs"] = self.pp_kwargs
 
         return config
 
     @classmethod
-    def parse_init_kwargs(cls, init_kwargs: str | None = None) -> dict:
-        """Parse initialization kwargs."""
-
-        # TODO: parsing happens here
-
+    # pylint: disable=unused-argument
+    def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
+        """A hook that sub-classes can implement to parse initialization kwargs."""
+        warnings.warn(
+            "parse_init_kwargs is not yet implemented. "
+            "TODO This will be fixed in a subsequent PR."
+        )
         return dict()
