@@ -9,7 +9,7 @@
 import importlib
 from typing import Optional
 import warnings
-
+import numpy as np
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
 from qiskit.converters import circuit_to_dag
@@ -27,8 +27,12 @@ if HAS_JL:
     from juliacall import Pkg as jlPkg
     from juliacall import convert
 
-    jlPkg.activate("PauliPropagation")
-    jl.seval("using PauliPropagation")
+    try:
+        jl.seval("using PauliPropagation")
+    except Exception as _:
+        print("Package not found or failed to load. Attempting to install...")
+        jl.seval('Pkg.add("PauliPropagation")')
+        jl.seval("using PauliPropagation")
     pp = jl.PauliPropagation
 
     # Here is the mapping between the supported qiskit gates and the corresponding PP gates.
@@ -101,7 +105,14 @@ class PPEvaluator(BaseEvaluator):
                 f"See https://github.com/MSRudolph/PauliPropagation.jl for more details."
             )
 
-        self.pp_kwargs = pp_kwargs or {"max_weight": 9, "min_abs_coeff": 1e-5}
+        # These kwargs match the default ones from PauliPropagation.jl
+        self.pp_kwargs = pp_kwargs or dict(
+            max_weight=np.inf,
+            min_abs_coeff=1e-10,
+            max_freq=np.inf,
+            max_sins=np.inf,
+            customtruncfunc=None,
+        )
 
     # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
@@ -151,7 +162,9 @@ class PPEvaluator(BaseEvaluator):
             pp.add_b(pp_paulisum, pauli_symbols, pp_qubits, coefficient.real)
         return pp_paulisum
 
-    def qc_to_pp(self, circuit: QuantumCircuit) -> tuple[list[tuple[str, list[int]]], list[int]]:
+    def qc_to_pp(
+        self, circuit: QuantumCircuit
+    ) -> tuple[list[tuple[str, list[int]]], list[int]]:
         """
         Args:
             circuit: The Qiskit cirucit with no free parameters.
