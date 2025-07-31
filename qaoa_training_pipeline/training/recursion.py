@@ -10,6 +10,7 @@
 
 from time import time
 from typing import Callable, Dict, Optional
+import matplotlib.pyplot as plt
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -40,13 +41,16 @@ class RecursionTrainer(BaseTrainer):
                 points for the parameter optimization at depth `p+1`.
             trainer: The trainer must be the ScipyTrainer.
         """
-        super().__init__(trainer.evaluator)
+        super().__init__(trainer.evaluator, trainer.qaoa_angles_function)
 
         # Takes parameters from QAOA depth p to depth p+1.
         self._parameter_extender = parameter_extender or PARAMETEREXTENDERS["extend"]
 
         # The trainer that optimizes the extended parameters.
         self._trainer = trainer
+
+        # Store internally all the results that we obtained.
+        self._all_results = None
 
     @property
     def minimization(self) -> bool:
@@ -77,7 +81,7 @@ class RecursionTrainer(BaseTrainer):
         start = time()
         current_reps = len(params0) // 2
 
-        all_results, energy = dict(), None
+        self._all_results, energy = dict(), None
 
         while current_reps < reps:
             current_reps += 1
@@ -103,10 +107,10 @@ class RecursionTrainer(BaseTrainer):
 
             params0 = result["optimized_params"]
             energy = result["energy"]
-            all_results[current_reps] = result
+            self._all_results[current_reps] = result.data
 
         param_result = ParamResult(params0, time() - start, self, energy)
-        param_result.update(all_results)
+        param_result.update(self._all_results)
 
         return param_result
 
@@ -138,12 +142,34 @@ class RecursionTrainer(BaseTrainer):
         }
 
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
-        """Parse a string into the training kwargs.
+        """Parse a string into the training kwargs."""
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key == "reps":
+                train_kwargs[key] = int(val)
+            elif key == "params0":
+                train_kwargs[key] = self.extract_list(val, dtype=float)
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        Note: This trainer does not take any arguments aside from the default
-        ones. We therefore ask the sub-trainer to parse the key word arguments.
-        """
-        if args_str is None:
-            return dict()
+        return train_kwargs
 
-        return self._trainer.parse_train_kwargs(args_str)
+    def plot(
+        self,
+        axis: Optional[plt.Axes] = None,
+        fig: Optional[plt.Figure] = None,
+        **plot_args,
+    ):
+        """Plot the energy progression throughout the recursion."""
+        if axis is None or fig is None:
+            fig, axis = plt.subplots(1, 1)
+
+        recursion_idx = sorted(self._all_results.keys())
+        energies = [self._all_results[key]["energy"] for key in recursion_idx]
+
+        axis.plot(recursion_idx, energies, label="Energy", **plot_args)
+        axis.set_xlabel("Recursion level")
+        axis.set_ylabel("Energy")
+        axis.legend()
+
+        return fig, axis

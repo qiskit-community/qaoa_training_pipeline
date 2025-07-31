@@ -188,7 +188,11 @@ class TQATrainer(BaseTrainer, HistoryMixin):
 
         The input args are only the number of repetitions. There the args_str is only a single int.
         """
-        if args_str is None:
-            return dict()
+        train_kwargs = dict()
+        for key, val in self.extract_train_kwargs(args_str).items():
+            if key in ["reps"]:
+                train_kwargs[key] = int(val)
+            else:
+                raise ValueError("Unknown key in provided train_kwargs.")
 
-        return {"reps": int(args_str)}
+        return train_kwargs

@@ -14,7 +14,7 @@ import numpy as np
 from qiskit import transpile
 
 from qiskit.circuit import QuantumCircuit
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import StatevectorEstimator
 
@@ -136,13 +136,13 @@ class LightConeEvaluator(BaseEvaluator):
         r"""Create the circuit for the given edge.
 
         This method proceeds by first shrinking the graph of the problem to the light cone.
-        Next, it uses `QAOAAnsatz` to create the circuit for this smaller scale version
+        Next, it uses `qaoa_ansatz` to create the circuit for this smaller scale version
         of the graph.
 
         Args:
             edge: The edge that we want to measure.
             params: The parameters of QAOA in order [beta0, beta1, ..., gamma0, gamma1, ...]
-                to match with `QAOAAnsatz`.
+                to match with `qaoa_ansatz`.
             initial_state: The initial state of all qubits.
             mixer_operator: The mixer operator.
         """
@@ -150,14 +150,14 @@ class LightConeEvaluator(BaseEvaluator):
 
         paulis, src_edge = self.make_sub_correlators(edges, edge, len(self.graph))
 
-        ansatz = QAOAAnsatz(
+        ansatz = qaoa_ansatz(
             cost_operator=SparsePauliOp.from_list(paulis),
             reps=len(params) // 2,
             initial_state=initial_state,
             mixer_operator=mixer_operator,
         )
 
-        # Assumes the same parameter order as QAOAAnsatz.
+        # Assumes the same parameter order as qaoa_ansatz.
         ansatz.assign_parameters(params, inplace=True)
 
         ansatz = transpile(ansatz, basis_gates=["sx", "x", "rzz", "rz", "rx"])
@@ -213,7 +213,7 @@ class LightConeEvaluator(BaseEvaluator):
         source_edge: Tuple[int, int],
         base_size: int,
     ) -> Tuple[List[Tuple[str, float]], Tuple]:
-        r"""Build Paulis from the edges to construct a cost_op for `QAOAAnsatz`.
+        r"""Build Paulis from the edges to construct a cost_op for `qaoa_ansatz`.
 
         First construct an array where each row is a correlator.
         Each I is a 0 and each Z is a 1. Therefore, each row sums to 2 (since QUBOs)
