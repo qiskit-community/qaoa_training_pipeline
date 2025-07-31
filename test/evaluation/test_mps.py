@@ -18,7 +18,7 @@ import numpy as np
 
 from qiskit import transpile, QuantumCircuit
 from qiskit.circuit import Parameter
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
@@ -82,7 +82,7 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
     def qiskit_circuit_simulation(self, cost_op, params):
         """This is the baseline simulation based on Qiskit."""
 
-        ansatz = QAOAAnsatz(cost_op, reps=len(params) // 2)
+        ansatz = qaoa_ansatz(cost_op, reps=len(params) // 2)
         estimator = StatevectorEstimator()
         ansatz.assign_parameters(params, inplace=True)
         ansatz = transpile(ansatz, basis_gates=["cx", "sx", "x", "rz"])
@@ -174,7 +174,7 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         ansatz.rzz(2 * gamma_param, 2, 1)
 
         # Construct the QAOA circuit corresponding to the ansatz.
-        qaoa_circuit = QAOAAnsatz(SparsePauliOp.from_list([("ZIIZ", 1), ("IZZI", 1)]))
+        qaoa_circuit = qaoa_ansatz(SparsePauliOp.from_list([("ZIIZ", 1), ("IZZI", 1)]))
         qaoa_circuit = transpile(qaoa_circuit, basis_gates=["rzz", "h", "rx", "rz"])
 
         estimator = StatevectorEstimator()
@@ -245,7 +245,7 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
 
     def test_hobo_on_labs_problem_vs_qaoa(self):
         """Checks HOBO MPS vs statevector on a LABS problem.
-        Unlike the previous test, here we use the `QAOAAnsatz` qiskit-native class"""
+        Unlike the previous test, here we use the `qaoa_ansatz` qiskit-native method"""
 
         # Generates the LABS problem
         n_qubits = 8
@@ -257,7 +257,7 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         energy_from_mps = mps_evaluator.evaluate(sparse_pauli_labs, list_of_params)
 
         # Statevector simulator via qiskit circuit
-        qaoa_circuit = QAOAAnsatz(sparse_pauli_labs, reps=1)
+        qaoa_circuit = qaoa_ansatz(sparse_pauli_labs, reps=1)
         actual_circuit = qaoa_circuit.assign_parameters([0.2, 0.3])
         estimator = StatevectorEstimator()
         result = estimator.run([(actual_circuit, sparse_pauli_labs, [])]).result()

@@ -47,11 +47,14 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 3,
+            "qaoa_training_pipeline_version": 5,
         }
 
         # Convert, e.g., np.float to float
         self.data["optimized_params"] = [float(val) for val in optimized_params]
+        self.data["optimized_qaoa_angles"] = [
+            float(val) for val in trainer.qaoa_angles_function(optimized_params)
+        ]
         self.data["train_duration"] = duration
         self.data["energy"] = float(energy) if isinstance(energy, np.floating) else energy
         self.data["trainer"] = trainer.to_config()

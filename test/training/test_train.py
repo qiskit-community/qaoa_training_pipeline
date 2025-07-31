@@ -41,7 +41,7 @@ class TestTrain(TrainingPipelineTestCase):
             "--config",
             "data/methods/train_method_0.json",
             "--train_kwargs0",
-            "10_3_6_3_6",
+            "num_points:10:parameter_ranges:3/6/3/6",
             "--save",
             "--save_file",
             file_name,
@@ -52,7 +52,10 @@ class TestTrain(TrainingPipelineTestCase):
             args, _ = get_script_args()
             result = train(args)
 
-            self.assertEqual(result["args"]["train_kwargs0"], "10_3_6_3_6")
+            self.assertEqual(
+                result["args"]["train_kwargs0"],
+                "num_points:10:parameter_ranges:3/6/3/6",
+            )
 
     def test_call_train_schmidt(self):
         """Test that the Schmidt values are returned with an MPS-based training."""
@@ -82,9 +85,20 @@ class TestTrain(TrainingPipelineTestCase):
             # case, is the only one)
             self.assertIn("schmidt_values", result[0].keys())
 
-    @data(0, 1, 2)
+    @data(0, 1, 2, 3, 4, 5, 6)
     def test_methods(self, method_idx: int):
         """Test that the different methods run without input args."""
+
+        # First value is the trainer index in the chain and the second one is the param length.
+        expected_param_len = {
+            0: (0, 2),
+            1: (1, 2),
+            2: (1, 2),
+            3: (0, 2),
+            4: (0, 2),
+            5: (0, 2),
+            6: (1, 6),
+        }
 
         file_name = "dmp_file_test_methods_" + str(method_idx)
 
@@ -103,4 +117,7 @@ class TestTrain(TrainingPipelineTestCase):
         with patch.object(sys, "argv", test_args):
             args, _ = get_script_args()
             result = train(args)
-            self.assertTrue("optimized_params" in result[0])
+
+            trainer_idx, exp_len = expected_param_len[method_idx]
+            opt_params = result[trainer_idx]["optimized_params"]
+            self.assertEqual(len(opt_params), exp_len)
