@@ -136,7 +136,7 @@ class PPEvaluator(BaseEvaluator):
                 f"Custom Ansatz circuits are currently not supported in {self.__class__.__name__}."
             )
 
-        circuit = QAOAAnsatz(
+        circuit = qaoa_ansatz(
             cost_op,
             reps=len(params) // 2,
             initial_state=initial_state,
