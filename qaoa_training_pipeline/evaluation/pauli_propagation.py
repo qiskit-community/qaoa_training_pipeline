@@ -24,13 +24,16 @@ jl_loader = importlib.util.find_spec("juliacall")
 HAS_JL = jl_loader is not None
 if HAS_JL:
     from juliacall import Main as jl
-    from juliacall import Pkg as jlPkg
     from juliacall import convert
 
     try:
         jl.seval("using PauliPropagation")
+
+    # pylint: disable=broad-exception-caught
     except Exception as _:
-        print("Package not found or failed to load. Attempting to install...")
+        warnings.warn(
+            "juliacall installed but no PauliPropagation. Attempting to install PauliPropagation."
+        )
         jl.seval('Pkg.add("PauliPropagation")')
         jl.seval("using PauliPropagation")
     pp = jl.PauliPropagation
@@ -162,9 +165,7 @@ class PPEvaluator(BaseEvaluator):
             pp.add_b(pp_paulisum, pauli_symbols, pp_qubits, coefficient.real)
         return pp_paulisum
 
-    def qc_to_pp(
-        self, circuit: QuantumCircuit
-    ) -> tuple[list[tuple[str, list[int]]], list[int]]:
+    def qc_to_pp(self, circuit: QuantumCircuit) -> tuple[list[tuple[str, list[int]]], list[int]]:
         """
         Args:
             circuit: The Qiskit cirucit with no free parameters.
