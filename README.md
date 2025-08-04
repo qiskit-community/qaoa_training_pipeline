@@ -136,6 +136,15 @@ This file will contain information on the training history and the method employ
 You can install this repository by running `pip install .` after cloning from Github. 
 If you are planning to contribute to the repository, you can have an editable install by running `pip install -e .`
 
+Pauli Propagation is built on top of the `PauliPropagation.jl` Julia library, which is currently under active development. Please note that future updates to this library may introduce breaking changes.
+Integration with Julia is handled via `juliacall`, which can be installed using the requirements-optional.txt file. Be aware that `juliacall` sets up its own Julia environment located at `name-venv/julia_env`.
+To update the Julia packages within this environment, you can run the following command from your Python environment:
+
+```
+from juliacall import Main as jl
+jl.seval("using Pkg; Pkg.update()")
+```
+
 ## Warning
 
 This repository is still in development: new functionality is being added and the API is subject to change.
