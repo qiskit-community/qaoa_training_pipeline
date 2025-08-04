@@ -23,6 +23,7 @@ from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 jl_loader = importlib.util.find_spec("juliacall")
 HAS_JL = jl_loader is not None
 if HAS_JL:
+    # pylint: disable=no-name-in-module
     from juliacall import Main as jl
     from juliacall import convert
 
