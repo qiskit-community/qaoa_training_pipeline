@@ -110,13 +110,15 @@ class PPEvaluator(BaseEvaluator):
             )
 
         # These kwargs match the default ones from PauliPropagation.jl
-        self.pp_kwargs = pp_kwargs or dict(
+        self.pp_kwargs = dict(
             max_weight=np.inf,
             min_abs_coeff=1e-10,
             max_freq=np.inf,
             max_sins=np.inf,
             customtruncfunc=None,
         )
+        if pp_kwargs is not None:
+            self.pp_kwargs.update(pp_kwargs)
 
     # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
