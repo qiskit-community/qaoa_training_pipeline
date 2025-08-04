@@ -14,7 +14,7 @@ from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
 from qiskit.converters import circuit_to_dag
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
