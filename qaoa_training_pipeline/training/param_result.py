@@ -56,9 +56,7 @@ class ParamResult:
             float(val) for val in trainer.qaoa_angles_function(optimized_params)
         ]
         self.data["train_duration"] = duration
-        self.data["energy"] = (
-            float(energy) if isinstance(energy, np.floating) else energy
-        )
+        self.data["energy"] = float(energy) if isinstance(energy, np.floating) else energy
         self.data["trainer"] = trainer.to_config()
 
     def __contains__(self, item):
