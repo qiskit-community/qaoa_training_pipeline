@@ -10,9 +10,7 @@
 
 from unittest import TestCase
 
-from qiskit.circuit.library import QAOAAnsatz
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.primitives import StatevectorEstimator
 from ddt import data, ddt, unpack
 
 from qaoa_training_pipeline.evaluation.statevector_evaluator import StatevectorEvaluator
