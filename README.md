@@ -149,6 +149,7 @@ This repository is still in development: new functionality is being added and th
 | 3       | Add fidelity bounds for MPS |           #6 |
 | 4       | Add QAOA angles functions   |          #14 |
 | 5       | Switch to qaoa_ansatz       |          #16 |
+| 6       | Add Pauli Proagation        |          #15 |
 
 ## IBM Public Repository Disclosure
 
