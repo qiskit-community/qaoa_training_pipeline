@@ -1,6 +1,6 @@
 #
 #
-# (C) Copyright IBM 2024.
+# (C) Copyright IBM 2025.
 #
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
@@ -13,16 +13,17 @@ from typing import Optional
 from qiskit_optimization.applications import StableSet
 from qiskit_optimization.converters import QuadraticProgramToQubo
 
-from qaoa_training_pipeline.utils.data_utils import load_input, input_to_operator
+from qaoa_training_pipeline.utils.data_utils import input_to_operator
 from qaoa_training_pipeline.utils.graph_utils import dict_to_graph
 
 
 class MaxCut:
     """Produce max-cut operators from input graphs."""
 
+    # pylint: disable=unused-argument
     @classmethod
     def from_str(cls, input_str: Optional[str] = "") -> "MaxCut":
-        """Create the class from a string."""
+        """Create the class. Note that the input is not needed."""
         return cls()
 
     def cost_operator(self, input_data: dict):
@@ -43,12 +44,21 @@ class MaxIndependentSet:
     DEFAULT_PENALTY = 2.0
 
     def __init__(self, penalty: Optional[float] = None):
-        """Create the maximum independent set class."""
+        """Create the maximum independent set class.
+        
+        Args:
+            penalty: The penalty to use for the cost operator. Defaults to 2.0.
+        """
         self._penalty = penalty or self.DEFAULT_PENALTY
 
     @classmethod
     def from_str(cls, input_str: Optional[str] = "") -> "MaxIndependentSet":
-        """Create the class from a string."""
+        """Create the class from a string.
+        
+        Args:
+            input_str: If given, it will be converted to a float representing the
+                penalty in from of the edge constraints.
+        """
         try:
             penalty = float(input_str)
         except ValueError:
