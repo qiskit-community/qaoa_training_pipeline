@@ -146,7 +146,7 @@ def train(args: Optional[List]):
     if class_str is not None:
         class_info = class_str.split(":")
         class_name = class_info[0].lower()
-        
+
         class_init_str = ""
         if len(class_info) > 1:
             class_init_str = class_info[1]
