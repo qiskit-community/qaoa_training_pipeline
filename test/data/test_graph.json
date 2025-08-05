@@ -1,0 +1,19 @@
+{
+    "edge list": [
+        {
+            "nodes": [
+                0,
+                1
+            ],
+            "weight": 1
+        },
+        {
+            "nodes": [
+                0,
+                2
+            ],
+            "weight": 1
+        }
+    ],
+    "Description": "A small test graph."
+}

@@ -34,6 +34,7 @@ from datetime import datetime
 from qaoa_training_pipeline.utils.data_utils import load_input, input_to_operator
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.training import TRAINERS
+from qaoa_training_pipeline.utils.problem_classes import PROBLEM_CLASSES
 
 
 def get_script_args():
@@ -142,9 +143,9 @@ def train(args: Optional[List]):
 
     # Load the input.
     class_str = getattr(args, "problem_class", None)
-    if input_class is not None:
+    if class_str is not None:
         class_info = class_str.split(":")
-        class_name = class_info[0]
+        class_name = class_info[0].lower()
         
         class_init_str = ""
         if len(class_info) > 1:
@@ -226,6 +227,7 @@ def train(args: Optional[List]):
                 json.dump({k: v.data for k, v in all_results.items()}, fout, indent=4)
 
     all_results["args"] = vars(args)
+    all_results["cost_operator"] = input_problem.to_list()
     return all_results
 
 
