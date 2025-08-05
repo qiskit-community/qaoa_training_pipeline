@@ -28,11 +28,11 @@ class MaxCut:
 
     def cost_operator(self, input_data: dict):
         """Create the cost operator from the input.
-        
+
         The (weighted) edges of the graph are converted to ZZ with a prefoactor of -0.5.
 
         Args:
-            input: A dict specifying a graph where the keys are tuples of ints representing 
+            input: A dict specifying a graph where the keys are tuples of ints representing
                 edges or hyper-edge and the values are the weights.
         """
         return input_to_operator(input_data, pre_factor=-0.5)
@@ -45,7 +45,7 @@ class MaxIndependentSet:
 
     def __init__(self, penalty: Optional[float] = None):
         """Create the maximum independent set class.
-        
+
         Args:
             penalty: The penalty to use for the cost operator. Defaults to 2.0.
         """
@@ -54,7 +54,7 @@ class MaxIndependentSet:
     @classmethod
     def from_str(cls, input_str: Optional[str] = "") -> "MaxIndependentSet":
         """Create the class from a string.
-        
+
         Args:
             input_str: If given, it will be converted to a float representing the
                 penalty in from of the edge constraints.
@@ -68,9 +68,9 @@ class MaxIndependentSet:
 
     def cost_operator(self, input_data: dict):
         """Create the cost operator from the input graph given as dict.
-        
+
         Args:
-            input_data: A dict specifying a graph where the keys are tuples of ints representing 
+            input_data: A dict specifying a graph where the keys are tuples of ints representing
                 edges or hyper-edge and the values are the weights.
         """
         graph = dict_to_graph(input_data)
