@@ -64,7 +64,7 @@ def input_to_operator(input_data: dict, pre_factor: float = 1.0) -> SparsePauliO
     # First, find the maximum number of variables.
     n_vars = 0
     for term in input_data["edge list"]:
-        n_vars = max([n_vars] + term["nodes"])
+        n_vars = max([n_vars] + list(term["nodes"]))
 
     for term in input_data["edge list"]:
         paulis = ["I"] * (n_vars + 1)
