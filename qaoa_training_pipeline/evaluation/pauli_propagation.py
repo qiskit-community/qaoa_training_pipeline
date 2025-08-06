@@ -166,15 +166,20 @@ class PPEvaluator(BaseEvaluator):
             pp.add_b(pp_paulisum, pauli_symbols, pp_qubits, coefficient.real)
         return pp_paulisum
 
-    def qc_to_pp(self, circuit: QuantumCircuit) -> tuple[list[tuple[str, list[int]]], list[int]]:
+    def qc_to_pp(
+        self, circuit: QuantumCircuit
+    ) -> tuple[list[tuple[str, list[int]]], list[int | float]]:
         """
         Args:
             circuit: The Qiskit cirucit with no free parameters.
 
         Returns:
-            A representation of the circuit on which we can call the Pauli propagation code.
-            That is a list of tuples with the name of the gate and the qubits it acts on and a
-            list with all the position of non-clifford gates.
+            pp_circuits: A representation of the circuit on which we can call the Pauli propagation code.
+                That is a list of tuples with the name of the gate and the qubits it acts on and a
+                list with all the position of non-clifford gates.
+            parameter_map: A list mapping between the parameters in the qiskit circuit and the Pauli Propagation
+                representation. If the value in the list is a float it means the qiskit gate had a bound parameter.
+                Otherwise the value will be an integer indicating the index of the unbound qiskit parameter.
         """
         if len(circuit.parameters) > 0:
             raise ValueError("The provided quantum circuit has unassigned parameters.")
@@ -194,14 +199,7 @@ class PPEvaluator(BaseEvaluator):
                 if isinstance(node.op.params[0], float):
                     parameter_map.append(node.op.params[0])
                 else:
-                    # TODO: This should never be accessed now
-                    # parameter_map.append(node.op.params[0].index)
-                    raise ValueError(
-                        f"""Something went wrong. All node parameters of pauli rotations
-                        should be of type float.
-                        However, {node.op.params[0]} is of type {type(node.op.params[0])}.
-                        """
-                    )
+                    parameter_map.append(node.op.params[0].index)
             elif name in CLIFFORD_GATES:
                 clifford_gate = pp.CliffordGate(CLIFFORD_GATES[name], q_indices)
                 pp.push_b(pp_circuit, clifford_gate)
