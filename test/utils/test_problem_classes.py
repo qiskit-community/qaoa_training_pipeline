@@ -30,7 +30,7 @@ class TestProblemClasses(TrainingPipelineTestCase):
             "edge list": [{"nodes": (0, 1), "weight": 1}, {"nodes": (0, 2), "weight": 1}]
         }
 
-        op1 = [[("IZZ", -0.5), ("ZIZ", -0.5)]]
+        op1 = [("IZZ", -0.5), ("ZIZ", -0.5)]
         op2 = [("IIZ", -0.5), ("IZZ", 0.5), ("ZIZ", 0.5)]
         op3 = [("IIZ", -1.0), ("IZI", -0.25), ("ZII", -0.25), ("IZZ", 0.75), ("ZIZ", 0.75)]
 
