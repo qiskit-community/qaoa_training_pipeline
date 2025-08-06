@@ -151,6 +151,12 @@ def train(args: Optional[List]):
         if len(class_info) > 1:
             class_init_str = class_info[1]
 
+        if class_name not in PROBLEM_CLASSES:
+            raise ValueError(
+                f"The problem class {class_name} is not supported. 
+                Valid problem classes are {PROBLEM_CLASSES.keys()}"
+            )
+
         problem_class = PROBLEM_CLASSES[class_name].from_str(class_init_str)
         input_problem = problem_class.cost_operator(load_input(args.input))
     else:
