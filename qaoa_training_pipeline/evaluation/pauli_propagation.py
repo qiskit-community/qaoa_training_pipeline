@@ -97,6 +97,13 @@ class PPEvaluator(BaseEvaluator):
                 under the PauliPropagation.propagate function. Furthermore, all the types
                 must be compatible with juliacall
                 https://juliapy.github.io/PythonCall.jl/stable/conversion-to-julia/.
+                The most relevant parameters are:
+                
+                 - `max_weight`: this defines the maximum Pauli weight of the Pauli operator
+                     that are kept in the Heisenberg evolution.
+                 - `min_abs_coeff`: this defines the threshold on the absolute value of the
+                     operator coefficient below which terms are neglected in the Heisenberg evolution.
+                     
                 If None is given then we default to `max_weight=9` and `min_abs_coeff=1e-5`.
         """
 
