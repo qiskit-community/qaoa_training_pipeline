@@ -177,7 +177,7 @@ class PPEvaluator(BaseEvaluator):
 
     def qc_to_pp(
         self, circuit: QuantumCircuit
-    ) -> tuple[list[tuple[str, list[int]]], list[Union(int, float)]]:
+    ) -> tuple[list[tuple[str, list[int]]], list[Union[int, float]]]:
         """
         Args:
             circuit: The Qiskit cirucit with no free parameters.
