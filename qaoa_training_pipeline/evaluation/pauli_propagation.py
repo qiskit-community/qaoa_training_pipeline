@@ -82,7 +82,7 @@ class PPEvaluator(BaseEvaluator):
 
     This class requires that the system has the Pauli propagation toolkit
     https://github.com/MSRudolph/PauliPropagation.jl installed. Note that this
-    toolkit also require Julia. Therefore, it is not supported by the default
+    toolkit also requires Julia. Therefore, it is not supported by the default
     requirements of the QAOA training pipeline and people need to install
     PauliPropagation and Julia themselves.
     """
