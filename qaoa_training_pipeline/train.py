@@ -17,7 +17,7 @@ Example usage:
 In the example above, the problem is contained in `exmaple_graph.json` which defines the
 graph that we want to optimize. The way in which we want to train is given in the
 `example_config.json` file. This file specifies which trainers to use and the input
-to initialize them, call them, as well as the evaluators to use. Crucially, the training 
+to initialize them, call them, as well as the evaluators to use. Crucially, the training
 is done with a list of trainers. This allows us to, for example, use a given
 method for depth `p` and then use another methods at depth `p+1`. The framework is
 capable of extracting input from a previously obtained training result.
