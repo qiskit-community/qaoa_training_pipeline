@@ -154,7 +154,7 @@ def train(args: Optional[List]):
         if class_name not in PROBLEM_CLASSES:
             raise ValueError(
                 f"The problem class {class_name} is not supported. "
-                "Valid problem classes are {PROBLEM_CLASSES.keys()}"
+                f"Valid problem classes are {PROBLEM_CLASSES.keys()}"
             )
 
         problem_class = PROBLEM_CLASSES[class_name].from_str(class_init_str)
