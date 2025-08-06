@@ -14,7 +14,7 @@ from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
 from qiskit.converters import circuit_to_dag
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
@@ -82,7 +82,7 @@ class PPEvaluator(BaseEvaluator):
 
     This class requires that the system has the Pauli propagation toolkit
     https://github.com/MSRudolph/PauliPropagation.jl installed. Note that this
-    toolkit also require Julia. Therefore, it is not supported by the default
+    toolkit also requires Julia. Therefore, it is not supported by the default
     requirements of the QAOA training pipeline and people need to install
     PauliPropagation and Julia themselves.
     """
@@ -97,6 +97,13 @@ class PPEvaluator(BaseEvaluator):
                 under the PauliPropagation.propagate function. Furthermore, all the types
                 must be compatible with juliacall
                 https://juliapy.github.io/PythonCall.jl/stable/conversion-to-julia/.
+                The most relevant parameters are:
+                
+                 - `max_weight`: this defines the maximum Pauli weight of the Pauli operator
+                     that are kept in the Heisenberg evolution.
+                 - `min_abs_coeff`: this defines the threshold on the absolute value of the
+                     operator coefficient below which terms are neglected in the Heisenberg evolution.
+                     
                 If None is given then we default to `max_weight=9` and `min_abs_coeff=1e-5`.
         """
 
@@ -110,13 +117,15 @@ class PPEvaluator(BaseEvaluator):
             )
 
         # These kwargs match the default ones from PauliPropagation.jl
-        self.pp_kwargs = pp_kwargs or dict(
+        self.pp_kwargs = dict(
             max_weight=np.inf,
             min_abs_coeff=1e-10,
             max_freq=np.inf,
             max_sins=np.inf,
             customtruncfunc=None,
         )
+        if pp_kwargs is not None:
+            self.pp_kwargs.update(pp_kwargs)
 
     # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
@@ -134,7 +143,7 @@ class PPEvaluator(BaseEvaluator):
                 f"Custom Ansatz circuits are currently not supported in {self.__class__.__name__}."
             )
 
-        circuit = QAOAAnsatz(
+        circuit = qaoa_ansatz(
             cost_op,
             reps=len(params) // 2,
             initial_state=initial_state,

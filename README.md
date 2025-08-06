@@ -136,8 +136,13 @@ This file will contain information on the training history and the method employ
 You can install this repository by running `pip install .` after cloning from Github. 
 If you are planning to contribute to the repository, you can have an editable install by running `pip install -e .`
 
+The training pipeline relies mostly on Python.
+However, the Pauli propagation evaluator `PPEvaluator` requires the `PauliPropagation` Julia library which integrates with python through the `juliacall` package.
+These are optional dependencies.
+If you want to use Pauli propagation you must run `pip install juliacall` or see the `requirements-optional.txt` file.
+Then, the first time you use the `PPEvaluator` the code in `pauli_propagation.py` will install `PauliPropagation.jl` for you in the Julia installation of your Python environment.
+Be aware that `juliacall` sets up its own Julia environment located at `name-venv/julia_env`.
 Pauli Propagation is built on top of the `PauliPropagation.jl` Julia library, which is currently under active development. Please note that future updates to this library may introduce breaking changes.
-Integration with Julia is handled via `juliacall`, which can be installed using the requirements-optional.txt file. Be aware that `juliacall` sets up its own Julia environment located at `name-venv/julia_env`.
 To update the Julia packages within this environment, you can run the following command from your Python environment:
 
 ```
@@ -158,7 +163,7 @@ This repository is still in development: new functionality is being added and th
 | 3       | Add fidelity bounds for MPS |           #6 |
 | 4       | Add QAOA angles functions   |          #14 |
 | 5       | Switch to qaoa_ansatz       |          #16 |
-| 6       | Add Pauli Proagation        |          #15 |
+| 6       | Add Pauli Propagation       |          #15 |
 
 ## IBM Public Repository Disclosure
 
