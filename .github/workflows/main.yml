@@ -94,6 +94,7 @@ jobs:
           cache-dependency-path: |
             setup.py
             requirements.txt
+            requirements-optional.txt
             requirements-dev.txt
       - uses: ./.github/actions/install-main-dependencies
         with:
