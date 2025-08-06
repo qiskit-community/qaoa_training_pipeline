@@ -179,24 +179,17 @@ class PPEvaluator(BaseEvaluator):
         self, circuit: QuantumCircuit
     ) -> tuple[list[tuple[str, list[int]]], list[Union[int, float]]]:
         """
-                Args:
-                    circuit: The Qiskit cirucit with no free parameters.
+        Args:
+            circuit: The Qiskit cirucit with no free parameters.
 
-                Returns:
-                    pp_circuits: A representation of the circuit on which we can call the Pauli propagation code.
-                        That is a list of tuples with the name of the gate and the qubits it acts on and a
-                        list with all the position of non-clifford gates.
-        <<<<<<< HEAD
-                    parameter_map: A list mapping between the parameters in the qiskit circuit and the
-                        Pauli Propagation representation. If the value in the list is a float it means
-                        the qiskit gate had a bound parameter. Otherwise the value will be an integer
-                        indicating the index of the unbound qiskit parameter.
-        =======
-                    parameter_map: A list mapping between the parameters in the qiskit circuit and the
-                        Pauli Propagation representation. If the value in the list is a float it means the qiskit
-                        gate had a bound parameter. Otherwise the value will be an integer indicating
-                        the index of the unbound qiskit parameter.
-        >>>>>>> 818dfc3fccfcd5b57b8f3c0d770f675a6c9b8127
+        Returns:
+            pp_circuits: A representation of the circuit on which we can call the Pauli propagation code.
+                That is a list of tuples with the name of the gate and the qubits it acts on and a
+                list with all the position of non-clifford gates.
+            parameter_map: A list mapping between the parameters in the qiskit circuit and the
+                Pauli Propagation representation. If the value in the list is a float it means
+                the qiskit gate had a bound parameter. Otherwise the value will be an integer
+                indicating the index of the unbound qiskit parameter.
         """
         if len(circuit.parameters) > 0:
             raise ValueError("The provided quantum circuit has unassigned parameters.")
