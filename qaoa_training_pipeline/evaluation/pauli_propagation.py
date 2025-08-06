@@ -7,7 +7,7 @@
 """Pauli propagation-based QAOA evaluator."""
 
 import importlib
-from typing import Optional
+from typing import Optional, Union
 import warnings
 import numpy as np
 from qiskit import transpile
@@ -98,12 +98,12 @@ class PPEvaluator(BaseEvaluator):
                 must be compatible with juliacall
                 https://juliapy.github.io/PythonCall.jl/stable/conversion-to-julia/.
                 The most relevant parameters are:
-                
+
                  - `max_weight`: this defines the maximum Pauli weight of the Pauli operator
                      that are kept in the Heisenberg evolution.
                  - `min_abs_coeff`: this defines the threshold on the absolute value of the
                      operator coefficient below which terms are neglected in the Heisenberg evolution.
-                     
+
                 If None is given then we default to `max_weight=9` and `min_abs_coeff=1e-5`.
         """
 
@@ -177,7 +177,7 @@ class PPEvaluator(BaseEvaluator):
 
     def qc_to_pp(
         self, circuit: QuantumCircuit
-    ) -> tuple[list[tuple[str, list[int]]], list[int | float]]:
+    ) -> tuple[list[tuple[str, list[int]]], list[Union(int, float)]]:
         """
         Args:
             circuit: The Qiskit cirucit with no free parameters.
