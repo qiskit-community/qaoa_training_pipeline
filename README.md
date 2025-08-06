@@ -141,7 +141,7 @@ However, the Pauli propagation evaluator `PPEvaluator` requires the `PauliPropag
 These are optional dependencies.
 If you want to use Pauli propagation you must run `pip install juliacall` or see the `requirements-optional.txt` file.
 Then, the first time you use the `PPEvaluator` the code in `pauli_propagation.py` will install `PauliPropagation.jl` for you in the Julia installation of your Python environment.
-Be aware that `juliacall` sets up its own Julia environment located at `name-venv/julia_env`.
+Be aware that `juliacall` sets up its own Julia environment located at `name-venv/julia_env`, where `name-venv` is the name of the original python environment.
 Pauli Propagation is built on top of the `PauliPropagation.jl` Julia library, which is currently under active development. Please note that future updates to this library may introduce breaking changes.
 To update the Julia packages within this environment, you can run the following command from your Python environment:
 
