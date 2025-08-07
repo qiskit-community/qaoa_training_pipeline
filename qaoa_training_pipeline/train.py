@@ -56,12 +56,15 @@ def get_script_args():
         help="A string to create instances of known optimization problems.",
     )
 
+    description = "A pre-factor that multiplies all the weights in the input. "
+    description += "This argument is optional, defaults to 1.0, and connot "
+    description += "be used in conjuction with `--problem_class`."
+
     parser.add_argument(
         "--pre_factor",
         required=False,
-        default=1.0,
         type=float,
-        help="A pre-factor that multiply all the weights in the input.",
+        help=description,
     )
 
     parser.add_argument(
@@ -141,8 +144,15 @@ def train(args: Optional[List]):
     fashion which allows one trainer to leverage the result of a previous trainer.
     """
 
-    # Load the input.
+    # Validate input
     class_str = getattr(args, "problem_class", None)
+    pre_factor = getattr(args, "pre_factor", None)
+    if pre_factor is not None and class_str is not None:
+        raise ValueError(
+            "Malformed command input. pre_factor and problem_class cannot be used together."
+        )
+
+    # Load the input.
     if class_str is not None:
         class_info = class_str.split(":")
         class_name = class_info[0].lower()
@@ -160,7 +170,8 @@ def train(args: Optional[List]):
         problem_class = PROBLEM_CLASSES[class_name].from_str(class_init_str)
         input_problem = problem_class.cost_operator(load_input(args.input))
     else:
-        input_problem = input_to_operator(load_input(args.input), pre_factor=args.pre_factor)
+        pre_factor = pre_factor or 1.0
+        input_problem = input_to_operator(load_input(args.input), pre_factor=pre_factor)
 
     # Load the training config and prepare the trainer.
     with open(args.config, "r") as fin:

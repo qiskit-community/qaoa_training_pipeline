@@ -94,6 +94,29 @@ class TestTrain(TrainingPipelineTestCase):
             self.assertEqual(result["args"]["problem_class"], problem_str)
             self.assertEqual(cost_op, expected[problem_str])
 
+    def test_validate_args(self):
+        """Test that the arguments are validated correctly."""
+
+        test_args = [
+            "prog",
+            "--input",
+            "data/problems/example_graph.json",
+            "--config",
+            "data/methods/train_method_4.json",
+            "--problem_class",
+            "maxcut",
+            "--pre_factor",
+            "2.0",
+            False,
+        ]
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+
+            with self.assertRaises(ValueError) as error:
+                train(args)
+                self.assertTrue("cannott be used together" in error.exception.args[0])
+
     def test_call_train_schmidt(self):
         """Test that the Schmidt values are returned with an MPS-based training."""
 
