@@ -3,11 +3,8 @@
         {
             "trainer": "DepthOneScanTrainer",
             "trainer_init": {
-                "evaluator": "MPSEvaluator",
-                "evaluator_init": {
-                    "use_vidal_form": "True",
-                    "use_swap_strategy": "True"
-                }
+                "evaluator": "EfficientDepthOneEvaluator",
+                "evaluator_init": {}
             },
             "train_kwargs": {
                 "parameter_ranges": [
@@ -51,4 +48,5 @@
         }
     ],
     "description": "Recursive Transition States Trainer (p=3)"
+
 }
