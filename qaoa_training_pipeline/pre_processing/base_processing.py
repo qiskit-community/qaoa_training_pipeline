@@ -23,3 +23,7 @@ class BasePreprocessor(ABC):
     @abstractmethod
     def from_str(cls, input_str: str) -> "BasePreprocessor":
         """Initialize the pre-processor from a string."""
+
+    def to_config(self) -> dict:
+        """Serialize the pre-processor to a dictionary."""
+        return {"pre_processor_name": self.__class__.__name__}

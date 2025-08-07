@@ -145,9 +145,16 @@ def train(args: Optional[List]):
     input_data = load_input(args.input)
 
     # Optionally pre-process the input data.
-    pre_processing = getattr(args, "pre_processing", None)
+    pre_processing, pre_processor = getattr(args, "pre_processing", None), None
     if pre_processing is not None:
-        pre_processor = PREPROCESSORS[pre_processor_name].from_str(input_str)  # TODO initialization.
+        pre_processing_info = pre_processing.split(":")
+        pre_processing_name = pre_processing_info[0]
+
+        pre_processing_init_str = ""
+        if len(pre_processing_info) > 1:
+            pre_processing_init_str = pre_processing_info[1]
+        
+        pre_processor = PREPROCESSORS[pre_processing_name].from_str(pre_processing_init_str)
         input_data = pre_processor(input_data)
 
     input_problem = input_to_operator(input_data, pre_factor=args.pre_factor)
@@ -226,6 +233,12 @@ def train(args: Optional[List]):
                 json.dump({k: v.data for k, v in all_results.items()}, fout, indent=4)
 
     all_results["args"] = vars(args)
+
+    if pre_processor is not None:
+        all_results["pre_processing"] = pre_processor.to_config()
+    else:
+        all_results["pre_processing"] = None
+
     return all_results
 
 
