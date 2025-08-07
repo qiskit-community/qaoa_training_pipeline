@@ -49,11 +49,16 @@ def get_script_args():
         help="The path to the graph or hyper graph to train on.",
     )
 
+    description = "A string to create instances of known optimization problems with "
+    description += "the format `problem_class_name` or `problem_class_name:input_str`. "
+    description += "Here, problem_class_name is a key in PROBLEM_CLASSES and "
+    description += "input_str is a string to initialize the problem class if needed."
+
     parser.add_argument(
         "--problem_class",
         required=False,
         type=str,
-        help="A string to create instances of known optimization problems.",
+        help=description,
     )
 
     description = "A pre-factor that multiplies all the weights in the input. "
