@@ -181,3 +181,41 @@ class TestTrain(TrainingPipelineTestCase):
             trainer_idx, exp_len = expected_param_len[method_idx]
             opt_params = result[trainer_idx]["optimized_params"]
             self.assertEqual(len(opt_params), exp_len)
+
+    def test_sat_integration(self):
+        """Test that the pipeline can call the SATMApper."""
+
+        test_args = [
+            "prog",
+            "--input",
+            "test/data/test_graph.json",
+            "--config",
+            "data/methods/train_method_0.json",
+            "--train_kwargs0",
+            "num_points:2:parameter_ranges:3/6/3/6",
+            "--problem_class",
+            "maxcut",
+            "--pre_processing",
+            "sat:10",
+        ]
+
+        expected = {
+            "pre_processor_name": "SATMapper",
+            "timeout": 10,
+            "min_k": 0,
+            "edge_map": {0: 1, 1: 2, 2: 0},
+        }
+
+        expected_op = SparsePauliOp.from_list([("IZZ", -0.5), ("ZIZ", -0.5)])
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+            result = train(args)
+
+            # Duration will be unknown, but at least this ensures its existance.
+            result["pre_processing"].pop("duration")
+
+            self.assertDictEqual(result["pre_processing"], expected)
+
+            cost_op = SparsePauliOp.from_list(result["cost_operator"])
+            self.assertEqual(cost_op, expected_op)

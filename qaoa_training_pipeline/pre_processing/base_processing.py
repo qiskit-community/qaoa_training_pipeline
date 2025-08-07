@@ -15,6 +15,10 @@ from typing import Dict
 class BasePreprocessor(ABC):
     """Base class for pre-processing input data to train.py."""
 
+    def __init__(self):
+        """Initialize the pre-processor."""
+        self.duration = None
+
     @abstractmethod
     def __call__(self, input_data: Dict) -> Dict:
         """Pre-processes the input data and return data in the same format."""
@@ -26,4 +30,7 @@ class BasePreprocessor(ABC):
 
     def to_config(self) -> dict:
         """Serialize the pre-processor to a dictionary."""
-        return {"pre_processor_name": self.__class__.__name__}
+        return {
+            "pre_processor_name": self.__class__.__name__,
+            "duration": self.duration,
+        }

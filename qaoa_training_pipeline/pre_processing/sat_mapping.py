@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
+from time import time
 from threading import Timer
 from typing import Optional
 
@@ -41,13 +42,13 @@ class SATResult:
 class SATMapper(BasePreprocessor):
     r"""Permute nodes in a graph to best match a line swap strategy.
 
-    The layout is found with a binary search over the layers :math:`l` of a line swap strategy. 
-    At each considered layer a subgraph isomorphism problem formulated as a SAT is solved by a 
-    SAT solver. Each instance is whether it is possible to embed the program graph :math:`P` 
-    into the effective connectivity graph :math:`C_l` that is achieved by applying :math:`l` 
-    layers of the swap strategy to the coupling map :math:`C_0` of the backend. Since solving 
-    SAT problems can be hard, a ``time_out`` fixes the maximum time allotted to the SAT solver 
-    for each instance. If this time is exceeded the considered problem is deemed unsatisfiable 
+    The layout is found with a binary search over the layers :math:`l` of a line swap strategy.
+    At each considered layer a subgraph isomorphism problem formulated as a SAT is solved by a
+    SAT solver. Each instance is whether it is possible to embed the program graph :math:`P`
+    into the effective connectivity graph :math:`C_l` that is achieved by applying :math:`l`
+    layers of the swap strategy to the coupling map :math:`C_0` of the backend. Since solving
+    SAT problems can be hard, a ``time_out`` fixes the maximum time allotted to the SAT solver
+    for each instance. If this time is exceeded the considered problem is deemed unsatisfiable
     and the binary search proceeds to the next number of swap layers :math:``l``.
 
     Warning: for large instances the SATMapper can take a lot of pre-processing time.
@@ -72,16 +73,19 @@ class SATMapper(BasePreprocessor):
 
     def __call__(self, input_data):
         """Call the SATMapper."""
+        start = time()
         graph = dict_to_graph(input_data)
 
         sat_graph = self.remap_graph_with_sat(graph)
+
+        self.duration = time() - start
 
         return graph_to_dict(sat_graph)
 
     @classmethod
     def from_str(cls, input_str) -> "SATMapper":
         """Initialize the SATMapper from a string.
-        
+
         Args:
             input_str: The only required input is an int which represents the timeout per
                 iteration of the SATMapper.
@@ -95,6 +99,9 @@ class SATMapper(BasePreprocessor):
         config["min_k"] = self.min_k
         config["edge_map"] = self.edge_map
 
+        return config
+
+    # pylint: disable=too-many-locals
     def find_initial_mappings(
         self,
         program_graph: nx.Graph,
@@ -116,7 +123,7 @@ class SATMapper(BasePreprocessor):
                 each number of swap layers.
         """
         swap_strategy = SwapStrategy.from_line(range(program_graph.order()))
-        # pylint: disable=too-many-locals
+
         num_nodes_g1 = len(program_graph.nodes)
         num_nodes_g2 = swap_strategy.distance_matrix.shape[0]
         if num_nodes_g1 > num_nodes_g2:
@@ -213,7 +220,7 @@ class SATMapper(BasePreprocessor):
             The remapped graph, the edge map, and the number of layers of
             the swap strategy that was used to find the initial mapping. If no solution is found
             then the tuple contains None for each element.
-            
+
         """
         num_nodes = len(graph.nodes)
         results = self.find_initial_mappings(graph, 0, num_nodes - 1)
