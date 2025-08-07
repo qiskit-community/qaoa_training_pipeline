@@ -76,6 +76,23 @@ class SATMapper(BasePreprocessor):
 
         return graph_to_dict(sat_graph)
 
+    @classmethod
+    def from_str(cls, input_str) -> "SATMapper":
+        """Initialize the SATMapper from a string.
+        
+        Args:
+            input_str: The only required input is an int which represents the timeout per
+                iteration of the SATMapper.
+        """
+        return cls(int(input_str))
+
+    def to_config(self) -> dict:
+        """Serialize the SATMapper to a config dictionary."""
+        config = super().to_config()
+        config["timeout"] = self.timeout
+        config["min_k"] = self.min_k
+        config["edge_map"] = self.edge_map
+
     def find_initial_mappings(
         self,
         program_graph: nx.Graph,
