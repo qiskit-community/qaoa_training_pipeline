@@ -33,6 +33,7 @@ from datetime import datetime
 
 from qaoa_training_pipeline.utils.data_utils import load_input, input_to_operator
 from qaoa_training_pipeline.evaluation import EVALUATORS
+from qaoa_training_pipeline.pre_processing import PREPROCESSORS
 from qaoa_training_pipeline.training import TRAINERS
 
 
@@ -46,6 +47,13 @@ def get_script_args():
         required=True,
         type=str,
         help="The path to the graph or hyper graph to train on.",
+    )
+
+    parser.add_argument(
+        "--pre_processing",
+        required=False,
+        type=str,
+        help="A pre-processing hook that acts on the loaded input problem data.",
     )
 
     parser.add_argument(
@@ -134,7 +142,15 @@ def train(args: Optional[List]):
     """
 
     # Load the input.
-    input_problem = input_to_operator(load_input(args.input), pre_factor=args.pre_factor)
+    input_data = load_input(args.input)
+
+    # Optionally pre-process the input data.
+    pre_processing = getattr(args, "pre_processing", None)
+    if pre_processing is not None:
+        pre_processor = PREPROCESSORS[pre_processor_name].from_str(input_str)  # TODO initialization.
+        input_data = pre_processor(input_data)
+
+    input_problem = input_to_operator(input_data, pre_factor=args.pre_factor)
 
     # Load the training config and prepare the trainer.
     with open(args.config, "r") as fin:
