@@ -22,6 +22,7 @@ from .reweighting import ReweightingTrainer
 from .scipy_trainer import ScipyTrainer
 from .tqa_trainer import TQATrainer
 from .transition_states import TransitionStatesTrainer
+from .recursive_transition_states import RecursiveTransitionStates
 
 
 TRAINERS = {
@@ -35,4 +36,5 @@ TRAINERS = {
     "RandomRegularDepthOneFit": RandomRegularDepthOneFit,
     "RecursionTrainer": RecursionTrainer,
     "FixedAngleConjecture": FixedAngleConjecture,
+    "RecursiveTransitionStates": RecursiveTransitionStates
 }

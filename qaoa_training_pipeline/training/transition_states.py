@@ -96,7 +96,7 @@ class TransitionStatesTrainer(BaseTrainer):
             res = self._trainer.train(cost_op, ts_state, mixer, initial_state, ansatz_circuit)
             res.update({"ts": ts_state})
 
-            self._all_ts[f"ts{idx}"] = res
+            self._all_ts[f"ts{idx}"] = res.data
 
             if not self.minimization:
                 keep = res["energy"] > result.get("energy", -np.inf)
