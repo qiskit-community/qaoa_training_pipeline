@@ -63,6 +63,7 @@ class SATMapper(BasePreprocessor):
             timeout: The allowed time in seconds for each iteration of the SAT solver. This
                 variable defaults to 60 seconds.
         """
+        super().__init__()
         self.timeout = timeout
 
         # Minimum number of swap layers needed.

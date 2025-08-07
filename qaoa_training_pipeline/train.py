@@ -176,7 +176,7 @@ def train(args: Optional[List]):
         pre_processing_init_str = ""
         if len(pre_processing_info) > 1:
             pre_processing_init_str = pre_processing_info[1]
-        
+
         pre_processor = PREPROCESSORS[pre_processing_name].from_str(pre_processing_init_str)
         input_data = pre_processor(input_data)
 
