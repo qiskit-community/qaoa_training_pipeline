@@ -17,6 +17,8 @@ import sys
 from unittest.mock import patch
 from ddt import ddt, data
 
+from qiskit.quantum_info import SparsePauliOp
+
 from qaoa_training_pipeline.train import train, get_script_args
 
 
@@ -56,6 +58,64 @@ class TestTrain(TrainingPipelineTestCase):
                 result["args"]["train_kwargs0"],
                 "num_points:10:parameter_ranges:3/6/3/6",
             )
+
+    @data("maxcut", "mis:3", "mis")
+    def test_problem_classes(self, problem_str: str):
+        """Test that we can call train.py."""
+
+        test_args = [
+            "prog",
+            "--input",
+            "test/data/test_graph.json",
+            "--config",
+            "data/methods/train_method_0.json",
+            "--train_kwargs0",
+            "num_points:2:parameter_ranges:3/6/3/6",
+            "--problem_class",
+            problem_str,
+        ]
+
+        op1 = [("IZZ", -0.5), ("ZIZ", -0.5)]
+        op2 = [("IIZ", -0.5), ("IZZ", 0.5), ("ZIZ", 0.5)]
+        op3 = [("IIZ", -1.0), ("IZI", -0.25), ("ZII", -0.25), ("IZZ", 0.75), ("ZIZ", 0.75)]
+
+        expected = {
+            "maxcut": SparsePauliOp.from_list(op1),
+            "mis": SparsePauliOp.from_list(op2),
+            "mis:3": SparsePauliOp.from_list(op3),
+        }
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+            result = train(args)
+
+            cost_op = SparsePauliOp.from_list(result["cost_operator"])
+
+            self.assertEqual(result["args"]["problem_class"], problem_str)
+            self.assertEqual(cost_op, expected[problem_str])
+
+    def test_validate_args(self):
+        """Test that the arguments are validated correctly."""
+
+        test_args = [
+            "prog",
+            "--input",
+            "data/problems/example_graph.json",
+            "--config",
+            "data/methods/train_method_4.json",
+            "--problem_class",
+            "maxcut",
+            "--pre_factor",
+            "2.0",
+            False,
+        ]
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+
+            with self.assertRaises(ValueError) as error:
+                train(args)
+                self.assertTrue("cannott be used together" in error.exception.args[0])
 
     def test_call_train_schmidt(self):
         """Test that the Schmidt values are returned with an MPS-based training."""
