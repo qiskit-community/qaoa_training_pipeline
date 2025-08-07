@@ -1,4 +1,3 @@
-
 """Recursive transition states trainer."""
 
 from time import time
@@ -16,8 +15,14 @@ from qaoa_training_pipeline.training.transition_states import TransitionStatesTr
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
-
 class RecursiveTransitionStates(BaseTrainer):
+    """Recursively train QAOA by constructing transition states.
+    
+    This class uses an initial set of parameters for depth `p` QAOA to construct transition states 
+    at depth `p+1`, from which the optimized parameters are used to construct the transition 
+    states at the next depth `p+2`. This process continues until the specified depth is reached.
+    """
+
 
     def __init__(self, trainer: BaseTrainer):  # Here the trainer would be e.g. a SciPy trainers
         super().__init__(trainer.evaluator)
@@ -30,6 +35,7 @@ class RecursiveTransitionStates(BaseTrainer):
         """Return True if the energy is minimized."""
         return self._trainer.minimization
 
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
@@ -38,19 +44,20 @@ class RecursiveTransitionStates(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-        ) -> ParamResult:
+    ) -> ParamResult:
         """
         Args:
-            cost_op: The cost operator :math:`H_C` of the problem we want to solve.
-            previous_optimal_point: A local minima in beta and gamma from which to start the transition states recursion.
-            reps: The number of QAOA layers we want to reach. 
+            cost_op: The cost operator of the problem we want to solve.
+            previous_optimal_point: A local minima in beta and gamma from which to start 
+                the transition states recursion.
+            reps: The number of QAOA layers we want to reach.
             mixer: A quantum circuit representing the mixer of QAOA. This allows us to
                 accommodate, e.g., warm-start QAOA. If this is None, then we assume the
                 standard QAOA mixer.
-            initial_state: A quantum circuit the represents the initial state. If None is
-                given then we default to the equal superposition state |+>.
+            initial_state: A quantum circuit that represents the initial state. If None is
+                given, then we default to the equal superposition state |+>.
             ansatz_circuit: The ansatz circuit in case it differs from the standard QAOA
-                circuit given by :math:`\exp(-i\gamma H_C)`.
+                circuit.
 
         Returns:
             A dictionary with optimization results.
@@ -67,7 +74,7 @@ class RecursiveTransitionStates(BaseTrainer):
             energy = result["energy"]
             self._all_results[current_reps] = result.data
             current_reps = len(ts_state) // 2
-        
+
         param_result = ParamResult(ts_state, time() - start, self, energy)
         param_result.update(self._all_results)
 
