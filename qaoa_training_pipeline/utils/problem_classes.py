@@ -23,7 +23,7 @@ class MaxCut:
     # pylint: disable=unused-argument
     @classmethod
     def from_str(cls, input_str: Optional[str] = "") -> "MaxCut":
-        """Create the class. Note that the input is not needed."""
+        """Create the class. Note that the input string is not used."""
         return cls()
 
     def cost_operator(self, input_data: dict):
