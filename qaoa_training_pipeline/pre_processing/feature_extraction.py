@@ -8,6 +8,7 @@
 
 """An initial implementation for a graph feature extractor."""
 
+from typing import Union
 import networkx as nx
 import numpy as np
 
@@ -24,24 +25,26 @@ class FeatureExtractor:
         * size (int): number of edges in the graph
         * order (int): number of nodes in the graph
         * degree (tuple(float, float)): the degree of a node is the number of edges adjacent to it.
-            We interpret the degree of a graph as the average of the degree of its nodes, so this feature
-            is formatted as a tuple of (avg_degree, std). If ``std==0.0``, the graph is regular.
-        * weights (tuple(float, float)): average weight of all edges in the graph, formatted as a tuple (avg, std).
-        * density (float): graph density defined as :math: d = \frac{2m}{n(n-1)} . Where ``n`` is the number of nodes
-            and ``m`` is the number of edges.
+            We interpret the degree of a graph as the average of the degree of its nodes, this feature
+            is thus formatted as a tuple of (avg_degree, std). If ``std==0.0``, the graph is regular.
+        * weights (tuple(float, float)): average weight of all edges in the graph, formatted as a
+            tuple (avg, std).
+        * density (float): graph density defined as :math: d = \frac{2m}{n(n-1)} . Where ``n`` is
+            the number of nodes and ``m`` is the number of edges.
 
     """
 
     def __init__(self) -> None:
         pass
 
-    def extract(self, graph: nx.Graph | dict) -> dict:
+    def extract(self, graph: Union[nx.Graph, dict]) -> dict:
         """
         Extract features from a graph
 
         Args:
-            graph: Input graph, defined as a :class:`networkx.Graph` instance or as a serializable dict
-                   built from a networkx graph via :func:`.qaoa_training_pipeline.utils.graph_utils.graph_to_dict`.
+            graph: Input graph, defined as a :class:`networkx.Graph` instance or as a
+                serializable dict built from a networkx graph via
+                :func:`.qaoa_training_pipeline.utils.graph_utils.graph_to_dict`.
 
         Returns:
             A dictionary of extracted features.

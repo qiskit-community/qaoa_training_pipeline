@@ -107,7 +107,8 @@ def graph_to_dict(graph: nx.Graph, description: Optional[str] = None) -> dict:
     """Create a json exportable dict for the graph."""
     edge_list = []
     for node1, node2, data in graph.edges(data=True):
-        edge_list.append({"nodes": [node1, node2], "weight": data.get("weight", 1)})
+        nodes = sorted([node1, node2])
+        edge_list.append({"nodes": nodes, "weight": data.get("weight", 1)})
 
     return {"edge list": edge_list, "Description": description or "No description available."}
 
