@@ -24,7 +24,12 @@ class RecursiveTransitionStates(BaseTrainer):
     """
 
 
-    def __init__(self, trainer: BaseTrainer):  # Here the trainer would be e.g. a SciPy trainers
+    def __init__(self, trainer: ScipyTrainer): 
+         """Initialize a recursion trainer.
+
+        Args:
+            trainer: The trainer must be the ScipyTrainer.
+        """
         super().__init__(trainer.evaluator)
 
         self._trainer = trainer
@@ -60,7 +65,7 @@ class RecursiveTransitionStates(BaseTrainer):
                 circuit.
 
         Returns:
-            A dictionary with optimization results.
+            A `ParamResults` with optimization results.
         """
         start = time()
         current_reps = len(previous_optimal_point) // 2
@@ -133,3 +138,4 @@ class RecursiveTransitionStates(BaseTrainer):
         axis.legend()
 
         return fig, axis
+
