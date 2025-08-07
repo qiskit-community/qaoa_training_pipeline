@@ -25,7 +25,7 @@ from pysat.solvers import Solver
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
 
 from qaoa_training_pipeline.pre_processing.base_processing import BasePreprocessor
-from qaoa_training_pipeline.utils.data_utils import dict_to_graph, graph_to_dict
+from qaoa_training_pipeline.utils.graph_utils import dict_to_graph, graph_to_dict
 
 
 @dataclass
@@ -49,6 +49,8 @@ class SATMapper(BasePreprocessor):
     SAT problems can be hard, a ``time_out`` fixes the maximum time allotted to the SAT solver 
     for each instance. If this time is exceeded the considered problem is deemed unsatisfiable 
     and the binary search proceeds to the next number of swap layers :math:``l``.
+
+    Warning: for large instances the SATMapper can take a lot of pre-processing time.
 
     The SAT mapper is based on this paper https://arxiv.org/abs/2212.05666.
     """
