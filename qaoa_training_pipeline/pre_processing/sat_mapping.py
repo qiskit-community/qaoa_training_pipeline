@@ -75,6 +75,10 @@ class SATMapper(BasePreprocessor):
     def __call__(self, input_data: dict):
         """Call the SATMapper.
         
+        This function will return the SAT mapped graph in the same data format as the
+        input. This allows the pre-processors to seamlessly integrate in the data
+        processing steps of `train.py`.
+
         Args:
             input_data: The input data to be preprocessed. This data is directly loaded
                 from the Json file, typically given to `train.py`. The `__call__` method
