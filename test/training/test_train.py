@@ -15,7 +15,9 @@ import os
 import sys
 
 from unittest.mock import patch
-from ddt import ddt, data
+from ddt import ddt, data, unpack
+
+from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.train import train, get_script_args
 
@@ -56,6 +58,64 @@ class TestTrain(TrainingPipelineTestCase):
                 result["args"]["train_kwargs0"],
                 "num_points:10:parameter_ranges:3/6/3/6",
             )
+
+    @data("maxcut", "mis:3", "mis")
+    def test_problem_classes(self, problem_str: str):
+        """Test that we can call train.py."""
+
+        test_args = [
+            "prog",
+            "--input",
+            "test/data/test_graph.json",
+            "--config",
+            "data/methods/train_method_0.json",
+            "--train_kwargs0",
+            "num_points:2:parameter_ranges:3/6/3/6",
+            "--problem_class",
+            problem_str,
+        ]
+
+        op1 = [("IZZ", -0.5), ("ZIZ", -0.5)]
+        op2 = [("IIZ", -0.5), ("IZZ", 0.5), ("ZIZ", 0.5)]
+        op3 = [("IIZ", -1.0), ("IZI", -0.25), ("ZII", -0.25), ("IZZ", 0.75), ("ZIZ", 0.75)]
+
+        expected = {
+            "maxcut": SparsePauliOp.from_list(op1),
+            "mis": SparsePauliOp.from_list(op2),
+            "mis:3": SparsePauliOp.from_list(op3),
+        }
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+            result = train(args)
+
+            cost_op = SparsePauliOp.from_list(result["cost_operator"])
+
+            self.assertEqual(result["args"]["problem_class"], problem_str)
+            self.assertEqual(cost_op, expected[problem_str])
+
+    def test_validate_args(self):
+        """Test that the arguments are validated correctly."""
+
+        test_args = [
+            "prog",
+            "--input",
+            "data/problems/example_graph.json",
+            "--config",
+            "data/methods/train_method_4.json",
+            "--problem_class",
+            "maxcut",
+            "--pre_factor",
+            "2.0",
+            False,
+        ]
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+
+            with self.assertRaises(ValueError) as error:
+                train(args)
+                self.assertTrue("cannott be used together" in error.exception.args[0])
 
     def test_call_train_schmidt(self):
         """Test that the Schmidt values are returned with an MPS-based training."""
@@ -105,7 +165,7 @@ class TestTrain(TrainingPipelineTestCase):
         test_args = [
             "prog",
             "--input",
-            "data/problems/example_graph.json",
+            "test/data/test_graph.json",
             "--config",
             f"data/methods/train_method_{method_idx}.json",
             "--save",
@@ -121,3 +181,72 @@ class TestTrain(TrainingPipelineTestCase):
             trainer_idx, exp_len = expected_param_len[method_idx]
             opt_params = result[trainer_idx]["optimized_params"]
             self.assertEqual(len(opt_params), exp_len)
+
+    @unpack
+    @data((6, "reps:2", 4, 1), (6, "reps:3", 6, 1), (4, "params0:0/0/0/0", 4, 0))
+    def test_change_reps(self, method_idx: int, trainer_kwars: str, exp_len: int, trainer_idx: int):
+        """Test that we can change the number of reps.
+
+        Args:
+            method_idx: The index of the method in data/methods/.
+            trainer_kwars: The keyword arguments to give to trainer.train. For example, this allows
+                us to pass the QAOA depth at runtime if the trainer accepts it.
+            exp_len: The expected length of the optimized parameters.
+            trainer_idx: The index of the trainer in the trainer chain.
+        """
+
+        test_args = [
+            "prog",
+            "--input",
+            "test/data/test_graph.json",
+            "--config",
+            f"data/methods/train_method_{method_idx}.json",
+            f"--train_kwargs{trainer_idx}",
+            trainer_kwars,
+            False,
+        ]
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+            result = train(args)
+
+            opt_params = result[trainer_idx]["optimized_params"]
+            self.assertEqual(len(opt_params), exp_len)
+
+    def test_sat_integration(self):
+        """Test that the pipeline can call the SATMApper."""
+
+        test_args = [
+            "prog",
+            "--input",
+            "test/data/test_graph.json",
+            "--config",
+            "data/methods/train_method_0.json",
+            "--train_kwargs0",
+            "num_points:2:parameter_ranges:3/6/3/6",
+            "--problem_class",
+            "maxcut",
+            "--pre_processing",
+            "sat:10",
+        ]
+
+        expected = {
+            "pre_processor_name": "SATMapper",
+            "timeout": 10,
+            "min_k": 0,
+            "edge_map": {0: 1, 1: 2, 2: 0},
+        }
+
+        expected_op = SparsePauliOp.from_list([("IZZ", -0.5), ("ZIZ", -0.5)])
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+            result = train(args)
+
+            # Duration will be unknown, but at least this ensures its existance.
+            result["pre_processing"].pop("duration")
+
+            self.assertDictEqual(result["pre_processing"], expected)
+
+            cost_op = SparsePauliOp.from_list(result["cost_operator"])
+            self.assertEqual(cost_op, expected_op)
