@@ -74,7 +74,7 @@ class SATMapper(BasePreprocessor):
 
     def __call__(self, input_data: dict):
         """Call the SATMapper.
-        
+
         This function will return the SAT mapped graph in the same data format as the
         input. This allows the pre-processors to seamlessly integrate in the data
         processing steps of `train.py`.
@@ -230,10 +230,9 @@ class SATMapper(BasePreprocessor):
             graph: The graph to remap.
 
         Returns:
-            The remapped graph, the edge map, and the number of layers of
-            the swap strategy that was used to find the initial mapping. If no solution is found
-            then the tuple contains None for each element.
-
+            The remapped graph. The edge map, and the number of layers of the swap strategy
+            that was used to find the initial mapping are both stored locally as internal
+            variables to the SATMapper. If no solution is found then an error is raised.
         """
         num_nodes = len(graph.nodes)
         results = self.find_initial_mappings(graph, 0, num_nodes - 1)
