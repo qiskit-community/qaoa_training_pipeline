@@ -51,15 +51,15 @@ class RecursiveTransitionStates(BaseTrainer):
     ) -> ParamResult:
         """
         Args:
-            cost_op: The cost operator :math:`H_C` of the problem we want to solve.
+            cost_op: The cost operator of the problem we want to solve.
             previous_optimal_point: A local minima in beta and gamma from which to start
                 the transition states recursion.
             reps: The number of QAOA layers we want to reach.
             mixer: A quantum circuit representing the mixer of QAOA. This allows us to
                 accommodate, e.g., warm-start QAOA. If this is None, then we assume the
                 standard QAOA mixer.
-            initial_state: A quantum circuit the represents the initial state. If None is
-                given then we default to the equal superposition state |+>.
+            initial_state: A quantum circuit that represents the initial state. If None is
+                given, then we default to the equal superposition state |+>.
             ansatz_circuit: The ansatz circuit in case it differs from the standard QAOA
                 circuit.
 
@@ -142,3 +142,4 @@ class RecursiveTransitionStates(BaseTrainer):
         axis.legend()
 
         return fig, axis
+
