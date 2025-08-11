@@ -15,7 +15,7 @@ import os
 import sys
 
 from unittest.mock import patch
-from ddt import ddt, data
+from ddt import ddt, data, unpack
 
 from qiskit.quantum_info import SparsePauliOp
 
@@ -165,7 +165,7 @@ class TestTrain(TrainingPipelineTestCase):
         test_args = [
             "prog",
             "--input",
-            "data/problems/example_graph.json",
+            "test/data/test_graph.json",
             "--config",
             f"data/methods/train_method_{method_idx}.json",
             "--save",
@@ -179,6 +179,37 @@ class TestTrain(TrainingPipelineTestCase):
             result = train(args)
 
             trainer_idx, exp_len = expected_param_len[method_idx]
+            opt_params = result[trainer_idx]["optimized_params"]
+            self.assertEqual(len(opt_params), exp_len)
+
+    @unpack
+    @data((6, "reps:2", 4, 1), (6, "reps:3", 6, 1), (4, "params0:0/0/0/0", 4, 0))
+    def test_change_reps(self, method_idx: int, trainer_kwars: str, exp_len: int, trainer_idx: int):
+        """Test that we can change the number of reps.
+
+        Args:
+            method_idx: The index of the method in data/methods/.
+            trainer_kwars: The keyword arguments to give to trainer.train. For example, this allows
+                us to pass the QAOA depth at runtime if the trainer accepts it.
+            exp_len: The expected length of the optimized parameters.
+            trainer_idx: The index of the trainer in the trainer chain.
+        """
+
+        test_args = [
+            "prog",
+            "--input",
+            "test/data/test_graph.json",
+            "--config",
+            f"data/methods/train_method_{method_idx}.json",
+            f"--train_kwargs{trainer_idx}",
+            trainer_kwars,
+            False,
+        ]
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+            result = train(args)
+
             opt_params = result[trainer_idx]["optimized_params"]
             self.assertEqual(len(opt_params), exp_len)
 
