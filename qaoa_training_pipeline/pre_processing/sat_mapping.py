@@ -95,12 +95,13 @@ class SATMapper(BasePreprocessor):
         return graph_to_dict(sat_graph)
 
     @classmethod
-    def from_str(cls, input_str) -> "SATMapper":
+    def from_str(cls, input_str: str) -> "SATMapper":
         """Initialize the SATMapper from a string.
 
         Args:
             input_str: The only required input is an int which represents the timeout per
-                iteration of the SATMapper.
+                iteration of the SATMapper. The input is a string so that this pre-processor
+                does not constrain the input data type of `from_str` of future pre-processors.
         """
         return cls(int(input_str))
 
