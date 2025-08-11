@@ -165,7 +165,8 @@ This repository is still in development: new functionality is being added and th
 | 5       | Switch to qaoa_ansatz       |          #16 |
 | 6       | Add Pauli Propagation       |          #15 |
 | 7       | Add problem class in train  |          #17 |
-| 8       | Add SAT map pre-processing  |          #19 |
+| 8       | Improve train tests         |          #22 |
+| 9       | Add SAT map pre-processing  |          #19 |
 
 ## IBM Public Repository Disclosure
 
