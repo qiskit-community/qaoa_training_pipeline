@@ -12,7 +12,7 @@ from test import TrainingPipelineTestCase
 
 import networkx as nx
 
-from qaoa_training_pipeline.service.feature_extraction import FeatureExtractor
+from qaoa_training_pipeline.pre_processing.feature_extraction import FeatureExtractor
 from qaoa_training_pipeline.utils.graph_utils import graph_to_dict
 
 
@@ -32,16 +32,19 @@ class TestFeatureExtractor(TrainingPipelineTestCase):
         }
 
     def test_extract_graph(self):
+        """Test graph extraction."""
         extractor = FeatureExtractor()
         features = extractor.extract(self.graph_20_3)
         self.assertDictEqual(features, self.ref_graph_20_3)
 
     def test_extract_dict(self):
+        """Test dict extraction."""
         extractor = FeatureExtractor()
         features = extractor.extract(self.dict_graph_20_3)
         self.assertDictEqual(features, self.ref_graph_20_3)
 
     def test_density_def(self):
+        """Test density extraction."""
         extractor = FeatureExtractor()
         features = extractor.extract(self.graph_20_3)
         density = features["density"]
