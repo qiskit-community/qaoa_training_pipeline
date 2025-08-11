@@ -64,7 +64,7 @@ class RecursiveTransitionStates(BaseTrainer):
                 circuit.
 
         Returns:
-            A `ParamResults` with optimization results.
+            A `ParamResult` with optimization results.
         """
         start = time()
         current_reps = len(previous_optimal_point) // 2
@@ -142,5 +142,6 @@ class RecursiveTransitionStates(BaseTrainer):
         axis.legend()
 
         return fig, axis
+
 
 
