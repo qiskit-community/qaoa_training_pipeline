@@ -29,7 +29,7 @@ class FeatureExtractor:
             is thus formatted as a tuple of (avg_degree, std), where `std` is the standard deviation.
             If ``std==0.0``, the graph is regular.
         * weights (tuple(float, float)): average weight of all edges in the graph, formatted as a
-            tuple (avg, std).
+            tuple (avg, std), i.e. using the same format as for the `degree` variable.
         * density (float): graph density defined as :math: d = \frac{2m}{n(n-1)} . Where ``n`` is
             the number of nodes and ``m`` is the number of edges.
 
