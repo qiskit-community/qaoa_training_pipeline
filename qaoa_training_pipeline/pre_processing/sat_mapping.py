@@ -72,8 +72,15 @@ class SATMapper(BasePreprocessor):
         # `{k: v}` where node `k` in the original graph maps to node `v`.
         self.edge_map = None
 
-    def __call__(self, input_data):
-        """Call the SATMapper."""
+    def __call__(self, input_data: dict):
+        """Call the SATMapper.
+        
+        Args:
+            input_data: The input data to be preprocessed. This data is directly loaded
+                from the Json file, typically given to `train.py`. The `__call__` method
+                expects that this input dictionary will convert to a graph through the
+                method `dict_to_graph` in `graph_utils.py`.
+        """
         start = time()
         graph = dict_to_graph(input_data)
 
