@@ -129,7 +129,7 @@ class SATMapper(BasePreprocessor):
             min_layers (int): The minimum number of swap layers to consider. Defaults to
                 the maximum degree of the program graph - 2.
             max_layers (int): The maximum number of swap layers to consider. Defaults to
-            the number of qubits in the swap strategy - 2.
+                the number of qubits in the swap strategy - 2.
 
         Returns:
             dict[int, SATResult]: A dictionary containing the results of the SAT solver for
