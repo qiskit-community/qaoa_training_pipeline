@@ -17,15 +17,14 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 
 class RecursiveTransitionStates(BaseTrainer):
     """Recursively train QAOA by constructing transition states.
-    
-    This class uses an initial set of parameters for depth `p` QAOA to construct transition states 
-    at depth `p+1`, from which the optimized parameters are used to construct the transition 
+
+    This class uses an initial set of parameters for depth `p` QAOA to construct transition states
+    at depth `p+1`, from which the optimized parameters are used to construct the transition
     states at the next depth `p+2`. This process continues until the specified depth is reached.
     """
 
-
-    def __init__(self, trainer: ScipyTrainer): 
-         """Initialize a recursion trainer.
+    def __init__(self, trainer: ScipyTrainer):
+        """Initialize a recursion trainer.
 
         Args:
             trainer: The trainer must be the ScipyTrainer.
@@ -52,15 +51,15 @@ class RecursiveTransitionStates(BaseTrainer):
     ) -> ParamResult:
         """
         Args:
-            cost_op: The cost operator of the problem we want to solve.
-            previous_optimal_point: A local minima in beta and gamma from which to start 
+            cost_op: The cost operator :math:`H_C` of the problem we want to solve.
+            previous_optimal_point: A local minima in beta and gamma from which to start
                 the transition states recursion.
             reps: The number of QAOA layers we want to reach.
             mixer: A quantum circuit representing the mixer of QAOA. This allows us to
                 accommodate, e.g., warm-start QAOA. If this is None, then we assume the
                 standard QAOA mixer.
-            initial_state: A quantum circuit that represents the initial state. If None is
-                given, then we default to the equal superposition state |+>.
+            initial_state: A quantum circuit the represents the initial state. If None is
+                given then we default to the equal superposition state |+>.
             ansatz_circuit: The ansatz circuit in case it differs from the standard QAOA
                 circuit.
 
@@ -71,6 +70,11 @@ class RecursiveTransitionStates(BaseTrainer):
         current_reps = len(previous_optimal_point) // 2
         ts_state = previous_optimal_point
         self._all_results, energy = dict(), None
+
+        if current_reps >= reps:
+            raise ValueError(
+                f"Current reps {current_reps} cannot be greater or equal than desired reps {reps}. "
+            )
 
         while current_reps < reps:
             ts_trainer = TransitionStatesTrainer(self._trainer)
@@ -138,4 +142,3 @@ class RecursiveTransitionStates(BaseTrainer):
         axis.legend()
 
         return fig, axis
-
