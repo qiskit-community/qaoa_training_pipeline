@@ -33,6 +33,7 @@ from datetime import datetime
 
 from qaoa_training_pipeline.utils.data_utils import load_input, input_to_operator
 from qaoa_training_pipeline.evaluation import EVALUATORS
+from qaoa_training_pipeline.pre_processing import PREPROCESSORS
 from qaoa_training_pipeline.training import TRAINERS
 from qaoa_training_pipeline.utils.problem_classes import PROBLEM_CLASSES
 
@@ -64,6 +65,13 @@ def get_script_args():
     description = "A pre-factor that multiplies all the weights in the input. "
     description += "This argument is optional, defaults to 1.0, and connot "
     description += "be used in conjuction with `--problem_class`."
+
+    parser.add_argument(
+        "--pre_processing",
+        required=False,
+        type=str,
+        help="A pre-processing hook that acts on the loaded input problem data.",
+    )
 
     parser.add_argument(
         "--pre_factor",
@@ -149,7 +157,7 @@ def train(args: Optional[List]):
     fashion which allows one trainer to leverage the result of a previous trainer.
     """
 
-    # Validate input
+    # Validate command line options
     class_str = getattr(args, "problem_class", None)
     pre_factor = getattr(args, "pre_factor", None)
     if pre_factor is not None and class_str is not None:
@@ -157,7 +165,22 @@ def train(args: Optional[List]):
             "Malformed command input. pre_factor and problem_class cannot be used together."
         )
 
-    # Load the input.
+    # Load and optionally pre-process the input.
+    input_data = load_input(args.input)
+
+    pre_processing, pre_processor = getattr(args, "pre_processing", None), None
+    if pre_processing is not None:
+        pre_processing_info = pre_processing.split(":")
+        pre_processing_name = pre_processing_info[0]
+
+        pre_processing_init_str = ""
+        if len(pre_processing_info) > 1:
+            pre_processing_init_str = pre_processing_info[1]
+
+        pre_processor = PREPROCESSORS[pre_processing_name].from_str(pre_processing_init_str)
+        input_data = pre_processor(input_data)
+
+    # Create the cost operator either from input or a supported problem class.
     if class_str is not None:
         class_info = class_str.split(":")
         class_name = class_info[0].lower()
@@ -249,7 +272,14 @@ def train(args: Optional[List]):
                 json.dump({k: v.data for k, v in all_results.items()}, fout, indent=4)
 
     all_results["args"] = vars(args)
+
+    if pre_processor is not None:
+        all_results["pre_processing"] = pre_processor.to_config()
+    else:
+        all_results["pre_processing"] = None
+
     all_results["cost_operator"] = input_problem.to_list()
+
     return all_results
 
 
