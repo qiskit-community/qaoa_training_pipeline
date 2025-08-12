@@ -216,7 +216,7 @@ class TestTrain(TrainingPipelineTestCase):
 
     def test_sat_integration(self):
         """Test that the pipeline can call the SATMApper.
-        
+
         The graph that we load has edges {(0, 1), (0, 2)}.
         """
 
