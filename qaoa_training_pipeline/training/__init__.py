@@ -36,5 +36,5 @@ TRAINERS = {
     "RandomRegularDepthOneFit": RandomRegularDepthOneFit,
     "RecursionTrainer": RecursionTrainer,
     "FixedAngleConjecture": FixedAngleConjecture,
-    "RecursiveTransitionStates": RecursiveTransitionStates
+    "RecursiveTransitionStates": RecursiveTransitionStates,
 }
