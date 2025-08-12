@@ -215,7 +215,10 @@ class TestTrain(TrainingPipelineTestCase):
             self.assertEqual(len(opt_params), exp_len)
 
     def test_sat_integration(self):
-        """Test that the pipeline can call the SATMApper."""
+        """Test that the pipeline can call the SATMApper.
+        
+        The graph that we load has edges {(0, 1), (0, 2)}.
+        """
 
         test_args = [
             "prog",
@@ -238,7 +241,7 @@ class TestTrain(TrainingPipelineTestCase):
             "edge_map": {0: 1, 1: 2, 2: 0},
         }
 
-        expected_op = SparsePauliOp.from_list([("IZZ", -0.5), ("ZIZ", -0.5)])
+        expected_op = SparsePauliOp.from_list([("IZZ", -0.5), ("ZZI", -0.5)])
 
         with patch.object(sys, "argv", test_args):
             args, _ = get_script_args()
