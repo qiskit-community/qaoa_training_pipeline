@@ -253,4 +253,4 @@ class TestTrain(TrainingPipelineTestCase):
             self.assertDictEqual(result["pre_processing"], expected)
 
             cost_op = SparsePauliOp.from_list(result["cost_operator"])
-            self.assertEqual(cost_op, expected_op)
+            self.assertSetEqual(set(cost_op.to_list()), set(expected_op.to_list()))
