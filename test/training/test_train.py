@@ -145,7 +145,7 @@ class TestTrain(TrainingPipelineTestCase):
             # case, is the only one)
             self.assertIn("schmidt_values", result[0].keys())
 
-    @data(0, 1, 2, 3, 4, 5, 6)
+    @data(0, 1, 2, 3, 4, 5, 6, 7)
     def test_methods(self, method_idx: int):
         """Test that the different methods run without input args."""
 
@@ -158,6 +158,7 @@ class TestTrain(TrainingPipelineTestCase):
             4: (0, 2),
             5: (0, 2),
             6: (1, 6),
+            7: (1, 6),
         }
 
         file_name = "dmp_file_test_methods_" + str(method_idx)
