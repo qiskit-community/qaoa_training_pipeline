@@ -1,0 +1,52 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "DepthOneScanTrainer",
+            "trainer_init": {
+                "evaluator": "EfficientDepthOneEvaluator",
+                "evaluator_init": {}
+            },
+            "train_kwargs": {
+                "parameter_ranges": [
+                    [
+                        0,
+                        3.1456
+                    ],
+                    [
+                        0,
+                        3.1456
+                    ]
+                ],
+                "num_points": 15
+            }
+        },
+        {
+            "trainer": "RecursiveTransitionStates",
+            "trainer_init": {
+                "trainer": "ScipyTrainer",
+                "trainer_init": {
+                    "evaluator": "MPSEvaluator",
+                    "evaluator_init": {
+                        "use_vidal_form": "True",
+                        "use_swap_strategy": "True"
+                    },
+                    "minimize_args": {
+                        "options": {
+                            "maxiter": 20,
+                            "rhobeg": 0.2
+                        }
+                    }
+                }
+            },
+            "train_kwargs": {
+                "reps": 3,
+                "result": {
+                    "optimized_params": "previous_optimal_point"
+                }
+            },
+            "save_file": "method_7.json"
+        }
+    ],
+    "description": "Recursive Transition States Trainer (p=3)"
+
+}
