@@ -196,10 +196,10 @@ def train(args: Optional[List]):
             )
 
         problem_class = PROBLEM_CLASSES[class_name].from_str(class_init_str)
-        input_problem = problem_class.cost_operator(load_input(args.input))
+        input_problem = problem_class.cost_operator(input_data)
     else:
         pre_factor = pre_factor or 1.0
-        input_problem = input_to_operator(load_input(args.input), pre_factor=pre_factor)
+        input_problem = input_to_operator(input_data, pre_factor=pre_factor)
 
     # Load the training config and prepare the trainer.
     with open(args.config, "r") as fin:
