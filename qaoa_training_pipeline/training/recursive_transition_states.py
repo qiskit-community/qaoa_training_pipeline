@@ -143,5 +143,3 @@ class RecursiveTransitionStates(BaseTrainer):
 
         return fig, axis
 
-
-
