@@ -81,8 +81,8 @@ class RecursiveTransitionStates(BaseTrainer):
             result = ts_trainer.train(cost_op, ts_state, mixer, initial_state, ansatz_circuit)
             ts_state = result["optimized_params"]
             energy = result["energy"]
-            self._all_results[current_reps] = result.data
             current_reps = len(ts_state) // 2
+            self._all_results[current_reps] = result.data
 
         param_result = ParamResult(ts_state, time() - start, self, energy)
         param_result.update(self._all_results)
@@ -142,3 +142,4 @@ class RecursiveTransitionStates(BaseTrainer):
         axis.legend()
 
         return fig, axis
+
