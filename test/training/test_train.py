@@ -218,6 +218,8 @@ class TestTrain(TrainingPipelineTestCase):
         """Test that the pipeline can call the SATMApper.
 
         The graph that we load has edges {(0, 1), (0, 2)}.
+        The hardcoded SAT mapping returns the edges `{(1, 2), (1, 0)}`,
+        which explains the value of `expected_op`.
         """
 
         test_args = [
