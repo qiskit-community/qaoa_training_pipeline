@@ -156,18 +156,19 @@ This repository is still in development: new functionality is being added and th
 
 ## Version tracking
 
-| Version | Added functionality         | Pull request |
-|---------|-----------------------------|--------------|
-| 1       | Track system information    |           #8 |
-| 2       | Add history mix-in          |          #11 |
-| 3       | Add fidelity bounds for MPS |           #6 |
-| 4       | Add QAOA angles functions   |          #14 |
-| 5       | Switch to qaoa_ansatz       |          #16 |
-| 6       | Add Pauli Propagation       |          #15 |
-| 7       | Add problem class in train  |          #17 |
-| 8       | Improve train tests         |          #22 |
-| 9       | Add SAT map pre-processing  |          #19 |
-|10       | Add recursive transition states trainer|#20|
+| Version | Added functionality                    | Pull request |
+|---------|----------------------------------------|--------------|
+|       1 | Track system information               |           #8 |
+|       2 | Add history mix-in                     |          #11 |
+|       3 | Add fidelity bounds for MPS            |           #6 |
+|       4 | Add QAOA angles functions              |          #14 |
+|       5 | Switch to qaoa_ansatz                  |          #16 |
+|       6 | Add Pauli Propagation                  |          #15 |
+|       7 | Add problem class in train             |          #17 |
+|       8 | Improve train tests                    |          #22 |
+|       9 | Add SAT map pre-processing             |          #19 |
+|      10 | Add recursive transition states trainer|          #20 |
+|      11 | Bug fix in train pre-processing data   |          #24 |   
 
 ## IBM Public Repository Disclosure
 
