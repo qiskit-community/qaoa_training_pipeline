@@ -235,8 +235,15 @@ class PPEvaluator(BaseEvaluator):
     # pylint: disable=unused-argument
     def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
         """A hook that sub-classes can implement to parse initialization kwargs."""
-        warnings.warn(
-            "parse_init_kwargs is not yet implemented. "
-            "TODO This will be fixed in a subsequent PR."
-        )
-        return dict()
+
+        if init_kwargs is None:
+            return dict()
+
+        items = init_kwargs.split(":")
+
+        if len(items) % 2 != 0:
+            raise ValueError(
+                f"Malformed keyword arguments {init_kwargs}: should be k1:v1:k2:v2_...."
+            )
+
+        return {items[idx]: float(items[idx + 1]) for idx in range(0, len(items), 2)}

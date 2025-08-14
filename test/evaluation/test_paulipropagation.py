@@ -52,3 +52,11 @@ class TestPPEvaluator(TestCase):
         trainer = ScipyTrainer(self.evaluator, {"options": {"maxiter": 3, "rhobeg": 0.2}})
         result = trainer.train(cost_op=cost_op, params0=params0)
         self.assertGreaterEqual(len(result["energy_history"]), 3)
+
+    def test_from_config(self):
+        """Test that we can initialize from a config."""
+        init_kwargs = PPEvaluator.parse_init_kwargs("max_weight:4:min_abs_coeff:1e-6")
+        evaluator = PPEvaluator.from_config(init_kwargs)
+
+        self.assertEqual(evaluator.pp_kwargs["max_weight"], 4)
+        self.assertEqual(evaluator.pp_kwargs["min_abs_coeff"], 1e-6)
