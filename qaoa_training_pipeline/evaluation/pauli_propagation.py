@@ -227,6 +227,11 @@ class PPEvaluator(BaseEvaluator):
         return config
 
     @classmethod
+    def from_config(cls, config: dict) -> "PPEvaluator":
+        """Initialize the Pauli propagation evaluator from a config dictionary."""
+        return cls(**config)
+
+    @classmethod
     # pylint: disable=unused-argument
     def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
         """A hook that sub-classes can implement to parse initialization kwargs."""
