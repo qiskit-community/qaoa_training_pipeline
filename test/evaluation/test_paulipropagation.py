@@ -61,7 +61,7 @@ class TestPPEvaluator(TestCase):
         self.assertEqual(evaluator.pp_kwargs["max_weight"], 4)
         self.assertEqual(evaluator.pp_kwargs["min_abs_coeff"], 1e-6)
 
-    def test_from_config(self):
+    def test_from_none_config(self):
         """Test that we can initialize from a config."""
         init_kwargs = PPEvaluator.parse_init_kwargs(None)
         evaluator = PPEvaluator.from_config(init_kwargs)
