@@ -246,4 +246,4 @@ class PPEvaluator(BaseEvaluator):
                 f"Malformed keyword arguments {init_kwargs}: should be k1:v1:k2:v2_...."
             )
 
-        return {items[idx]: float(items[idx + 1]) for idx in range(0, len(items), 2)}
+        return {"pp_kwargs": {items[idx]: float(items[idx + 1]) for idx in range(0, len(items), 2)}}
