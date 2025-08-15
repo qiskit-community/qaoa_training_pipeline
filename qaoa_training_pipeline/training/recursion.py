@@ -134,12 +134,10 @@ class RecursionTrainer(BaseTrainer):
 
     def to_config(self) -> Dict:
         """Return the configuration of the trainer."""
-        return {
-            "trainer_name": self.__class__.__name__,
-            "evaluator": self._evaluator.to_config(),
-            "trainer": self._trainer.to_config(),
-            "parameter_extender": self._parameter_extender.__name__,
-        }
+        config = super().to_config()
+        config["trainer"] = self._trainer.to_config(),
+        config["parameter_extender"] = self._parameter_extender.__name__,
+        return config
 
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
         """Parse a string into the training kwargs."""
