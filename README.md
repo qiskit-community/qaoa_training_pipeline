@@ -171,7 +171,10 @@ This repository is still in development: new functionality is being added and th
 |      11 | Bug fix in train pre-processing data   |          #24 |
 |      12 | More data in result saving in train.py |          #26 |
 |      13 | Create PPEvaluator from configs        |          #25 |
+<<<<<<< HEAD
 
+=======
+>>>>>>> 151a726ee7bada24db8859856d8b91fa8d734f65
 
 ## IBM Public Repository Disclosure
 

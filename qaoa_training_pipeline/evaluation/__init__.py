@@ -20,5 +20,5 @@ EVALUATORS = {
     "LightConeEvaluator": LightConeEvaluator,
     "MPSEvaluator": MPSEvaluator,
     "StatevectorEvaluator": StatevectorEvaluator,
-    "PauliPropagationEvaluator": PPEvaluator,
+    "PPEvaluator": PPEvaluator,
 }
