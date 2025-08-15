@@ -11,6 +11,7 @@
 from test import TrainingPipelineTestCase
 
 import glob
+import json
 import os
 import sys
 
@@ -58,6 +59,15 @@ class TestTrain(TrainingPipelineTestCase):
                 result["args"]["train_kwargs0"],
                 "num_points:10:parameter_ranges:3/6/3/6",
             )
+
+        # Load from the saved file
+        labels_to_test = ["pre_processing", "cost_operator", "0", "args"]
+        for file_name in glob.glob("*dmp_file*"):
+            with open(file_name, "r") as fin:
+                ld_data = json.load(fin)
+
+                for label in labels_to_test:
+                    self.assertTrue(label in ld_data)
 
     @data("maxcut", "mis:3", "mis")
     def test_problem_classes(self, problem_str: str):

@@ -58,6 +58,11 @@ class TestPPEvaluator(TestCase):
         init_kwargs = PPEvaluator.parse_init_kwargs("max_weight:4:min_abs_coeff:1e-6")
         evaluator = PPEvaluator.from_config(init_kwargs)
 
+        cost_op = SparsePauliOp.from_list([("II", 1.0), ("IZ", 1.0), ("ZZ", 1.0)])
+        result = evaluator.evaluate(cost_op, params=[0.2, 0.3])
+
+        self.assertTrue(isinstance(result["energy"], float))
+
         self.assertEqual(evaluator.pp_kwargs["max_weight"], 4)
         self.assertEqual(evaluator.pp_kwargs["min_abs_coeff"], 1e-6)
 
