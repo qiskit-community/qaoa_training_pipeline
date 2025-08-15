@@ -168,7 +168,8 @@ This repository is still in development: new functionality is being added and th
 |       8 | Improve train tests                    |          #22 |
 |       9 | Add SAT map pre-processing             |          #19 |
 |      10 | Add recursive transition states trainer|          #20 |
-|      11 | Bug fix in train pre-processing data   |          #24 |   
+|      11 | Bug fix in train pre-processing data   |          #24 |
+|      12 | More data in result saving in train.py |          #26 |
 
 ## IBM Public Repository Disclosure
 
