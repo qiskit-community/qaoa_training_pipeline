@@ -53,7 +53,7 @@ class FourierFunction(BaseAnglesFunction):
 
     def __init__(self, depth: int = None) -> None:
         """Initialize the Fourier function.
-        
+
         Args:
             depth: The depth of the QAOA circuit. Therefore, the length of the `beta` and `gamma`
                 angles is given by depth. If depth is None, then the QAOA depth will be the
@@ -66,7 +66,7 @@ class FourierFunction(BaseAnglesFunction):
         """Compute beta and gamma angles from the optimization variables x.
 
         We assume that the first half of `x` is for `beta` and the second half is for `gamma`.
-        Furthermore, this function assumes that the QAOA depth is given either by its internal 
+        Furthermore, this function assumes that the QAOA depth is given either by its internal
         variable `self._depth` or by `x` if `self._depth` is None.
         """
         n_coeffs = len(x) // 2

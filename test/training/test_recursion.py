@@ -8,8 +8,8 @@
 
 """Tests for recursive training."""
 
-from ddt import ddt, data
 from test import TrainingPipelineTestCase
+from ddt import ddt, data
 
 from qiskit.quantum_info import SparsePauliOp
 
@@ -29,7 +29,6 @@ class TestRecursion(TrainingPipelineTestCase):
 
     def test_simple(self):
         """Test a simple recursion training."""
-        
 
         scipy_trainer = ScipyTrainer(MPSEvaluator())
         trainer = RecursionTrainer(scipy_trainer, interpolate)
@@ -71,10 +70,10 @@ class TestRecursion(TrainingPipelineTestCase):
     @data(2, None)
     def test_fourier_from_config(self, qaoa_reps):
         """Test that we can setup a recursive Fourier training from a config.
-        
+
         Note: if qaoa_reps is 2 then we always have QAOA depth 2 but we are doing a recursion
-        on the Fourier coefficients going from 2 per beta/gamma to 4 Fourier coefficients. If 
-        instead, qaoa_reps is None then we are going from QAOA depth 2 to QAOA depth 4 while we 
+        on the Fourier coefficients going from 2 per beta/gamma to 4 Fourier coefficients. If
+        instead, qaoa_reps is None then we are going from QAOA depth 2 to QAOA depth 4 while we
         optimize the Fourier coefficients.
         """
         config = {
@@ -94,6 +93,6 @@ class TestRecursion(TrainingPipelineTestCase):
         result = trainer.train(self.cost_op, params0=[1, 1, 0, 0], reps=4)
 
         expected_len = 4 if qaoa_reps is None else qaoa_reps
-        
+
         self.assertEqual(len(result["optimized_params"]), 2 * 4)
         self.assertEqual(len(result["optimized_qaoa_angles"]), 2 * expected_len)
