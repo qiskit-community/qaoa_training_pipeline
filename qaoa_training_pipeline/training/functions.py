@@ -66,8 +66,8 @@ class FourierFunction(BaseAnglesFunction):
         """Compute beta and gamma angles from the optimization variables x.
 
         We assume that the first half of `x` is for `beta` and the second half is for `gamma`.
-        Furthermore, this function assumes that the QAOA depth is given by its internal variable
-        `self._depth`. Therefore, dimensionality reduction is not implemented.
+        Furthermore, this function assumes that the QAOA depth is given either by its internal 
+        variable `self._depth` or by `x` if `self._depth` is None.
         """
         n_coeffs = len(x) // 2
 
@@ -122,10 +122,10 @@ class FourierFunction(BaseAnglesFunction):
             plot_args["beta"]["ls"] = "--"
 
         qaoa_angles = self(x)
-
+        reps = len(qaoa_angles) // 2
         xvals = list(range(1, self._depth + 1))
-        axis.plot(xvals, qaoa_angles[: self._depth], label=r"$\beta$", **plot_args["beta"])
-        axis.plot(xvals, qaoa_angles[self._depth :], label=r"$\gamma$", **plot_args["gamma"])
+        axis.plot(xvals, qaoa_angles[:reps], label=r"$\beta$", **plot_args["beta"])
+        axis.plot(xvals, qaoa_angles[reps:], label=r"$\gamma$", **plot_args["gamma"])
         axis.legend()
 
         return axis
@@ -145,6 +145,7 @@ class FourierFunction(BaseAnglesFunction):
         axis = axis or plt.gca()
 
         n_coeffs = len(x) // 2
+        qaoa_reps = n_coeffs if self._depth is None else self._depth
 
         ivals = np.linspace(0, self._depth, 50)
 
@@ -155,7 +156,7 @@ class FourierFunction(BaseAnglesFunction):
             plot_args["beta"]["ls"] = "--"
 
         for k_idx in range(n_coeffs):
-            coeff = (k_idx + 0.5) * np.pi / self._depth
+            coeff = (k_idx + 0.5) * np.pi / qaoa_reps
 
             lbl = r"$\beta$ basis" if k_idx == 0 else None
 
