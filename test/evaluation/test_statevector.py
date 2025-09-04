@@ -48,3 +48,12 @@ class TestStatevectorEvaluator(TestCase):
         result = trainer.train(cost_op=self.cost_op, params0=[0.2, 0.3])
 
         self.assertGreaterEqual(len(result["energy_history"]), 3)
+
+    def test_custom_ansatz(self):
+        """Test that we can construct the ansatz from a different operator."""
+        ansatz_op = SparsePauliOp.from_list([("ZI", 1)])
+
+        energy1 = self.evaluator.evaluate(self.cost_op, params=[1.2, 1.3], ansatz_circuit=ansatz_op)
+        energy2 = self.evaluator.evaluate(self.cost_op, params=[1.2, 1.3])
+
+        self.assertTrue(abs(energy1 - energy2) > 0.1)
