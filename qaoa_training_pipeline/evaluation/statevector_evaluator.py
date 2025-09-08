@@ -8,7 +8,7 @@
 
 """Statevector-based QAOA evaluator."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
@@ -43,7 +43,7 @@ class StatevectorEvaluator(BaseEvaluator):
         params: List[float],
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        ansatz_circuit: Optional[Union[QuantumCircuit, SparsePauliOp]] = None,
     ) -> float:
         """Evaluate the expectation value of a cost operator given a set of parameters.
 
@@ -56,15 +56,26 @@ class StatevectorEvaluator(BaseEvaluator):
             initial_state (Optional[QuantumCircuit], optional): the initial state of the QAOA.
         """
 
-        if ansatz_circuit is not None:
-            raise NotImplementedError("Custom ansatz circuits are not yet supported.")
+        if isinstance(ansatz_circuit, SparsePauliOp):
+            ansatz_op = ansatz_circuit
+        elif ansatz_circuit is None:
+            ansatz_op = cost_op
+        else:
+            raise NotImplementedError(
+                "Custom ansatz circuits in format"
+                f"{ansatz_circuit.__class__.__name__} are not yet supported."
+            )
 
         circuit = qaoa_ansatz(
-            cost_op,
+            ansatz_op,
             reps=len(params) // 2,
             mixer_operator=mixer,
             initial_state=initial_state,
         )
+
+        # Prevents the edge case where the cost op is the identity.
+        if len(circuit.parameters) != len(params):
+            raise ValueError("The QAOA Circuit does not have the correct number of parameters. ")
 
         result = self.primitive.run([(circuit, cost_op, params)]).result()
 
