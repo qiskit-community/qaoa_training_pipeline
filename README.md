@@ -171,6 +171,7 @@ This repository is still in development: new functionality is being added and th
 |      11 | Bug fix in train pre-processing data   |          #24 |
 |      12 | More data in result saving in train.py |          #26 |
 |      13 | Create PPEvaluator from configs        |          #25 |
+|      14 | Custom ansatz operator to state vector |          #29 |
 
 ## IBM Public Repository Disclosure
 
