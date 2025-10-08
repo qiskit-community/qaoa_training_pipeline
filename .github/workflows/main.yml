@@ -1,5 +1,3 @@
-# This code is part of a Qiskit project.
-#
 # (C) Copyright IBM 2021, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
@@ -33,7 +31,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.10]
+        python-version: [3.11]
     steps:
       - name: Print Concurrency Group
         env:
@@ -75,14 +73,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.10, 3.12]
+        python-version: [3.11, 3.12]
         include:
           - os: macos-latest
-            python-version: 3.10
+            python-version: 3.11
           - os: macos-latest
             python-version: 3.12
           - os: windows-latest
-            python-version: 3.10
+            python-version: 3.11
           - os: windows-latest
             python-version: 3.12
     steps:
@@ -118,7 +116,7 @@ jobs:
           mkdir ./ci-artifact-data
           coverage3 combine
           mv .coverage ./ci-artifact-data/pipeline.dat
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10 }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11 }}
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
