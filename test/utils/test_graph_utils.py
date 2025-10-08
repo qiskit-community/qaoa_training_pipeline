@@ -74,10 +74,10 @@ class TestGraphUtils(TrainingPipelineTestCase):
 
         cost_layer = qaoa_ansatz(
             cost_operator,
-            mixer_operator=QuantumCircuit(4),
+            mixer_operator=SparsePauliOp.from_list([("IIII", 1)]),
             initial_state=QuantumCircuit(4),
             reps=1,
-        ).decompose()
+        )
 
         pass_manager = PassManager([HighLevelSynthesis(basis_gates=["rzz"])])
         cost_layer = pass_manager.run(cost_layer)
@@ -95,10 +95,10 @@ class TestGraphUtils(TrainingPipelineTestCase):
 
         cost_layer = qaoa_ansatz(
             cost_operator,
-            mixer_operator=QuantumCircuit(3),
+            mixer_operator=SparsePauliOp.from_list([("III", 1)]),
             initial_state=QuantumCircuit(3),
             reps=1,
-        ).decompose()
+        )
 
         pass_manager = PassManager([HighLevelSynthesis(basis_gates=["rzz", "rz"])])
         cost_layer = pass_manager.run(cost_layer)
