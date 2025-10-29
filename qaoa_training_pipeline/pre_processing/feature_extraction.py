@@ -8,14 +8,31 @@
 
 """An initial implementation for a graph feature extractor."""
 
-from typing import Union
+from abc import ABC, abstractmethod
+from typing import Dict, Tuple
 import networkx as nx
 import numpy as np
 
-from qaoa_training_pipeline.utils.graph_utils import dict_to_graph
+from qiskit.quantum_info import SparsePauliOp
+
+from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
+
+class BaseFeatureExtractor(ABC):
+    """A base class that extracts properties from cost operators."""
+
+    def __call__(self, cost_op: SparsePauliOp) -> Tuple:
+        """Extract features of the given cost operator."""
+
+    def to_config(self) -> Dict:
+        """Return the config of the feature extractor."""
+
+    @classmethod
+    @abstractmethod
+    def from_config(cls, config):
+        """Return an instance of this class based on a config."""
 
 
-class FeatureExtractor:
+class GraphFeatureExtractor(BaseFeatureExtractor):
     """
     An initial implementation for a graph feature extractor to be potentially
     used in a "qaoa training pipeline service".
@@ -35,52 +52,69 @@ class FeatureExtractor:
 
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self,
+        num_nodes: bool,
+        num_edges: bool,
+        avg_node_degree: bool,
+        avg_edge_weights: bool,
+        standard_devs: bool,
+        density: bool,
+    ):
+        """Setup the class.
+        
+        Args:
+            TODO!
+        """
+        self.num_nodes = num_nodes
+        self.num_edges = num_edges
+        self.avg_node_degree = avg_node_degree
+        self.avg_edge_weights = avg_edge_weights
+        self.standard_devs = standard_devs
+        self.density = density
 
-    def extract(self, graph: Union[nx.Graph, dict]) -> dict:
+    def __call__(self, cost_op: SparsePauliOp, qaoa_depth: int) -> Tuple:
         """
         Extract features from a graph
 
         Args:
-            graph: Input graph, defined as a :class:`networkx.Graph` instance or as a
-                serializable dict built from a networkx graph via
-                :func:`.qaoa_training_pipeline.utils.graph_utils.graph_to_dict`.
+            cost_op: Input cost operator which must be convertible to a graph.
 
         Returns:
-            A dictionary of extracted features.
+            A tuple of extracted features.
         """
+        graph = operator_to_graph(cost_op)
 
-        if isinstance(graph, dict):
-            graph = dict_to_graph(graph)
+        features = [qaoa_depth]
+
+        if self.num_nodes:
+            features.append(graph.order())
+
+        if self.num_edges:
+            features.append(len(graph.edges()))
 
         # Compute average node degeree for the graph + std
-        degree_list = list(deg[1] for deg in graph.degree())
-        degree = (float(np.average(degree_list)), float(np.std(degree_list)))
+        if self.avg_node_degree:
+            degree_list = list(deg[1] for deg in graph.degree())
+            features.append(float(np.average(degree_list)))
 
-        # If a weight is None it will be overwritten to 1
-        weight_list = [
-            data[2] if data[2] is not None else 1.0 for data in graph.edges.data("weight")
-        ]
+            if self.standard_devs:
+                features.append(float(np.std(degree_list)))
 
-        # Compute order (n_vertices)
-        order = graph.order()
+        if self.avg_edge_weights:
 
-        # Compute size (n_edges). We could also use nx.Graph.size
-        size = len(weight_list)
+            # If a weight is None it will be overwritten to 1
+            weight_list = [
+                data[2] if data[2] is not None else 1.0 for data in graph.edges.data("weight")
+            ]
 
-        weights = (float(np.average(weight_list)), float(np.std(weight_list)))
+            features.append(float(np.average(weight_list)))
+
+            if self.standard_devs:
+                features.append(float(np.std(weight_list)))
 
         # Compute density
-        density = nx.density(graph)
+        if self.density:
+            features.append(nx.density(graph))
 
-        out_features = {
-            "size": size,
-            "order": order,
-            "degree": degree,
-            "weights": weights,
-            "density": density,
-            "qaoa_depth": None,
-        }
-
-        return out_features
+        return tuple(features)
