@@ -8,6 +8,9 @@
 
 """Classes to test the TQA trainer."""
 
+from qaoa_training_pipeline.training.param_result import ParamResult
+
+
 from test import TrainingPipelineTestCase
 
 from qiskit.quantum_info import SparsePauliOp
@@ -21,9 +24,15 @@ class TestTQA(TrainingPipelineTestCase):
 
     def test_no_optim(self):
         """ "Test that we can run without doing any optimization."""
-        result = TQATrainer().train(None, 3)
+        reps = 3
+        result = TQATrainer().train(None, reps)
 
         self.assertListEqual(result["optimized_params"], [0.875, 0.625, 0.375, 0.125, 0.375, 0.625])
+        self.assertEqual(
+            len(result["optimized_qaoa_angles"]),
+            2 * reps,
+            msg="Number of QAOA angles is not as expected.",
+        )
 
         # Check that history is not present.
         self.assertTrue(len(result["energy_history"]) == 0)
@@ -38,10 +47,16 @@ class TestTQA(TrainingPipelineTestCase):
 
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
 
-        result = trainer.train(cost_op, reps=4)
+        reps = 4
+        result: ParamResult = trainer.train(cost_op, reps=reps)
 
         self.assertEqual(result["success"], "True")
-        self.assertEqual(len(result["optimized_params"]), 8)
+        self.assertEqual(len(result["optimized_params"]), 2 * reps)
+        self.assertEqual(
+            len(result["optimized_qaoa_angles"]),
+            2 * reps,
+            msg="Number of QAOA angles is not as expected.",
+        )
 
         # Check that history is present.
         self.assertTrue(len(result["energy_history"]) > 0)
