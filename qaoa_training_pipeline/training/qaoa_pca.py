@@ -77,7 +77,7 @@ class QAOAPCA(ScipyTrainer):
 
     def validate_data(self):
         """Data for QAOA PCA must be in the form of a 2D."""
-        if not isinstance(self._data, np.array):
+        if not isinstance(self._data, np.ndarray):
             self._data = np.array(self._data)
 
         if len(self._data.shape) != 2:

@@ -29,6 +29,30 @@ class BaseDataLoader(ABC):
         """Initialize the loader from a config."""
 
 
+class TrivialDataLoader(BaseDataLoader):
+    """Allows us to pass data to classes without going through files."""
+
+    def __init__(self, data):
+        """The data loader holds the data."""
+        self._data = data
+
+    def __call__(self):
+        """Load the data."""
+        return self._data
+
+    def to_config(self) -> dict:
+        """Creates a serializeable dictionary of the class."""
+        config = super().to_config()
+        config["data"] = self._data
+
+        return config
+
+    @classmethod
+    def from_config(cls, config: dict) -> None:
+        """Initialize the loader from a config."""
+        return cls(config["data"])
+
+
 class LoadFromJson(BaseDataLoader):
     """Loads data from a json file."""
 
