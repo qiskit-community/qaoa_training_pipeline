@@ -16,25 +16,29 @@ from .fixed_angle_conjecture import FixedAngleConjecture
 from .models.random_regular_fit import RandomRegularDepthOneFit
 from .optimized_parameter_loader import OptimizedParametersLoader
 from .parameter_scanner import DepthOneScanTrainer
+from .qaoa_pca import QAOAPCA
 from .random_point import RandomPoint
 from .recursion import RecursionTrainer
+from .recursive_transition_states import RecursiveTransitionStates
 from .reweighting import ReweightingTrainer
 from .scipy_trainer import ScipyTrainer
 from .tqa_trainer import TQATrainer
+from .transfer_trainer import TransferTrainer
 from .transition_states import TransitionStatesTrainer
-from .recursive_transition_states import RecursiveTransitionStates
 
 
 TRAINERS = {
     "DepthOneScanTrainer": DepthOneScanTrainer,
-    "ScipyTrainer": ScipyTrainer,
-    "TransitionStatesTrainer": TransitionStatesTrainer,
-    "ReweightingTrainer": ReweightingTrainer,
-    "RandomPoint": RandomPoint,
+    "FixedAngleConjecture": FixedAngleConjecture,
     "OptimizedParametersLoader": OptimizedParametersLoader,
-    "TQATrainer": TQATrainer,
+    "QAOAPCA": QAOAPCA,
+    "ScipyTrainer": ScipyTrainer,
+    "RandomPoint": RandomPoint,
     "RandomRegularDepthOneFit": RandomRegularDepthOneFit,
     "RecursionTrainer": RecursionTrainer,
-    "FixedAngleConjecture": FixedAngleConjecture,
     "RecursiveTransitionStates": RecursiveTransitionStates,
+    "ReweightingTrainer": ReweightingTrainer,
+    "TQATrainer": TQATrainer,
+    "TransferTrainer": TransferTrainer,
+    "TransitionStatesTrainer": TransitionStatesTrainer,    
 }
