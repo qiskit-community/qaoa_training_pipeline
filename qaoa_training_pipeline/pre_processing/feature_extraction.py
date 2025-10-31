@@ -6,7 +6,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""An initial implementation for a graph feature extractor."""
+"""Classes to extract features from cost operators."""
 
 from abc import ABC, abstractmethod
 from typing import Dict, Tuple
@@ -20,15 +20,20 @@ from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 class BaseFeatureExtractor(ABC):
     """A base class that extracts properties from cost operators."""
 
+    @abstractmethod
     def __call__(self, cost_op: SparsePauliOp) -> Tuple:
         """Extract features of the given cost operator."""
 
     def to_config(self) -> Dict:
         """Return the config of the feature extractor."""
 
+    def to_config(self) -> dict:
+        """Return a config based on the class instance."""
+        return {"feature_extractor_name": self.__class__.__name__}
+
     @classmethod
     @abstractmethod
-    def from_config(cls, config):
+    def from_config(cls, config: dict):
         """Return an instance of this class based on a config."""
 
 
@@ -54,17 +59,22 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
 
     def __init__(
         self,
-        num_nodes: bool,
-        num_edges: bool,
-        avg_node_degree: bool,
-        avg_edge_weights: bool,
-        standard_devs: bool,
-        density: bool,
+        num_nodes: bool=True,
+        num_edges: bool=True,
+        avg_node_degree: bool=True,
+        avg_edge_weights: bool=True,
+        standard_devs: bool=True,
+        density: bool=True,
     ):
         """Setup the class.
         
         Args:
-            TODO!
+            num_nodes: If True, add the number of nodes to the features.
+            num_edges: If True, add the number of edges to the features.
+            avg_node_degree: If True, add the average node degree to the features.
+            avg_edge_weights: If True, add the average edge weight to the features.
+            standard_devs: If True, add the standard deviations with the averages.
+            density: If True, add the graph edge density to the features.
         """
         self.num_nodes = num_nodes
         self.num_edges = num_edges
@@ -118,3 +128,28 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
             features.append(nx.density(graph))
 
         return tuple(features)
+
+    def to_config(self) -> dict:
+        """Return an instance of this class based on a config."""
+        config = super().to_config()
+
+        config["num_nodes"] = self.num_nodes
+        config["num_edges"] = self.num_edges
+        config["avg_node_degree"] = self.avg_node_degree
+        config["avg_edge_weights"] = self.avg_edge_weights
+        config["standard_devs"] = self.standard_devs
+        config["density"] = self.density
+
+        return config
+
+    @classmethod
+    def from_config(cls, config) -> "GraphFeatureExtractor":
+        """Setup the feature extractor from a config."""
+        return cls(
+            config.get("num_nodes", True),
+            config.get("num_edges", True),
+            config.get("avg_node_degree", True),
+            config.get("avg_edge_weights", True),
+            config.get("standard_devs", True),
+            config.get("density", True),
+        )
