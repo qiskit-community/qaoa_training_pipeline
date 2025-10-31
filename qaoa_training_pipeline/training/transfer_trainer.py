@@ -16,20 +16,37 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.pre_processing.feature_extraction import BaseFeatureExtractor
+from qaoa_training_pipeline.pre_processing.feature_matching import (
+    BaseFeatureMatcher, 
+    TrivialFeatureMatcher,
+)
+from qaoa_training_pipeline.pre_processing.angle_aggregation import (
+    BaseAngleAggregator,
+    TrivialAngleAggregator,
+)
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.data_loading import BaseDataLoader
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class TransferTrainer(BaseTrainer):
-    """A class to transfer parameters from a collection of parameters."""
+    """A class to transfer parameters from a collection of parameters.
+    
+    The workflow allows for the following steps:
+
+    1. Compute a set of features of the given problem instance.
+    2. Match these features to keys in a database of QAOA angles. Here, there might be
+       multiple angles in the database that match with the features.
+    3. Aggregate the selected angles into a set of single QAOA angles.
+    """
 
     def __init__(
         self, 
         data_loader: BaseDataLoader,
-        feature_extractor = None,  # TODO
-        feature_matcher = None,  # TODO
-        angle_aggregator = None,  # TODO
+        feature_extractor: BaseFeatureExtractor,
+        feature_matcher: BaseFeatureMatcher=None,
+        angle_aggregator: BaseAngleAggregator = None,
         evaluator: Optional[BaseEvaluator] = None, 
     ):
         """Setup a class to train based on existing data.
@@ -59,10 +76,16 @@ class TransferTrainer(BaseTrainer):
         self._feature_extractor = feature_extractor
 
         # Matches the features in the data of known angles.
-        self._feature_matcher = feature_matcher
+        if feature_matcher is not None:
+            self._feature_matcher = feature_matcher
+        else:
+            self._feature_matcher = TrivialFeatureMatcher()
 
         # Aggregates the matched angles in the data if data have more than one set of angles.
-        self._angle_aggregator = angle_aggregator
+        if angle_aggregator is not None:
+            self._angle_aggregator = angle_aggregator
+        else:
+            self._angle_aggregator = TrivialAngleAggregator()
 
     @abstractmethod
     def train(
