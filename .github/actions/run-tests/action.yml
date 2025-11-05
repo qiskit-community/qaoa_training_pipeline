@@ -28,7 +28,7 @@ runs:
   steps:
     - name: Run Unit Tests
       env:
-        PYTHONWARNINGS: default
+        PYTHONWARNINGS: ignore
       run: |
         # run slow tests only on scheduled event or if input flag is set
         if [ "${{ inputs.os }}" == "ubuntu-latest" ] && [ "${{ inputs.python-version }}" == "3.11" ]; then
