@@ -9,7 +9,7 @@
 """Classes to extract features from cost operators."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple
+from typing import Tuple
 import networkx as nx
 import numpy as np
 
@@ -17,15 +17,13 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
+
 class BaseFeatureExtractor(ABC):
     """A base class that extracts properties from cost operators."""
 
     @abstractmethod
     def __call__(self, cost_op: SparsePauliOp) -> Tuple:
         """Extract features of the given cost operator."""
-
-    def to_config(self) -> Dict:
-        """Return the config of the feature extractor."""
 
     def to_config(self) -> dict:
         """Return a config based on the class instance."""
@@ -57,17 +55,18 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
 
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
-        num_nodes: bool=True,
-        num_edges: bool=True,
-        avg_node_degree: bool=True,
-        avg_edge_weights: bool=True,
-        standard_devs: bool=True,
-        density: bool=True,
+        num_nodes: bool = True,
+        num_edges: bool = True,
+        avg_node_degree: bool = True,
+        avg_edge_weights: bool = True,
+        standard_devs: bool = True,
+        density: bool = True,
     ):
         """Setup the class.
-        
+
         Args:
             num_nodes: If True, add the number of nodes to the features.
             num_edges: If True, add the number of edges to the features.

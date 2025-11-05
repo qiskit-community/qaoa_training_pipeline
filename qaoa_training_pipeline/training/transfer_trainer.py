@@ -18,7 +18,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.pre_processing.feature_extraction import BaseFeatureExtractor
 from qaoa_training_pipeline.pre_processing.feature_matching import (
-    BaseFeatureMatcher, 
+    BaseFeatureMatcher,
     TrivialFeatureMatcher,
 )
 from qaoa_training_pipeline.pre_processing.angle_aggregation import (
@@ -32,7 +32,7 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 
 class TransferTrainer(BaseTrainer):
     """A class to transfer parameters from a collection of parameters.
-    
+
     The workflow allows for the following steps:
 
     1. Compute a set of features of the given problem instance.
@@ -41,18 +41,19 @@ class TransferTrainer(BaseTrainer):
     3. Aggregate the selected angles into a set of single QAOA angles.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
-        self, 
+        self,
         data_loader: BaseDataLoader,
         feature_extractor: BaseFeatureExtractor,
-        feature_matcher: BaseFeatureMatcher=None,
+        feature_matcher: BaseFeatureMatcher = None,
         angle_aggregator: BaseAngleAggregator = None,
-        evaluator: Optional[BaseEvaluator] = None, 
+        evaluator: Optional[BaseEvaluator] = None,
     ):
         """Setup a class to train based on existing data.
 
         Args:
-            data_loader: A callable that populates the data that the trainer relies on to set 
+            data_loader: A callable that populates the data that the trainer relies on to set
                 the QAOA parameters.
             feature_extractor: A method to extract features from a problem instance. This instance
                 is callable and should also be what is used to generate the keys in the data
@@ -87,6 +88,7 @@ class TransferTrainer(BaseTrainer):
         else:
             self._angle_aggregator = TrivialAngleAggregator()
 
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     @abstractmethod
     def train(
         self,
@@ -98,7 +100,7 @@ class TransferTrainer(BaseTrainer):
         **kwargs,
     ) -> ParamResult:
         """Performs the training."""
-        
+
         start = time()
 
         # 1. Extract features of the cost operator.
@@ -118,6 +120,8 @@ class TransferTrainer(BaseTrainer):
 
         if self._evaluator is not None:
             energy = self._evaluator.evaluate(cost_op, qaoa_angles)
+        else:
+            energy = "NA"
 
         return ParamResult(qaoa_angles, time() - start, self, energy)
 

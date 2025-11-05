@@ -22,7 +22,7 @@ class BaseDataLoader(ABC):
     def to_config(self) -> dict:
         """Creates a serializeable dictionary of the class."""
         return {"function_name": self.__class__.__name__}
-    
+
     @classmethod
     @abstractmethod
     def from_config(cls, config: dict) -> None:
@@ -81,4 +81,5 @@ class LoadFromJson(BaseDataLoader):
 
 DATA_LOADERS = {
     "LoadFromJson": LoadFromJson,
+    "TrivialDataLoader": TrivialDataLoader,
 }

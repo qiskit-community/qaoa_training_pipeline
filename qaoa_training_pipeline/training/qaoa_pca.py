@@ -8,7 +8,7 @@
 
 """Trainer that leverages PCA to reduce the dimensionality of QAOA parameter optimization."""
 
-from typing import Any, Dict, Callable, Optional
+from typing import Any, Dict, Optional
 import numpy as np
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
@@ -21,7 +21,7 @@ from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 class QAOAPCA(ScipyTrainer):
     """Reduce the dimensionality of QAOA parameters with PCA.
-    
+
     Example usage:
     ```
     trainer = QAOAPCA(LoadFromJson("my_data.json"), 2, StatevectorEvaluator())
@@ -32,9 +32,10 @@ class QAOAPCA(ScipyTrainer):
     In the example, above the `qaoa_angles` are good angles that come from a similar graph.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
-        self, 
-        data_loader: BaseDataLoader, 
+        self,
+        data_loader: BaseDataLoader,
         num_components: int,
         evaluator: BaseEvaluator,
         minimize_args: Optional[Dict[str, Any]] = None,
@@ -42,7 +43,7 @@ class QAOAPCA(ScipyTrainer):
     ):
         """Setup the QAOAPCA trainer.
 
-        The fitting of the principal components and the data loading happen at instance 
+        The fitting of the principal components and the data loading happen at instance
         initialization. The `train` method is simply the train method of the ScipyTrainer.
         Therefore the `params0` must be given in principal component form.
 
@@ -69,7 +70,7 @@ class QAOAPCA(ScipyTrainer):
 
         # Setup the rest of the SciPy trainer.
         super().__init__(
-            evaluator=evaluator, 
+            evaluator=evaluator,
             minimize_args=minimize_args,
             energy_minimization=energy_minimization,
             qaoa_angles_function=qaoa_angles_function,
@@ -81,9 +82,7 @@ class QAOAPCA(ScipyTrainer):
             self._data = np.array(self._data)
 
         if len(self._data.shape) != 2:
-            raise ValueError(
-                "Data for {self.__class__.__name__} must be a 2D numpy array."
-            )
+            raise ValueError("Data for {self.__class__.__name__} must be a 2D numpy array.")
 
     def to_config(self):
         """Create a config file from a traininer instance."""
