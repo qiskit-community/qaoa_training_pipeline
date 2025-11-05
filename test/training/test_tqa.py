@@ -25,37 +25,90 @@ class TestTQA(TrainingPipelineTestCase):
     def test_no_optim(self):
         """ "Test that we can run without doing any optimization."""
         reps = 3
-        result = TQATrainer().train(None, reps)
+        trainer = TQATrainer()
 
-        self.assertListEqual(result["optimized_params"], [0.875, 0.625, 0.375, 0.125, 0.375, 0.625])
-        self.assertEqual(
-            len(result["optimized_qaoa_angles"]),
-            2 * reps,
+        with self.assertRaises(
+            ValueError,
+            msg="Calling qaoa_angles_function without reps=... on untrained TQATrainer should raise an error.",
+        ):
+            _ = trainer.qaoa_angles_function([0.2])
+
+        self.assertTrue(
+            len(trainer.qaoa_angles_function([0.2], reps=reps)) == 2 * reps,
+            msg="Calling qaoa_angles_function with reps=... on untrained TQATrainer should return list of angles.",
+        )
+
+        result = trainer.train(None, reps)
+
+        self.assertListEqual(
+            result["optimized_qaoa_angles"],
+            [0.875, 0.625, 0.375, 0.125, 0.375, 0.625],
             msg="Number of QAOA angles is not as expected.",
+        )
+        self.assertListEqual(
+            result["optimized_params"],
+            [0.75],
+            msg="Optimized params with default argument should be [0.75]"
         )
 
         # Check that history is not present.
         self.assertTrue(len(result["energy_history"]) == 0)
         self.assertTrue(len(result["parameter_history"]) == 0)
         self.assertTrue(len(result["energy_evaluation_time"]) == 0)
+        # Double check that the default number of reps for qaoa_angles_function
+        # is the same as the most recent run.
+        self.assertTrue(
+            len(trainer.qaoa_angles_function(result["optimized_params"])) == 2 * reps,
+            msg="Calling qaoa_angles_function without reps=... on trained TQATrainer should return list of angles.",
+        )
+
+        result = trainer.train(None, reps + 1)
+        self.assertTrue(
+            len(trainer.qaoa_angles_function(result["optimized_params"])) == 2 * (reps + 1),
+            msg="Calling qaoa_angles_function without reps=... on trained TQATrainer should return list of angles.",
+        )
 
     def test_optim(self):
         """Test that we can optimize the dt of the TQA schedule."""
         evaluator = MPSEvaluator()
 
+        reps = 4
         trainer = TQATrainer(evaluator)
+
+        with self.assertRaises(
+            ValueError,
+            msg="Calling qaoa_angles_function without reps=... on untrained TQATrainer should raise an error.",
+        ):
+            _ = trainer.qaoa_angles_function([0.2])
+
+        self.assertTrue(
+            len(trainer.qaoa_angles_function([0.2], reps=reps)) == 2 * reps,
+            msg="Calling qaoa_angles_function with reps=... on untrained TQATrainer should return list of angles.",
+        )
 
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
 
-        reps = 4
         result: ParamResult = trainer.train(cost_op, reps=reps)
 
         self.assertEqual(result["success"], "True")
-        self.assertEqual(len(result["optimized_params"]), 2 * reps)
+        self.assertEqual(
+            len(result["optimized_params"]),
+            1,
+            msg="There is only one parameter, dt, for TQATrainer.",
+        )
         self.assertEqual(
             len(result["optimized_qaoa_angles"]),
             2 * reps,
             msg="Number of QAOA angles is not as expected.",
+        )
+        self.assertTrue(
+            len(trainer.qaoa_angles_function(result["optimized_params"])) == 2 * reps,
+            msg="Calling qaoa_angles_function without reps=... on trained TQATrainer should return list of angles.",
+        )
+        self.assertListEqual(
+            result["optimized_qaoa_angles"],
+            trainer.qaoa_angles_function(result["optimized_params"]),
+            msg="Calling qaoa_angles_function without reps=... on trained TQATrainer should return the same angles.",
         )
 
         # Check that history is present.
