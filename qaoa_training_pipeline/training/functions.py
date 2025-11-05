@@ -253,24 +253,24 @@ class PCAFunction(BaseAnglesFunction):
     def from_config(cls, config: dict) -> None:
         """Initialize the Fourier function."""
 
-        foo = cls(config["num_components"])
+        pca_func = cls(config["num_components"])
 
         if "scaler" in config:
             scaler_params = config["scaler"]
-            foo._scaler.mean_ = np.array(scaler_params["mean"])
-            foo._scaler.scale_ = np.array(scaler_params["scale"])
-            foo._scaler.var_ = np.array(scaler_params["var"])
-            foo._scaler.n_features_in_ = len(foo._scaler.mean_)
+            pca_func._scaler.mean_ = np.array(scaler_params["mean"])
+            pca_func._scaler.scale_ = np.array(scaler_params["scale"])
+            pca_func._scaler.var_ = np.array(scaler_params["var"])
+            pca_func._scaler.n_features_in_ = len(pca_func._scaler.mean_)
 
         if "pca" in config:
             pca_params = config["pca"]
-            foo._pca.components_ = np.array(pca_params["components"])
-            foo._pca.mean_ = np.array(pca_params["mean"])
-            foo._pca.explained_variance_ = np.array(pca_params["explained_variance"])
-            foo._pca.explained_variance_ratio_ = np.array(pca_params["explained_variance_ratio"])
-            foo._pca.n_features_in_ = len(foo._pca.mean_)
+            pca_func._pca.components_ = np.array(pca_params["components"])
+            pca_func._pca.mean_ = np.array(pca_params["mean"])
+            pca_func._pca.explained_variance_ = np.array(pca_params["explained_variance"])
+            pca_func._pca.explained_variance_ratio_ = np.array(pca_params["explained_variance_ratio"])
+            pca_func._pca.n_features_in_ = len(pca_func._pca.mean_)
 
-        return foo
+        return pca_func
 
 
 FUNCTIONS = {

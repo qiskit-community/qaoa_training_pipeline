@@ -18,7 +18,7 @@ class BaseFeatureMatcher(ABC):
     @abstractmethod
     def __call__(self, features: Tuple, data: Any) -> Tuple:
         """Match the given features to features describing the data.
-        
+
         For example, we have data that containes a map between some features of
         problem instances and their corresponding optimized QAOA angles. This call
         method is designed to find the best match between the given `fieatures` and
@@ -28,7 +28,7 @@ class BaseFeatureMatcher(ABC):
     def to_config(self) -> Dict:
         """Return a config based on the class instance."""
         return {"feature_matcher_name": self.__class__.__name__}
-    
+
     @classmethod
     @abstractmethod
     def from_config(cls, config: Dict):
@@ -42,9 +42,7 @@ class TrivialFeatureMatcher(BaseFeatureMatcher):
         """Perform a trivial match."""
 
         if features not in data:
-            raise KeyError(
-                f"{self.__class__.__name__} could not find feature {features} in data."
-            )
+            raise KeyError(f"{self.__class__.__name__} could not find feature {features} in data.")
 
         return features
 

@@ -40,5 +40,5 @@ TRAINERS = {
     "ReweightingTrainer": ReweightingTrainer,
     "TQATrainer": TQATrainer,
     "TransferTrainer": TransferTrainer,
-    "TransitionStatesTrainer": TransitionStatesTrainer,    
+    "TransitionStatesTrainer": TransitionStatesTrainer,
 }
