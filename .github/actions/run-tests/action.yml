@@ -26,9 +26,13 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Test JuliaCall and Julia installation
+      run: |
+        python -c "from qaoa_training_pipeline.evaluation.pauli_propagation import *; print('JuliaCall works correctly.')"
+      shell: bash
     - name: Run Unit Tests
       env:
-        PYTHONWARNINGS: ignore
+        PYTHONWARNINGS: default
       run: |
         # run slow tests only on scheduled event or if input flag is set
         if [ "${{ inputs.os }}" == "ubuntu-latest" ] && [ "${{ inputs.python-version }}" == "3.11" ]; then
