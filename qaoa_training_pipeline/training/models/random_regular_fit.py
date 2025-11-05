@@ -11,7 +11,7 @@
 import json
 from importlib import resources
 from time import time
-from typing import Dict, Optional
+from typing import Dict, NoReturn, Optional
 import numpy as np
 
 from qiskit import QuantumCircuit
@@ -184,3 +184,8 @@ class RandomRegularDepthOneFit(BaseTrainer):
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
         """Parse train arguments. In this case there aren't any."""
         return dict()
+
+    @property
+    def minimization(self) -> NoReturn:
+        """Fits for random regular problems neither minimizes nor maximizes."""
+        raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")
