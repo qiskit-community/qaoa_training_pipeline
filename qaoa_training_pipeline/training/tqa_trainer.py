@@ -8,7 +8,6 @@
 
 """Classes to generate a beta and gamma schedule based on TQA."""
 
-from functools import partial
 from time import time
 from typing import Any, Dict, Optional
 
@@ -54,14 +53,16 @@ class TQATrainerFunction(BaseAnglesFunction):
             reps = self.reps
         if reps is None:
             raise ValueError(
-                f"reps must be provided to {self.__class__.__name__}(reps=...) or set with trainer.reps=..."
+                f"reps must be provided to {self.__class__.__name__}(reps=...) or "
+                + "set with trainer.reps=..."
             )
         return self._tqa_schedule(reps=reps, dt=x[0])
 
     # pylint: disable=unused-argument
     @classmethod
     def from_config(cls, config: dict) -> None:
-        raise RuntimeError(f"{self.__class__.__name__} cannot be constructed from a config.")
+        """Create a TQATrainer from a config dictionary."""
+        raise RuntimeError(f"{cls.__name__} cannot be constructed from a config.")
 
 
 class TQATrainer(BaseTrainer, HistoryMixin):
