@@ -9,3 +9,4 @@ matplotlib>=3.3
 python-sat
 qiskit
 qiskit-optimization[cplex]
+scikit-learn
