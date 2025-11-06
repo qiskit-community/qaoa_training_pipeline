@@ -267,7 +267,9 @@ class PCAFunction(BaseAnglesFunction):
             pca_func._pca.components_ = np.array(pca_params["components"])
             pca_func._pca.mean_ = np.array(pca_params["mean"])
             pca_func._pca.explained_variance_ = np.array(pca_params["explained_variance"])
-            pca_func._pca.explained_variance_ratio_ = np.array(pca_params["explained_variance_ratio"])
+            pca_func._pca.explained_variance_ratio_ = np.array(
+                pca_params["explained_variance_ratio"]
+            )
             pca_func._pca.n_features_in_ = len(pca_func._pca.mean_)
 
         return pca_func
