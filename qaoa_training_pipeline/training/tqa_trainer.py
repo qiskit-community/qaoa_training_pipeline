@@ -54,7 +54,7 @@ class TQATrainerFunction(BaseAnglesFunction):
         if reps is None:
             raise ValueError(
                 f"reps must be provided to {self.__class__.__name__}(reps=...) or "
-                + "set with trainer.reps=..."
+                + "set with trainer.train(..., reps=...)"
             )
         return self._tqa_schedule(reps=reps, dt=x[0])
 
