@@ -10,6 +10,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
+import numpy as np
 
 
 class BaseFeatureMatcher(ABC):
@@ -27,7 +28,7 @@ class BaseFeatureMatcher(ABC):
 
     def to_config(self) -> Dict:
         """Return a config based on the class instance."""
-        return {"feature_matcher_name": self.__class__.__name__}
+        return dict()
 
     @classmethod
     @abstractmethod
@@ -50,3 +51,22 @@ class TrivialFeatureMatcher(BaseFeatureMatcher):
     def from_config(cls, config: Dict) -> "TrivialFeatureMatcher":
         """Create the trivial feature matcher."""
         return cls()
+
+
+class MinimumNormFeatureMatcher(BaseFeatureMatcher):
+    """Match the features based on the smallest inner product."""
+
+    def __call__(self, features: Tuple, data: Dict):
+        """Find the key in the data that minimizes the dot product."""
+        return min(list(data.keys()), key=lambda x: np.dot(x, features))
+
+    @classmethod
+    def from_config(cls, config: Dict) -> "MinimumNormFeatureMatcher":
+        """Create the trivial feature matcher."""
+        return cls()
+
+
+FEATURE_MATCHERS = {
+    "TrivialFeatureMatcher": TrivialFeatureMatcher,
+    "MinimumNormFeatureMatcher": MinimumNormFeatureMatcher,
+}

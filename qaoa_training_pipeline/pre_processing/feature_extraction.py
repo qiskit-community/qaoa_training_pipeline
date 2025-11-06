@@ -9,7 +9,7 @@
 """Classes to extract features from cost operators."""
 
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Dict, List, Optional, Tuple
 import networkx as nx
 import numpy as np
 
@@ -28,6 +28,10 @@ class BaseFeatureExtractor(ABC):
     def to_config(self) -> dict:
         """Return a config based on the class instance."""
         return {"feature_extractor_name": self.__class__.__name__}
+
+    @abstractmethod
+    def features(self) -> List[str]:
+        """Return a list of feature names."""
 
     @classmethod
     @abstractmethod
@@ -64,6 +68,7 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         avg_edge_weights: bool = True,
         standard_devs: bool = True,
         density: bool = True,
+        extra_features: Optional[Dict] = None,
     ):
         """Setup the class.
 
@@ -74,6 +79,8 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
             avg_edge_weights: If True, add the average edge weight to the features.
             standard_devs: If True, add the standard deviations with the averages.
             density: If True, add the graph edge density to the features.
+            extra_features: Features to be added to the list of features that are not
+                dependent on the graphs. The features are added when calling `__call__`.
         """
         self.num_nodes = num_nodes
         self.num_edges = num_edges
@@ -81,6 +88,37 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         self.avg_edge_weights = avg_edge_weights
         self.standard_devs = standard_devs
         self.density = density
+        self._extra_feature = extra_features or dict()
+
+    def features(self):
+        """Return the names of the features."""
+        names = ["qaoa_depth"]
+
+        if self.num_nodes:
+            names.append("num_nodes")
+
+        if self.num_edges:
+            names.append("num_edges")
+
+        if self.avg_node_degree:
+            names.append("avg_degree")
+
+            if self.standard_devs:
+                names.append("std_degree")
+
+        if self.avg_edge_weights:
+            names.append("avg_weight")
+
+            if self.standard_devs:
+                names.append("std_weight")
+
+        if self.density:
+            names.append("density")
+
+        for featur in self._extra_feature:
+            names.append(featur)
+
+        return names
 
     def __call__(self, cost_op: SparsePauliOp, qaoa_depth: int) -> Tuple:
         """
@@ -126,6 +164,9 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         if self.density:
             features.append(nx.density(graph))
 
+        for featur in self._extra_feature.values():
+            features.append(featur)
+
         return tuple(features)
 
     def to_config(self) -> dict:
@@ -152,3 +193,8 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
             config.get("standard_devs", True),
             config.get("density", True),
         )
+
+
+FEATURE_EXTRACTORS = {
+    "GraphFeatureExtractor": GraphFeatureExtractor,
+}
