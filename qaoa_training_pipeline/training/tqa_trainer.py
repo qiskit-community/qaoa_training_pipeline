@@ -10,18 +10,59 @@
 
 from time import time
 from typing import Any, Dict, Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
-
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from scipy.optimize import minimize
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.training.functions import BaseAnglesFunction
+from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.param_result import ParamResult
+
+
+class TQATrainerFunction(BaseAnglesFunction):
+    """Wrapper function around TQATrainer.tqa_schedule.
+
+    This function allows for a default ``rep`` value to be set, which is passed
+    to ``tqa_schedule``. If no value has been set yet, and no value is provided
+    to :meth:`__call__`, then an error is raised.
+    """
+
+    def __init__(self, tqa_schedule_method: callable, reps: int | None = None) -> None:
+        """Create an instance of a TQATrainer QAOA angles function.
+
+        Args:
+            tqa_schedule_method: The :meth:`TQATrainer.tqa_schedule` method for
+                an instance of :class:`TQATrainer`.
+            reps: The default reps to use if not overridden by
+                :meth:`TQATrainer.train`. If None and ``reps`` is not provided
+                in :meth:`__call__`, an error is raised. Defaults to None.
+        """
+        super().__init__()
+        self._tqa_schedule = tqa_schedule_method
+        self.reps = reps
+
+    # pylint: disable=unused-argument
+    def __call__(self, x: list, reps: int | None = None) -> list:
+        if reps is None:
+            reps = self.reps
+        if reps is None:
+            raise ValueError(
+                f"reps must be provided to {self.__class__.__name__}(reps=...) or "
+                + "set with trainer.train(..., reps=...)"
+            )
+        return self._tqa_schedule(reps=reps, dt=x[0])
+
+    # pylint: disable=unused-argument
+    @classmethod
+    def from_config(cls, config: dict) -> None:
+        """Create a TQATrainer from a config dictionary."""
+        raise RuntimeError(f"{cls.__name__} cannot be constructed from a config.")
 
 
 class TQATrainer(BaseTrainer, HistoryMixin):
@@ -33,6 +74,16 @@ class TQATrainer(BaseTrainer, HistoryMixin):
     be used as an initial point generator which is independent of problem instance and
     does not do any optimization. However, we can also use this class to perform a
     SciPy optimization of the end point of the TQA schedule.
+
+
+    .. note::
+
+        :attr:`qaoa_angles_function` for :class:`TQATrainer` requires knowledge
+        of the number of repetitions. ``reps`` can be provided by calling
+        ``qaoa_angles_function(params, reps=reps)``. If no value for ``reps`` is
+        provided, the value for the most recent call to :meth:`train` will be
+        used. If :meth:`train` has not been called yet for the instance of
+        :class:`TQATrainer`, then an error is raised.
     """
 
     def __init__(
@@ -40,6 +91,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         evaluator: Optional[BaseEvaluator] = None,
         minimize_args: Optional[Dict[str, Any]] = None,
         energy_minimization: bool = False,
+        initial_dt: float = 0.75,
     ) -> None:
         """Initialize an instance.
 
@@ -51,11 +103,18 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
+            initial_dt: Initial dt if not provided to :meth:`train`. Defaults to
+                ``0.75``.
         """
-        BaseTrainer.__init__(self, evaluator)
+        BaseTrainer.__init__(
+            self,
+            evaluator,
+            qaoa_angles_function=TQATrainerFunction(self.tqa_schedule, reps=None),
+        )
         HistoryMixin.__init__(self)
 
         self._minimize_args = {"method": "COBYLA", "options": {"maxiter": 20, "rhobeg": 0.1}}
+        self.initial_dt = initial_dt
 
         minimize_args = minimize_args or {}
         self._minimize_args.update(minimize_args)
@@ -76,9 +135,17 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        initial_dt: float | None = None,
     ) -> ParamResult:
         """Train the QAOA parameters."""
         self.reset_history()
+        # Set the reps attribute on the angles function, if it supports one.
+        # This allow us to override it later with a function that doesn't
+        # require reps. We set reps here so that ParamResult.from_scipy_result
+        # correctly populates "optimized_qaoa_angles" and so we can call
+        # `trainer.qaoa_angles_function()` in scripts.
+        if hasattr(self._qaoa_angles_function, "reps"):
+            self._qaoa_angles_function.reps = reps
 
         def _energy(x):
             """Optimize the energy by minimizing the negative energy.
@@ -105,21 +172,15 @@ class TQATrainer(BaseTrainer, HistoryMixin):
 
         start = time()
 
+        initial_dt = initial_dt or self.initial_dt
         if self.evaluator is None:
-            tqa_dt = 0.75
-            param_result = ParamResult(
-                self.tqa_schedule(reps, dt=tqa_dt), time() - start, self, None
-            )
+            param_result = ParamResult([initial_dt], time() - start, self, None)
         else:
-            params0 = [0.75]
+            params0 = [initial_dt]
             result = minimize(_energy, params0, **self._minimize_args)
             param_result = ParamResult.from_scipy_result(
                 result, params0, time() - start, self._sign, self
             )
-            param_result["optimized_params"] = self.tqa_schedule(
-                reps, dt=param_result["optimized_params"]
-            )
-
         param_result.add_history(self)
 
         return param_result
