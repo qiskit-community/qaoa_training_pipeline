@@ -115,8 +115,8 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         if self.density:
             names.append("density")
 
-        for featur in self._extra_feature:
-            names.append(featur)
+        for feature in self._extra_feature:
+            names.append(feature)
 
         return names
 

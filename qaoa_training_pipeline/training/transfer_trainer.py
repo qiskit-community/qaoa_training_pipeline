@@ -174,6 +174,9 @@ class TransferTrainer(BaseTrainer):
             config["evaluator"] = self._evaluator.__class__.__name__
             config["evaluator_init"] = self._evaluator.to_config()
 
+            if "name" in config["evaluator_init"]:
+                del config["evaluator_init"]["name"]
+
         return config
 
     @classmethod
@@ -190,7 +193,7 @@ class TransferTrainer(BaseTrainer):
             evaluator = evaluator_cls.from_config(config["evaluator_init"])
 
         return cls(
-            data_load=data_loader_cls.from_config(config["data_loader_init"]),
+            data_loader=data_loader_cls.from_config(config["data_loader_init"]),
             feature_extractor=feature_extractor_cls.from_config(config["feature_extractor_init"]),
             feature_matcher=feature_matcher_cls.from_config(config["feature_matcher_init"]),
             angle_aggregator=angle_aggregator_cls.from_config(config["angle_aggregator_init"]),
