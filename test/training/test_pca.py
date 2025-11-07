@@ -8,13 +8,13 @@
 
 """Tests for PCA-based training."""
 
+from test import TrainingPipelineTestCase
+
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation import StatevectorEvaluator
 from qaoa_training_pipeline.training import QAOAPCA
 from qaoa_training_pipeline.training.data_loading import TrivialDataLoader
-
-from test import TrainingPipelineTestCase
 
 
 class TestPCA(TrainingPipelineTestCase):
