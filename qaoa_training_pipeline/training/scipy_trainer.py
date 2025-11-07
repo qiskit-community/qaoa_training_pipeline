@@ -179,7 +179,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
-            config["minimize_args"],
+            config.get("minimize_args", None),
             energy_minimization=config.get("energy_minimization", None),
             qaoa_angles_function=function,
         )
@@ -207,7 +207,8 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         """
         config = {
             "trainer_name": self.__class__.__name__,
-            "evaluator": self._evaluator.to_config(),
+            "evaluator": self._evaluator.__class__.__name__,
+            "evaluator_init": self._evaluator.to_config(),
         }
 
         config.update(self._minimize_args)

@@ -87,8 +87,13 @@ class QAOAPCA(ScipyTrainer):
     def to_config(self):
         """Create a config file from a traininer instance."""
         config = super().to_config()
+        if "name" in config["evaluator_init"]:
+            del config["evaluator_init"]["name"]
+
         config["num_components"] = self._num_components
-        config["data_loader"] = self._data_loader.to_config()
+
+        config["data_loader"] = self._data_loader.__class__.__name__
+        config["data_loader_init"] = self._data_loader.to_config()
 
         return config
 
@@ -102,6 +107,6 @@ class QAOAPCA(ScipyTrainer):
             data_loader=data_loader_cls.from_config(config["data_loader_init"]),
             num_components=config["num_components"],
             evaluator=evaluator_cls.from_config(config["evaluator_init"]),
-            minimize_args=config["minimize_args"],
+            minimize_args=config.get("minimize_args", None),
             energy_minimization=config.get("energy_minimization", None),
         )
