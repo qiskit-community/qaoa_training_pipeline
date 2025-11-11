@@ -75,7 +75,7 @@ class TransferTrainer(BaseTrainer):
         # values are QAOA angles corresponding to those features. The values may
         # be a list.
         self._data_loader = data_loader
-        self._data: dict = data_loader()
+        self._data: dict = self._data_loader()
         self.validate_data()
 
         # Extracts features of cost operators.
