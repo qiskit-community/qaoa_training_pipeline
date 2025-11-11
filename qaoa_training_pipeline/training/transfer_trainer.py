@@ -77,7 +77,7 @@ class TransferTrainer(BaseTrainer):
         # the values may be a list of QAOA angles (requires trivial aggregation) or
         # a list of lists of QAOA angles (requires aggregation such as `AverageAngleAggregator`).
         self._data_loader = data_loader
-        self._data: dict = data_loader()
+        self._data: dict = self._data_loader()
         self.validate_data()
 
         # Extracts features of cost operators.
