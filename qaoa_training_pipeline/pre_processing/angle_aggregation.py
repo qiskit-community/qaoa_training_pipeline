@@ -22,7 +22,7 @@ class BaseAngleAggregator(ABC):
 
         For example, for example, multiple sets of angles might have been identified as
         good QAOA angles for a given instance. We could then average over these angles or
-        try and identify trends in them to fit.
+        try and extrapolate these data to new problem instances.
         """
 
     def to_config(self) -> dict:
