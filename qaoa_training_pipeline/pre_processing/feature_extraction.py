@@ -73,46 +73,46 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         """Setup the class.
 
         Args:
-            num_nodes: If True, add the number of nodes to the features.
-            num_edges: If True, add the number of edges to the features.
-            avg_node_degree: If True, add the average node degree to the features.
-            avg_edge_weights: If True, add the average edge weight to the features.
-            standard_devs: If True, add the standard deviations with the averages.
-            density: If True, add the graph edge density to the features.
+            exctract_num_nodes: If True, add the number of nodes to the features.
+            exctract_num_edges: If True, add the number of edges to the features.
+            exctract_avg_node_degree: If True, add the average node degree to the features.
+            exctract_avg_edge_weights: If True, add the average edge weight to the features.
+            exctract_standard_devs: If True, add the standard deviations with the averages.
+            exctract_density: If True, add the graph edge density to the features.
             extra_features: Features to be added to the list of features that are not
                 dependent on the graphs. The features are added when calling `__call__`.
         """
-        self.num_nodes = num_nodes
-        self.num_edges = num_edges
-        self.avg_node_degree = avg_node_degree
-        self.avg_edge_weights = avg_edge_weights
-        self.standard_devs = standard_devs
-        self.density = density
+        self.exctract_num_nodes = exctract_num_nodes
+        self.exctract_num_edges = exctract_num_edges
+        self.exctract_avg_node_degree = exctract_avg_node_degree
+        self.exctract_avg_edge_weights = exctract_avg_edge_weights
+        self.exctract_standard_devs = exctract_standard_devs
+        self.exctract_density = exctract_density
         self._extra_feature = extra_features or dict()
 
     def features(self):
         """Return the names of the features."""
         names = ["qaoa_depth"]
 
-        if self.num_nodes:
+        if self.extract_num_nodes:
             names.append("num_nodes")
 
-        if self.num_edges:
+        if self.extract_num_edges:
             names.append("num_edges")
 
-        if self.avg_node_degree:
+        if self.extract_avg_node_degree:
             names.append("avg_degree")
 
-            if self.standard_devs:
+            if self.extract_standard_devs:
                 names.append("std_degree")
 
-        if self.avg_edge_weights:
+        if self.extract_avg_edge_weights:
             names.append("avg_weight")
 
-            if self.standard_devs:
+            if self.extract_standard_devs:
                 names.append("std_weight")
 
-        if self.density:
+        if self.extract_density:
             names.append("density")
 
         for feature in self._extra_feature:
@@ -126,6 +126,7 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
 
         Args:
             cost_op: Input cost operator which must be convertible to a graph.
+            qaoa_depth: Depth of the corresponding QAOA circuit
 
         Returns:
             A tuple of extracted features.
@@ -134,21 +135,21 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
 
         features = [qaoa_depth]
 
-        if self.num_nodes:
+        if self.extract_num_nodes:
             features.append(graph.order())
 
-        if self.num_edges:
+        if self.extract_num_edges:
             features.append(len(graph.edges()))
 
         # Compute average node degeree for the graph + std
-        if self.avg_node_degree:
+        if self.extract_avg_node_degree:
             degree_list = list(deg[1] for deg in graph.degree())
             features.append(float(np.average(degree_list)))
 
-            if self.standard_devs:
+            if self.extract_standard_devs:
                 features.append(float(np.std(degree_list)))
 
-        if self.avg_edge_weights:
+        if self.extract_avg_edge_weights:
 
             # If a weight is None it will be overwritten to 1
             weight_list = [
@@ -157,15 +158,15 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
 
             features.append(float(np.average(weight_list)))
 
-            if self.standard_devs:
+            if self.extract_standard_devs:
                 features.append(float(np.std(weight_list)))
 
         # Compute density
-        if self.density:
+        if self.extract_density:
             features.append(nx.density(graph))
 
-        for featur in self._extra_feature.values():
-            features.append(featur)
+        for feature in self._extra_feature.values():
+            features.append(feature)
 
         return tuple(features)
 
@@ -173,12 +174,12 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         """Return an instance of this class based on a config."""
         config = super().to_config()
 
-        config["num_nodes"] = self.num_nodes
-        config["num_edges"] = self.num_edges
-        config["avg_node_degree"] = self.avg_node_degree
-        config["avg_edge_weights"] = self.avg_edge_weights
-        config["standard_devs"] = self.standard_devs
-        config["density"] = self.density
+        config["num_nodes"] = self.extract_num_nodes
+        config["num_edges"] = self.extract_num_edges
+        config["avg_node_degree"] = self.extract_avg_node_degree
+        config["avg_edge_weights"] = self.extract_avg_edge_weights
+        config["standard_devs"] = self.extract_standard_devs
+        config["density"] = self.extract_density
 
         return config
 
