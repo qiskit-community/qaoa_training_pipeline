@@ -20,7 +20,7 @@ class BaseFeatureMatcher(ABC):
     def __call__(self, features: Tuple, set_of_features: Set[Tuple]) -> Tuple:
         """Match the given features to features in the `set_of_features`.
 
-        This call method is designed to find the best match between the given 
+        This call method is designed to find the best match between the given
         `features` and those in the `set_of_features`.
 
         Args:
@@ -62,7 +62,7 @@ class MinimumNormFeatureMatcher(BaseFeatureMatcher):
 
     def __call__(self, features: Tuple, set_of_features: Set[Tuple]):
         """Find the key in the data that minimizes the dot product.
-        
+
         A dot product is computed between the given `features` and each of the
         existing features stored in the data (as keys in the dict). The features
         in the data with the minimum dot product are returned. For example, if
