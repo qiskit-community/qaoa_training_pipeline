@@ -54,7 +54,13 @@ class TrivialDataLoader(BaseDataLoader):
 
 
 class LoadFromJson(BaseDataLoader):
-    """Loads data from a json file."""
+    """Loads data from a json file.
+
+    The loader expects that json file to contain keys that can be converted
+    to a tuple of floats that correspond to features of problem instances.
+    For example, `2, 6, 9, 3.0, -0.5, 0.6` is a valid key which will be
+    converted to the tuple of features `(2.0, 6.0, 9.0, 3.0, -0.5, 0.6)`.
+    """
 
     def __init__(self, file_name: str):
         """Setup the loader by specifying the file from which to load."""
@@ -63,7 +69,12 @@ class LoadFromJson(BaseDataLoader):
     def __call__(self):
         """Load the data."""
         with open(self._file_name, "r") as fin:
-            data = json.load(fin)
+            json_data = json.load(fin)
+
+        data = dict()
+        for key, val in json_data.items():
+            tuple_key = tuple(float(val) for val in key.split(","))
+            data[tuple_key] = val
 
         return data
 

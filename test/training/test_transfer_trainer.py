@@ -16,7 +16,7 @@ from qaoa_training_pipeline.evaluation import StatevectorEvaluator
 from qaoa_training_pipeline.pre_processing.feature_extraction import GraphFeatureExtractor
 from qaoa_training_pipeline.pre_processing.feature_matching import TrivialFeatureMatcher
 from qaoa_training_pipeline.pre_processing.angle_aggregation import AverageAngleAggregator
-from qaoa_training_pipeline.training.data_loading import TrivialDataLoader
+from qaoa_training_pipeline.training.data_loading import TrivialDataLoader, LoadFromJson
 from qaoa_training_pipeline.training.transfer_trainer import TransferTrainer
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
@@ -53,6 +53,22 @@ class TestTransferTraininer(TrainingPipelineTestCase):
         cost_op = graph_to_operator(graph, pre_factor=-0.5)
 
         result = self._trainer.train(cost_op, qaoa_depth=self._qaoa_depth)
+
+        self.assertEqual(len(result["optimized_qaoa_angles"]), 2 * self._qaoa_depth)
+
+    def test_data_load_from_file(self):
+        """Test data loading from a file."""
+        load_trainer = TransferTrainer(
+            data_loader=LoadFromJson("./test/data/qaoa_angles.json"),
+            feature_extractor=GraphFeatureExtractor(extract_standard_devs=False),
+            feature_matcher=TrivialFeatureMatcher(),
+            angle_aggregator=AverageAngleAggregator(),
+            evaluator=StatevectorEvaluator(),
+        )
+
+        graph = nx.random_regular_graph(n=6, d=3, seed=123)
+        cost_op = graph_to_operator(graph, pre_factor=-0.5)
+        result = load_trainer.train(cost_op, qaoa_depth=self._qaoa_depth)
 
         self.assertEqual(len(result["optimized_qaoa_angles"]), 2 * self._qaoa_depth)
 
