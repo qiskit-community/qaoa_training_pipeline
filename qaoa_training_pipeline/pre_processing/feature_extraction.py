@@ -62,12 +62,12 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
     # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
-        num_nodes: bool = True,
-        num_edges: bool = True,
-        avg_node_degree: bool = True,
-        avg_edge_weights: bool = True,
-        standard_devs: bool = True,
-        density: bool = True,
+        extract_num_nodes: bool = True,
+        extract_num_edges: bool = True,
+        extract_avg_node_degree: bool = True,
+        extract_avg_edge_weights: bool = True,
+        extract_standard_devs: bool = True,
+        extract_density: bool = True,
         extra_features: Optional[Dict] = None,
     ):
         """Setup the class.
