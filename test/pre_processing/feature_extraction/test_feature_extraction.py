@@ -36,7 +36,7 @@ class TestFeatureExtractor(TrainingPipelineTestCase):
 
     def test_turn_off_stds(self):
         """Test dict extraction."""
-        extractor = GraphFeatureExtractor(standard_devs=False)
+        extractor = GraphFeatureExtractor(extract_standard_devs=False)
         features = extractor(self.cost_op, None)
         self.assertTupleEqual(features, self.ref_graph_20_3_nostd)
 
