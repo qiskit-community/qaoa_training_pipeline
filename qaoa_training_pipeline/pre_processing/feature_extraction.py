@@ -82,12 +82,12 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
             extra_features: Features to be added to the list of features that are not
                 dependent on the graphs. The features are added when calling `__call__`.
         """
-        self.exctract_num_nodes = exctract_num_nodes
-        self.exctract_num_edges = exctract_num_edges
-        self.exctract_avg_node_degree = exctract_avg_node_degree
-        self.exctract_avg_edge_weights = exctract_avg_edge_weights
-        self.exctract_standard_devs = exctract_standard_devs
-        self.exctract_density = exctract_density
+        self.exctract_num_nodes = extract_num_nodes
+        self.exctract_num_edges = extract_num_edges
+        self.exctract_avg_node_degree = extract_avg_node_degree
+        self.exctract_avg_edge_weights = extract_avg_edge_weights
+        self.exctract_standard_devs = extract_standard_devs
+        self.exctract_density = extract_density
         self._extra_feature = extra_features or dict()
 
     def features(self):
@@ -174,12 +174,12 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         """Return an instance of this class based on a config."""
         config = super().to_config()
 
-        config["num_nodes"] = self.extract_num_nodes
-        config["num_edges"] = self.extract_num_edges
-        config["avg_node_degree"] = self.extract_avg_node_degree
-        config["avg_edge_weights"] = self.extract_avg_edge_weights
-        config["standard_devs"] = self.extract_standard_devs
-        config["density"] = self.extract_density
+        config["extract_num_nodes"] = self.extract_num_nodes
+        config["extract_num_edges"] = self.extract_num_edges
+        config["extract_avg_node_degree"] = self.extract_avg_node_degree
+        config["extract_avg_edge_weights"] = self.extract_avg_edge_weights
+        config["extract_standard_devs"] = self.extract_standard_devs
+        config["extract_density"] = self.extract_density
 
         return config
 
@@ -187,12 +187,12 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
     def from_config(cls, config) -> "GraphFeatureExtractor":
         """Setup the feature extractor from a config."""
         return cls(
-            config.get("num_nodes", True),
-            config.get("num_edges", True),
-            config.get("avg_node_degree", True),
-            config.get("avg_edge_weights", True),
-            config.get("standard_devs", True),
-            config.get("density", True),
+            config.get("extract_num_nodes", True),
+            config.get("extract_num_edges", True),
+            config.get("extract_avg_node_degree", True),
+            config.get("extract_avg_edge_weights", True),
+            config.get("extract_standard_devs", True),
+            config.get("extract_density", True),
         )
 
 
