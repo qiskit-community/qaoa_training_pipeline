@@ -15,7 +15,7 @@ import numpy as np
 
 class BaseAngleAggregator(ABC):
     """A base class to aggregate QAOA angles.
-    
+
     Children of this base class should take one or more lists of QAOA angles
     and return a single list of floats that correspond to QAOA angles. This
     aggregation can, for instance, return QAOA angles as the mean of multiple
@@ -43,7 +43,7 @@ class BaseAngleAggregator(ABC):
 
 class TrivialAngleAggregator(BaseAngleAggregator):
     """Perform a trivial aggregation.
-    
+
     This class assumes that the QAOA angles passed to `__call__` are already
     QAOA angles that are ready to be bound to a quantum circuit.
     """
