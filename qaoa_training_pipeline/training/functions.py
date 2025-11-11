@@ -13,6 +13,9 @@ from typing import Dict, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
 
 class BaseAnglesFunction(ABC):
     """A base class to define the interface of QAOA angle functions."""
@@ -24,6 +27,11 @@ class BaseAnglesFunction(ABC):
     def to_config(self) -> dict:
         """Creates a serializeable dictionary of the class."""
         return {"function_name": self.__class__.__name__}
+
+    @classmethod
+    @abstractmethod
+    def from_config(cls, config: dict) -> None:
+        """Initialize the function from a config."""
 
 
 class IdentityFunction(BaseAnglesFunction):
@@ -169,7 +177,110 @@ class FourierFunction(BaseAnglesFunction):
         return axis
 
 
+class PCAFunction(BaseAnglesFunction):
+    """Performs a PCA transform of the QAOA angles.
+
+    The PCA QAOA angle function is inspired from O. Parry and P. McMinn, "QAOA-PCA: Enhancing
+    efficiency in the quantum approximate optimization algorithm via principal component
+    analysis", arXiv:2504.16755.
+    """
+
+    def __init__(self, num_components: int):
+        """Initialize a PCA angles function for QAOA.
+
+        Args:
+            num_components: The number of PCA components.
+        """
+        self._num_components = num_components
+        self._scaler = StandardScaler()
+        self._pca = PCA(self._num_components)
+        self._is_fitted = False
+
+    @property
+    def is_fitted(self) -> bool:
+        """Return true if self has been fitted to data."""
+        return self._is_fitted
+
+    def fit(self, data):
+        """Fit the PCA function."""
+        data_ = self._scaler.fit_transform(data)
+        self._pca.fit(data_)
+        self._is_fitted = True
+
+    def __call__(self, x: list) -> list:
+        """Compute the QAOA angles from the principal components.
+
+        Here, `x` is a list of floats with the same length as the number of PCA components.
+        The returned is a list of QAOA angles.
+        """
+        if not self._is_fitted:
+            raise ValueError(f"Fit {self.__class__.__name__} to compute the QAOA angles.")
+
+        # Reconstruct standardized data from PCA
+        angles_scaled = self._pca.inverse_transform([x])
+
+        # Convert back to original scale
+        qaoa_angles = self._scaler.inverse_transform(angles_scaled)
+
+        return qaoa_angles[0]
+
+    def transform(self, x: list) -> list:
+        """Convert QAOA angles to their principle components."""
+        if not self._is_fitted:
+            raise ValueError(f"Fit {self.__class__.__name__} to compute the principal components.")
+
+        x_scaled = self._scaler.transform([x])
+        return self._pca.transform(x_scaled)[0]
+
+    def to_config(self) -> dict:
+        """Creates a serializeable dictionary of the class."""
+        config = super().to_config()
+        config["num_components"] = self._num_components
+
+        if self._is_fitted:
+            config["scaler"] = {
+                "mean": self._scaler.mean_.tolist(),
+                "scale": self._scaler.scale_.tolist(),
+                "var": self._scaler.var_.tolist(),
+            }
+
+            config["pca"] = {
+                "components": self._pca.components_.tolist(),
+                "mean": self._pca.mean_.tolist(),
+                "explained_variance": self._pca.explained_variance_.tolist(),
+                "explained_variance_ratio": self._pca.explained_variance_ratio_.tolist(),
+            }
+
+        return config
+
+    @classmethod
+    def from_config(cls, config: dict) -> None:
+        """Initialize the Fourier function."""
+
+        pca_func = cls(config["num_components"])
+
+        if "scaler" in config:
+            scaler_params = config["scaler"]
+            pca_func._scaler.mean_ = np.array(scaler_params["mean"])
+            pca_func._scaler.scale_ = np.array(scaler_params["scale"])
+            pca_func._scaler.var_ = np.array(scaler_params["var"])
+            pca_func._scaler.n_features_in_ = len(pca_func._scaler.mean_)
+
+        if "pca" in config:
+            pca_params = config["pca"]
+            pca_func._pca.components_ = np.array(pca_params["components"])
+            pca_func._pca.mean_ = np.array(pca_params["mean"])
+            pca_func._pca.explained_variance_ = np.array(pca_params["explained_variance"])
+            pca_func._pca.explained_variance_ratio_ = np.array(
+                pca_params["explained_variance_ratio"]
+            )
+            pca_func._pca.n_features_in_ = len(pca_func._pca.mean_)
+
+        return pca_func
+
+
 FUNCTIONS = {
     "IdentityFunction": IdentityFunction,
     "FourierFunction": FourierFunction,
+    "PCAFunction": PCAFunction,
 }
