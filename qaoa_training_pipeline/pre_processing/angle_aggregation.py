@@ -26,9 +26,9 @@ class BaseAngleAggregator(ABC):
     def __call__(self, qaoa_angles: Any) -> List:
         """Aggregate a set of angles into a list of angles that can be bound into a circuit.
 
-        For example, for example, multiple sets of angles might have been identified as
-        good QAOA angles for a given instance. We could then average over these angles or
-        try and extrapolate these data to new problem instances.
+        For example, multiple sets of angles might have been identified as good QAOA angles
+        for a given instance. We could then average over these angles or try and extrapolate
+        these data to new problem instances.
         """
 
     def to_config(self) -> dict:

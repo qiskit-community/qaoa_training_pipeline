@@ -72,8 +72,10 @@ class TransferTrainer(BaseTrainer):
         super().__init__(evaluator)
 
         # The data should be a dictionary in which the keys are features and the
-        # values are QAOA angles corresponding to those features. The values may
-        # be a list.
+        # values are QAOA angles corresponding to those features. The values are
+        # lists that should be valid inputs to angle aggregator functions. Therefore,
+        # the values may be a list of QAOA angles (requires trivial aggregation) or
+        # a list of lists of QAOA angles (requires aggregation such as `AverageAngleAggregator`).
         self._data_loader = data_loader
         self._data: dict = data_loader()
         self.validate_data()

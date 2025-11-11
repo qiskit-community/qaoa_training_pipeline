@@ -209,7 +209,7 @@ class PCAFunction(BaseAnglesFunction):
 
     def __call__(self, x: list) -> list:
         """Compute the QAOA angles from the principal components.
-        
+
         Here, `x` is a list of floats with the same length as the number of PCA components.
         The returned is a list of QAOA angles.
         """
