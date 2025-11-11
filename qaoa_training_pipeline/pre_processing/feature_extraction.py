@@ -73,21 +73,21 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         """Setup the class.
 
         Args:
-            exctract_num_nodes: If True, add the number of nodes to the features.
-            exctract_num_edges: If True, add the number of edges to the features.
-            exctract_avg_node_degree: If True, add the average node degree to the features.
-            exctract_avg_edge_weights: If True, add the average edge weight to the features.
-            exctract_standard_devs: If True, add the standard deviations with the averages.
-            exctract_density: If True, add the graph edge density to the features.
+            extract_num_nodes: If True, add the number of nodes to the features.
+            extract_num_edges: If True, add the number of edges to the features.
+            extract_avg_node_degree: If True, add the average node degree to the features.
+            extract_avg_edge_weights: If True, add the average edge weight to the features.
+            extract_standard_devs: If True, add the standard deviations with the averages.
+            extract_density: If True, add the graph edge density to the features.
             extra_features: Features to be added to the list of features that are not
                 dependent on the graphs. The features are added when calling `__call__`.
         """
-        self.exctract_num_nodes = extract_num_nodes
-        self.exctract_num_edges = extract_num_edges
-        self.exctract_avg_node_degree = extract_avg_node_degree
-        self.exctract_avg_edge_weights = extract_avg_edge_weights
-        self.exctract_standard_devs = extract_standard_devs
-        self.exctract_density = extract_density
+        self.extract_num_nodes = extract_num_nodes
+        self.extract_num_edges = extract_num_edges
+        self.extract_avg_node_degree = extract_avg_node_degree
+        self.extract_avg_edge_weights = extract_avg_edge_weights
+        self.extract_standard_devs = extract_standard_devs
+        self.extract_density = extract_density
         self._extra_feature = extra_features or dict()
 
     def features(self):

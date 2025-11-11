@@ -67,10 +67,16 @@ class AverageAngleAggregator(BaseAngleAggregator):
         Args:
             axis: The axis along which to perform the averaging.
         """
+        if isinstance(axis, int):
+            axis = [axis]
+
         self._axis = axis
 
-    def __call__(self, qaoa_angles: np.array):
+    def __call__(self, qaoa_angles: Union[np.array, List]):
         """Average over the qaoa_angles."""
+        if isinstance(qaoa_angles, List):
+            qaoa_angles = np.array(qaoa_angles)
+
         if any(i >= len(qaoa_angles.shape) for i in self._axis):
             raise ValueError("Input data not coherent with chosen axes")
         return np.average(qaoa_angles, axis=self._axis)
