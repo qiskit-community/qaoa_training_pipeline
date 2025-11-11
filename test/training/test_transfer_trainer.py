@@ -41,7 +41,7 @@ class TestTransferTraininer(TrainingPipelineTestCase):
 
         self._trainer = TransferTrainer(
             data_loader=TrivialDataLoader(self._data),
-            feature_extractor=GraphFeatureExtractor(standard_devs=False),
+            feature_extractor=GraphFeatureExtractor(extract_standard_devs=False),
             feature_matcher=TrivialFeatureMatcher(),
             angle_aggregator=AverageAngleAggregator(),
             evaluator=StatevectorEvaluator(),
@@ -114,12 +114,12 @@ class TestTransferTraininer(TrainingPipelineTestCase):
             "feature_extractor": "GraphFeatureExtractor",
             "feature_extractor_init": {
                 "feature_extractor_name": "GraphFeatureExtractor",
-                "num_nodes": True,
-                "num_edges": True,
-                "avg_node_degree": True,
-                "avg_edge_weights": True,
-                "standard_devs": False,
-                "density": True,
+                "extract_num_nodes": True,
+                "extract_num_edges": True,
+                "extract_avg_node_degree": True,
+                "extract_avg_edge_weights": True,
+                "extract_standard_devs": False,
+                "extract_density": True,
             },
             "feature_matcher": "TrivialFeatureMatcher",
             "feature_matcher_init": {},
