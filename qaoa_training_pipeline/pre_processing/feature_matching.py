@@ -9,21 +9,23 @@
 """Classes to match features from cost operators."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Tuple
+from typing import Dict, Set, Tuple
 import numpy as np
 
 
 class BaseFeatureMatcher(ABC):
-    """A base class that matches features from problem instances to data."""
+    """A base class that matches features from problem instances to an existing set."""
 
     @abstractmethod
-    def __call__(self, features: Tuple, data: Any) -> Tuple:
-        """Match the given features to features describing the data.
+    def __call__(self, features: Tuple, set_of_features: Set[Tuple]) -> Tuple:
+        """Match the given features to features in the `set_of_features`.
 
-        For example, we have data that containes a map between some features of
-        problem instances and their corresponding optimized QAOA angles. This call
-        method is designed to find the best match between the given `fieatures` and
-        those in the data.
+        This call method is designed to find the best match between the given 
+        `features` and those in the `set_of_features`.
+
+        Args:
+            features: A tuple of features.
+            set_of_features: Each element of the set is a tuple of features.
         """
 
     def to_config(self) -> Dict:
@@ -39,11 +41,13 @@ class BaseFeatureMatcher(ABC):
 class TrivialFeatureMatcher(BaseFeatureMatcher):
     """Perform a trivial mapping."""
 
-    def __call__(self, features: Tuple, data: Dict):
+    def __call__(self, features: Tuple, set_of_features: Set[Tuple]):
         """Perform a trivial match."""
 
-        if features not in data:
-            raise KeyError(f"{self.__class__.__name__} could not find feature {features} in data.")
+        if features not in set_of_features:
+            raise KeyError(
+                f"{self.__class__.__name__} could not find feature {features} in {set_of_features}."
+            )
 
         return features
 
@@ -56,9 +60,16 @@ class TrivialFeatureMatcher(BaseFeatureMatcher):
 class MinimumNormFeatureMatcher(BaseFeatureMatcher):
     """Match the features based on the smallest inner product."""
 
-    def __call__(self, features: Tuple, data: Dict):
-        """Find the key in the data that minimizes the dot product."""
-        return min(list(data.keys()), key=lambda x: np.dot(x, features))
+    def __call__(self, features: Tuple, set_of_features: Set[Tuple]):
+        """Find the key in the data that minimizes the dot product.
+        
+        A dot product is computed between the given `features` and each of the
+        existing features stored in the data (as keys in the dict). The features
+        in the data with the minimum dot product are returned. For example, if
+        the sets of features in the data are `f1` and `f2` we return
+        min(np.dot(x, f1), np.dot(x, f2)).
+        """
+        return min(set_of_features, key=lambda x: np.dot(x, features))
 
     @classmethod
     def from_config(cls, config: Dict) -> "MinimumNormFeatureMatcher":

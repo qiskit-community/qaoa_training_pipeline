@@ -117,7 +117,7 @@ class TransferTrainer(BaseTrainer):
 
         # 2. Match these features to keys in the data of good angles.
         if self._feature_matcher is not None:
-            data_key = self._feature_matcher(features, self._data)
+            data_key = self._feature_matcher(features, set(self._data.keys()))
         else:
             data_key = features
 
