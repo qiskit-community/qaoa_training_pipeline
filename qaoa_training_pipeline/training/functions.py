@@ -208,7 +208,11 @@ class PCAFunction(BaseAnglesFunction):
         self._is_fitted = True
 
     def __call__(self, x: list) -> list:
-        """Compute the QAOA angles from the principal components."""
+        """Compute the QAOA angles from the principal components.
+        
+        Here, `x` is a list of floats with the same length as the number of PCA components.
+        The returned is a list of QAOA angles.
+        """
         if not self._is_fitted:
             raise ValueError(f"Fit {self.__class__.__name__} to compute the QAOA angles.")
 
