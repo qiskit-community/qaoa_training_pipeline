@@ -134,6 +134,12 @@ class TransferTrainer(BaseTrainer):
         else:
             energy = "NA"
 
+        if len(qaoa_angles) // 2 != qaoa_depth:
+            raise ValueError(
+                f"Data in {self.__class__.__name__} returned angles for the wrong QAOA depth."
+                "Check the underlying data used in the transfer."
+            )
+
         return ParamResult(qaoa_angles, time() - start, self, energy)
 
     def validate_data(self):
