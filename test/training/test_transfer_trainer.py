@@ -154,3 +154,12 @@ class TestTransferTraininer(TrainingPipelineTestCase):
         config = self._trainer.to_config()
         trainer = TransferTrainer.from_config(config)
         self.assertTrue(isinstance(trainer, TransferTrainer))
+
+    def test_parse_train_kwargs(self):
+        """Test the parsing of the train key word arguments."""
+        kwargs = self._trainer.parse_train_kwargs("qaoa_depth:3")
+
+        self.assertDictEqual(kwargs, {"qaoa_depth": 3})
+
+        with self.assertRaises(ValueError):
+            self._trainer.parse_train_kwargs("reps:3")
