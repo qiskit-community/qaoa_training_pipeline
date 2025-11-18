@@ -155,7 +155,7 @@ class TransferTrainer(BaseTrainer):
         """
         train_kwargs = dict()
         for key, val in self.extract_train_kwargs(args_str).items():
-            if key in ["reps"]:
+            if key in ["qaoa_depth"]:
                 train_kwargs[key] = int(val)
             else:
                 raise ValueError("Unknown key in provided train_kwargs.")
