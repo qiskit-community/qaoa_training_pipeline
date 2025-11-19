@@ -25,7 +25,7 @@ class TestRecursion(TrainingPipelineTestCase):
 
     def setUp(self):
         """Setup values for tests."""
-        self.cost_op = SparsePauliOp.from_list([("ZIZ", -1), ("IZZ", -1)])
+        self.cost_op = SparsePauliOp.from_list([("IZIZ", -1), ("IIZZ", -1), ("ZIZI", -1)])
 
     def test_simple(self):
         """Test a simple recursion training."""
@@ -33,7 +33,7 @@ class TestRecursion(TrainingPipelineTestCase):
         scipy_trainer = ScipyTrainer(MPSEvaluator())
         trainer = RecursionTrainer(scipy_trainer, interpolate)
 
-        result_pre = scipy_trainer.train(self.cost_op, params0=[0, 0])
+        result_pre = scipy_trainer.train(self.cost_op, params0=[0.1, 0.1])
 
         result = trainer.train(self.cost_op, params0=result_pre["optimized_params"], reps=3)
 
