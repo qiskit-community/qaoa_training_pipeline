@@ -48,6 +48,10 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
+            qaoa_angles_function: A function to convert optimization parameters into QAOA
+                angles. By default, this is the identity function. Ideally, this argument is
+                an instance of `BaseAnglesFunction` but we allow any callable here that maps
+                optimization parameters to QAOA angles.
         """
         BaseTrainer.__init__(self, evaluator, qaoa_angles_function)
         HistoryMixin.__init__(self)
@@ -175,7 +179,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
-            config["minimize_args"],
+            config.get("minimize_args", None),
             energy_minimization=config.get("energy_minimization", None),
             qaoa_angles_function=function,
         )
@@ -203,7 +207,8 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         """
         config = {
             "trainer_name": self.__class__.__name__,
-            "evaluator": self._evaluator.to_config(),
+            "evaluator": self._evaluator.__class__.__name__,
+            "evaluator_init": self._evaluator.to_config(),
         }
 
         config.update(self._minimize_args)
