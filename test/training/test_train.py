@@ -11,6 +11,7 @@
 from test import TrainingPipelineTestCase
 
 import glob
+import json
 import os
 import sys
 
@@ -58,6 +59,15 @@ class TestTrain(TrainingPipelineTestCase):
                 result["args"]["train_kwargs0"],
                 "num_points:10:parameter_ranges:3/6/3/6",
             )
+
+        # Load from the saved file
+        labels_to_test = ["pre_processing", "cost_operator", "0", "args"]
+        for file_name in glob.glob("*dmp_file*"):
+            with open(file_name, "r") as fin:
+                ld_data = json.load(fin)
+
+                for label in labels_to_test:
+                    self.assertTrue(label in ld_data)
 
     @data("maxcut", "mis:3", "mis")
     def test_problem_classes(self, problem_str: str):
@@ -145,7 +155,7 @@ class TestTrain(TrainingPipelineTestCase):
             # case, is the only one)
             self.assertIn("schmidt_values", result[0].keys())
 
-    @data(0, 1, 2, 3, 4, 5, 6, 7)
+    @data(0, 1, 2, 3, 4, 5, 6, 7, 8)
     def test_methods(self, method_idx: int):
         """Test that the different methods run without input args."""
 
@@ -159,6 +169,7 @@ class TestTrain(TrainingPipelineTestCase):
             5: (0, 2),
             6: (1, 6),
             7: (1, 6),
+            8: (0, 4),  # The data in test/data/qaoa_angles.json is for p=2.
         }
 
         file_name = "dmp_file_test_methods_" + str(method_idx)

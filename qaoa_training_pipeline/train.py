@@ -24,17 +24,17 @@ capable of extracting input from a previously obtained training result.
 """
 
 import argparse
-from typing import Optional, List
-import json
-
-import os
-
 from datetime import datetime
+from typing import Optional, List
+import os
+import json
+import numpy as np
 
 from qaoa_training_pipeline.utils.data_utils import load_input, input_to_operator
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.pre_processing import PREPROCESSORS
 from qaoa_training_pipeline.training import TRAINERS
+from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.utils.problem_classes import PROBLEM_CLASSES
 
 
@@ -209,6 +209,16 @@ def train(args: Optional[List]):
 
     all_results, result = {}, {}
 
+    all_results["args"] = vars(args)
+
+    if pre_processor is not None:
+        all_results["pre_processing"] = pre_processor.to_config()
+    else:
+        all_results["pre_processing"] = None
+
+    # Convert to real for serialization since optimization problems are a diagonal Hc.
+    all_results["cost_operator"] = [(l, np.real(c)) for l, c in input_problem.to_list()]
+
     # Save files specified from the cmd line override file names in the json config.
     save_file = getattr(args, "save_file", None)
 
@@ -269,16 +279,11 @@ def train(args: Optional[List]):
                 os.makedirs(args.save_dir)
 
             with open(args.save_dir + save_file_local, "w") as fout:
-                json.dump({k: v.data for k, v in all_results.items()}, fout, indent=4)
+                save_data = dict()
+                for k, v in all_results.items():
+                    save_data[k] = v.data if isinstance(v, ParamResult) else v
 
-    all_results["args"] = vars(args)
-
-    if pre_processor is not None:
-        all_results["pre_processing"] = pre_processor.to_config()
-    else:
-        all_results["pre_processing"] = None
-
-    all_results["cost_operator"] = input_problem.to_list()
+                json.dump(save_data, fout, indent=4)
 
     return all_results
 
