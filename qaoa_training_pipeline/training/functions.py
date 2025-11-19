@@ -73,9 +73,10 @@ class FourierFunction(BaseAnglesFunction):
     def __call__(self, x: list) -> list:
         """Compute beta and gamma angles from the optimization variables x.
 
-        We assume that the first half of `x` is for `beta` and the second half is for `gamma`.
-        Furthermore, this function assumes that the QAOA depth is given either by its internal
-        variable `self._depth` or by `x` if `self._depth` is None.
+        We assume that the first half of `x` are the Fourier coefficients for `beta` and the
+        second half are the coefficients for `gamma`. Furthermore, this function assumes that
+        the QAOA depth is given either by its internal variable `self._depth` or by `x` if
+        `self._depth` is None.
         """
         n_coeffs = len(x) // 2
 
