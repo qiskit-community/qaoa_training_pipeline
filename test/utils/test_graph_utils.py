@@ -17,7 +17,7 @@ import numpy as np
 
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
-from qiskit.circuit.library import QAOAAnsatz
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import HighLevelSynthesis
 from qiskit.quantum_info import SparsePauliOp
@@ -72,12 +72,12 @@ class TestGraphUtils(TrainingPipelineTestCase):
 
         cost_operator = SparsePauliOp.from_list([("IIZZ", -1), ("ZIIZ", 1), ("IZIZ", 2)])
 
-        cost_layer = QAOAAnsatz(
+        cost_layer = qaoa_ansatz(
             cost_operator,
-            mixer_operator=QuantumCircuit(4),
+            mixer_operator=SparsePauliOp.from_list([("IIII", 1)]),
             initial_state=QuantumCircuit(4),
             reps=1,
-        ).decompose()
+        )
 
         pass_manager = PassManager([HighLevelSynthesis(basis_gates=["rzz"])])
         cost_layer = pass_manager.run(cost_layer)
@@ -93,12 +93,12 @@ class TestGraphUtils(TrainingPipelineTestCase):
 
         cost_operator = SparsePauliOp.from_list([("IZZ", -1), ("IIZ", 1), ("ZIZ", 2)])
 
-        cost_layer = QAOAAnsatz(
+        cost_layer = qaoa_ansatz(
             cost_operator,
-            mixer_operator=QuantumCircuit(3),
+            mixer_operator=SparsePauliOp.from_list([("III", 1)]),
             initial_state=QuantumCircuit(3),
             reps=1,
-        ).decompose()
+        )
 
         pass_manager = PassManager([HighLevelSynthesis(basis_gates=["rzz", "rz"])])
         cost_layer = pass_manager.run(cost_layer)
