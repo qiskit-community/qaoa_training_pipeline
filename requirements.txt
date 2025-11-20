@@ -8,5 +8,6 @@ quimb>=1.8.2
 matplotlib>=3.3
 python-sat
 qiskit
+qiskit-ibm-runtime
 qiskit-optimization[cplex]
 scikit-learn
