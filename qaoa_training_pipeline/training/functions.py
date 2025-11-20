@@ -65,7 +65,7 @@ class FourierFunction(BaseAnglesFunction):
         Args:
             depth: The depth of the QAOA circuit. Therefore, the length of the `beta` and `gamma`
                 angles is given by depth. If depth is None, then the QAOA depth will be the
-                same as the number of fourrier coefficients. This corresponds to the
+                same as the number of Fourier coefficients. This corresponds to the
                 FOURIER[∞; 0] from the Zhou et al. PRX 10, 021067 (2020).
         """
         self._depth = depth
