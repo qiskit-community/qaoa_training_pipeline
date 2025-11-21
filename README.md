@@ -175,6 +175,7 @@ This repository is still in development: new functionality is being added and th
 |      15 | Remove python 3.9 support                                    |          #31 |
 |      16 | Fix TQATrainer qaoa_angles_function and returned ParamResult |          #35 |
 |      17 | Add QAOA-PCA and data based trainers                         |          #32 |
+|      18 | Allow nbr of Fourrier coefficients to scale with QAOA depth  |          #27 |
 
 ## IBM Public Repository Disclosure
 
