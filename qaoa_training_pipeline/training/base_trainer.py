@@ -82,6 +82,7 @@ class BaseTrainer(ABC):
         return {
             "trainer_name": self.__class__.__name__,
             "evaluator": self._evaluator.to_config(),
+            "qaoa_angles_function": self._qaoa_angles_function.to_config(),
         }
 
     @abstractmethod
