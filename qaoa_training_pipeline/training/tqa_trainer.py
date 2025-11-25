@@ -173,7 +173,6 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             )
 
             energy = float(energy)
-            print(energy)
             self._energy_evaluation_time.append(time() - estart)
             self._energy_history.append(self._sign * energy)
             self._parameter_history.append(list(float(val) for val in x))
