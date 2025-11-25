@@ -73,8 +73,8 @@ class TQATrainer(BaseTrainer, HistoryMixin):
     optimization algorithm" published in Quantum 5, 491 (2021). It is usually intended to
     be used as an initial point generator which is independent of problem instance and
     does not do any optimization. However, we can also use this class to perform a
-    SciPy optimization of the end point of the TQA schedule. 
-    
+    SciPy optimization of the end point of the TQA schedule.
+
     Additionally, the trainer accepts a Linear Ramp parameters selection of QAOA as
     presented in "Towards a Linear-Ramp QAOA protocol: Evidence of a scaling advantage in
     solving some combinatorial optimization problems" published in npj Quantum Information
@@ -162,7 +162,11 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             estart = time()
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
-                params=self.lr_schedule(reps, dt=x[0]) if type(x[0]) in (list, tuple) else self.tqa_schedule(reps, dt=x[0]),
+                params=(
+                    self.lr_schedule(reps, dt=x[0])
+                    if type(x[0]) in (list, tuple)
+                    else self.tqa_schedule(reps, dt=x[0])
+                ),
                 mixer=mixer,
                 initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
@@ -179,7 +183,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         start = time()
 
         initial_dt = initial_dt or self.initial_dt
-        params0 = initial_dt if type(initial_dt) == tuple else [initial_dt] 
+        params0 = initial_dt if type(initial_dt) == tuple else [initial_dt]
         if self.evaluator is None:
             param_result = ParamResult(params0, time() - start, self, None)
         else:
@@ -198,9 +202,9 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         return np.concatenate((1 - grid * dt / reps, grid * dt / reps)).tolist()
 
     @staticmethod
-    def lr_schedule(reps:int, dt:Tuple[float, float]):
+    def lr_schedule(reps: int, dt: Tuple[float, float]):
         """Create the Linear Ramp schedule."""
-        betas = np.arange(1, reps + 1)[::-1] * dt[0]/ reps
+        betas = np.arange(1, reps + 1)[::-1] * dt[0] / reps
         gammas = np.arange(1, reps + 1) * dt[1] / reps
         return np.concatenate((betas, gammas)).tolist()
 
@@ -221,7 +225,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             line1 = axis.plot(self._energy_history, **plot_style, label="Energy")
 
             axis2 = axis.twinx()
-            
+
             if len(self._parameter_history[0]) == 1:
                 plot_style["color"] = "forestgreen"
                 line2 = axis2.plot(
@@ -233,18 +237,24 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             elif len(self._parameter_history[0]) == 2:
                 plot_style["color"] = "tab:green"
                 line2 = axis2.plot(
-                    [val[0] for val in self._parameter_history], **plot_style, label=r"$\Delta_{\beta}$"
+                    [val[0] for val in self._parameter_history],
+                    **plot_style,
+                    label=r"$\Delta_{\beta}$",
                 )
                 plot_style["color"] = "tab:red"
                 line3 = axis2.plot(
-                    [val[1] for val in self._parameter_history], **plot_style, label=r"$\Delta_{\gamma}$"
+                    [val[1] for val in self._parameter_history],
+                    **plot_style,
+                    label=r"$\Delta_{\gamma}$",
                 )
                 axis2.set_ylabel("LR slope values")
-                axis.legend(line1 + line2 + line3, [line1[0].get_label(), line2[0].get_label(), line3[0].get_label()])
-            
+                axis.legend(
+                    line1 + line2 + line3,
+                    [line1[0].get_label(), line2[0].get_label(), line3[0].get_label()],
+                )
+
             axis.set_xlabel("Iteration")
             axis.set_ylabel("Energy")
-            
 
         return fig, axis
 
