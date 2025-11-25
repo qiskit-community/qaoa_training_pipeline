@@ -9,7 +9,7 @@
 """Classes to generate a beta and gamma schedule based on TQA."""
 
 from time import time
-from typing import Any, Dict, Optional
+from typing import Any, Tuple, Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -73,7 +73,12 @@ class TQATrainer(BaseTrainer, HistoryMixin):
     optimization algorithm" published in Quantum 5, 491 (2021). It is usually intended to
     be used as an initial point generator which is independent of problem instance and
     does not do any optimization. However, we can also use this class to perform a
-    SciPy optimization of the end point of the TQA schedule.
+    SciPy optimization of the end point of the TQA schedule. 
+    
+    Additionally, the trainer accepts a Linear Ramp parameters selection of QAOA as
+    presented in "Towards a Linear-Ramp QAOA protocol: Evidence of a scaling advantage in
+    solving some combinatorial optimization problems" published in npj Quantum Information
+    11, 131 (2025). It can be used to perform a SciPy optimization of the beta and gamma slopes.
 
 
     .. note::
@@ -91,13 +96,14 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         evaluator: Optional[BaseEvaluator] = None,
         minimize_args: Optional[Dict[str, Any]] = None,
         energy_minimization: bool = False,
-        initial_dt: float = 0.75,
+        initial_dt: float | Tuple[float, float] = 0.75,
     ) -> None:
         """Initialize an instance.
 
         Args:
-            evaluator: If an evaluator is given then we will try and optimize the
-                end points of the TQA schedule using SciPy.
+            evaluator: If an evaluator is given then we will try and optimize: (1) the
+                end points of the TQA schedule using SciPy if initial_dt is a float.
+                (2) The slopes of the Linear Ramp schedules if initial_dt is Tuple[float, float].
             minimize_args: Arguments for the minimization. By default, we assume COBYLA with
                 a small step size since the default TQA value of 0.75 is usually very good.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
@@ -135,7 +141,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-        initial_dt: float | None = None,
+        initial_dt: float | Tuple[float, float] | None = None,
     ) -> ParamResult:
         """Train the QAOA parameters."""
         self.reset_history()
@@ -156,14 +162,14 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             estart = time()
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
-                params=self.tqa_schedule(reps, dt=x[0]),
+                params=self.lr_schedule(reps, dt=x[0]) if type(x[0]) in (list, tuple) else self.tqa_schedule(reps, dt=x[0]),
                 mixer=mixer,
                 initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
             )
 
             energy = float(energy)
-
+            print(energy)
             self._energy_evaluation_time.append(time() - estart)
             self._energy_history.append(self._sign * energy)
             self._parameter_history.append(list(float(val) for val in x))
@@ -173,10 +179,10 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         start = time()
 
         initial_dt = initial_dt or self.initial_dt
+        params0 = initial_dt if type(initial_dt) == tuple else [initial_dt] 
         if self.evaluator is None:
-            param_result = ParamResult([initial_dt], time() - start, self, None)
+            param_result = ParamResult(params0, time() - start, self, None)
         else:
-            params0 = [initial_dt]
             result = minimize(_energy, params0, **self._minimize_args)
             param_result = ParamResult.from_scipy_result(
                 result, params0, time() - start, self._sign, self
@@ -190,6 +196,13 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         """Create the TQA schedule."""
         grid = np.arange(1, reps + 1) - 0.5
         return np.concatenate((1 - grid * dt / reps, grid * dt / reps)).tolist()
+
+    @staticmethod
+    def lr_schedule(reps:int, dt:Tuple[float, float]):
+        """Create the Linear Ramp schedule."""
+        betas = np.arange(1, reps + 1)[::-1] * dt[0]/ reps
+        gammas = np.arange(1, reps + 1) * dt[1] / reps
+        return np.concatenate((betas, gammas)).tolist()
 
     def plot(
         self,
@@ -208,15 +221,30 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             line1 = axis.plot(self._energy_history, **plot_style, label="Energy")
 
             axis2 = axis.twinx()
-            plot_style["color"] = "forestgreen"
-            line2 = axis2.plot(
-                [val[0] for val in self._parameter_history], **plot_style, label="TQA dt"
-            )
+            
+            if len(self._parameter_history[0]) == 1:
+                plot_style["color"] = "forestgreen"
+                line2 = axis2.plot(
+                    [val[0] for val in self._parameter_history], **plot_style, label="TQA dt"
+                )
+                axis2.set_ylabel("TQA dt value")
+                axis.legend(line1 + line2, [line1[0].get_label(), line2[0].get_label()])
 
+            elif len(self._parameter_history[0]) == 2:
+                plot_style["color"] = "tab:green"
+                line2 = axis2.plot(
+                    [val[0] for val in self._parameter_history], **plot_style, label=r"$\Delta_{\beta}$"
+                )
+                plot_style["color"] = "tab:red"
+                line3 = axis2.plot(
+                    [val[1] for val in self._parameter_history], **plot_style, label=r"$\Delta_{\gamma}$"
+                )
+                axis2.set_ylabel("LR slope values")
+                axis.legend(line1 + line2 + line3, [line1[0].get_label(), line2[0].get_label(), line3[0].get_label()])
+            
             axis.set_xlabel("Iteration")
             axis.set_ylabel("Energy")
-            axis2.set_ylabel("TQA dt value")
-            axis.legend(line1 + line2, [line1[0].get_label(), line2[0].get_label()])
+            
 
         return fig, axis
 
