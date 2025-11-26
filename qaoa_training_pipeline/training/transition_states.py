@@ -238,9 +238,25 @@ class TransitionStatesTrainer(BaseTrainer):
 
     @classmethod
     def from_config(cls, config: dict) -> "TransitionStatesTrainer":
-        """Create a transition state trainer from a config."""
+        """Create a transition state trainer from a config.
+
+        Note that the config can be written as folows to allow train.py to modify the
+        evaluator init arguments from the command line.
+        {
+            "trainer_init": {
+                "trainer": "ScipyTrainer",
+                "trainer_init" {"minimize_args": {...}}
+            },
+            "evaluator": "MPSEvaluator",
+            "evaluator_init": {...}
+        }
+        """
 
         trainer_name = config["trainer"]
+
+        for key in ["evaluator", "evaluator_init"]:
+            if key in config:
+                config["trainer_init"][key] = config[key]
 
         # Note: we cannot user the TRAINERS mapping otherwise we will circular import outselves.
         if trainer_name == "ScipyTrainer":

@@ -190,6 +190,11 @@ class ReweightingTrainer(BaseTrainer):
     def from_config(cls, config: dict) -> "ReweightingTrainer":
         """Create a class instance from a trainer."""
 
+        for key in ["evaluator", "evaluator_init"]:
+            if key in config:
+                config["trainer1_init"][key] = config[key]
+                config["trainer2_init"][key] = config[key]
+
         trainer1_name = config["trainer1"]
         trainer1 = cls._trainer_from_config(trainer1_name, config["trainer1_init"])
 

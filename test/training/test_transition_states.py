@@ -105,6 +105,22 @@ class TestTransitionStates(TrainingPipelineTestCase):
         self.assertTrue(isinstance(trainer, TransitionStatesTrainer))
         self.assertTrue(isinstance(trainer.trainer, ScipyTrainer))
 
+    def test_from_config_override(self):
+        """Test that we can load from a config file."""
+        config = {
+            "trainer": "ScipyTrainer",
+            "trainer_init": {
+                "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}},
+            },
+            "evaluator": "LightConeEvaluator",
+            "evaluator_init": {},
+        }
+
+        trainer = TransitionStatesTrainer.from_config(config)
+
+        self.assertTrue(isinstance(trainer, TransitionStatesTrainer))
+        self.assertTrue(isinstance(trainer.trainer, ScipyTrainer))
+
     def test_evaluator_config(self):
         """Test that we can load from a config file."""
         config = {
