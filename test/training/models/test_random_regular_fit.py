@@ -19,8 +19,11 @@ from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
 @ddt
 class TestRandomRegularModel(TrainingPipelineTestCase):
+    """Test RandomRegularDepthOneFit parameter mapper."""
+
     @data(3, 4, 5, 7, 8, 9)
     def test_model(self, degree: int):
+        """Test default trainer runs on simple random-regular graph."""
         model = RandomRegularDepthOneFit()
 
         graph = nx.random_regular_graph(d=degree, n=26)

@@ -1,0 +1,22 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "TransferTrainer",
+            "trainer_init": {
+            "data_loader": "LoadFromJson",
+            "data_loader_init": {
+                "file_name": "./test/data/qaoa_angles.json"
+            },
+            "feature_extractor": "GraphFeatureExtractor",
+            "feature_extractor_init": {"extract_standard_devs": false},
+            "feature_matcher": "MinimumNormFeatureMatcher",
+            "feature_matcher_init": {},
+            "angle_aggregator": "AverageAngleAggregator",
+            "angle_aggregator_init": {"angle_aggregator_name": "AverageAngleAggregator", "axis": 0},
+            "evaluator": "StatevectorEvaluator",
+            "evaluator_init": {"statevector_init_args": {}}
+            },
+            "train_kwargs": {"qaoa_depth": 2}
+        }
+    ]
+}
