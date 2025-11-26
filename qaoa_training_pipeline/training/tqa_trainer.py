@@ -56,7 +56,7 @@ class TQATrainerFunction(BaseAnglesFunction):
                 f"reps must be provided to {self.__class__.__name__}(reps=...) or "
                 + "set with trainer.train(..., reps=...)"
             )
-        return self._tqa_schedule(reps=reps, dt=x[0])
+        return self._tqa_schedule(reps=reps, dt=x)
 
     # pylint: disable=unused-argument
     @classmethod
@@ -112,10 +112,15 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             initial_dt: Initial dt if not provided to :meth:`train`. Defaults to
                 ``0.75``.
         """
+
+        initial_dt = (initial_dt,) if isinstance(initial_dt, float) else initial_dt
+
+        schedule_method = self.tqa_schedule if len(initial_dt) == 1 else self.lr_schedule
+
         BaseTrainer.__init__(
             self,
             evaluator,
-            qaoa_angles_function=TQATrainerFunction(self.tqa_schedule, reps=None),
+            qaoa_angles_function=TQATrainerFunction(schedule_method, reps=None),
         )
         HistoryMixin.__init__(self)
 
@@ -145,8 +150,8 @@ class TQATrainer(BaseTrainer, HistoryMixin):
     ) -> ParamResult:
         """Train the QAOA parameters."""
         self.reset_history()
-        
-        initial_dt = (initial_dt, ) if isinstance(initial_dt, float) else initial_dt
+
+        initial_dt = (initial_dt,) if isinstance(initial_dt, float) else initial_dt
         # Set the reps attribute on the angles function, if it supports one.
         # This allow us to override it later with a function that doesn't
         # require reps. We set reps here so that ParamResult.from_scipy_result
@@ -195,6 +200,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
     @staticmethod
     def tqa_schedule(reps: int, dt: float) -> np.array:
         """Create the TQA schedule."""
+        dt = dt[0] if isinstance(dt, tuple) else dt
         grid = np.arange(1, reps + 1) - 0.5
         return np.concatenate((1 - grid * dt / reps, grid * dt / reps)).tolist()
 
