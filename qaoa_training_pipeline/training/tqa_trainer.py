@@ -162,11 +162,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             estart = time()
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
-                params=(
-                    self.lr_schedule(reps, dt=x[0])
-                    if isinstance(x[0], tuple)
-                    else self.tqa_schedule(reps, dt=x[0])
-                ),
+                params=self.qaoa_angles_function(x),
                 mixer=mixer,
                 initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
