@@ -164,7 +164,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
                 cost_op=cost_op,
                 params=(
                     self.lr_schedule(reps, dt=x[0])
-                    if type(x[0]) in (list, tuple)
+                    if isinstance(x[0], tuple)
                     else self.tqa_schedule(reps, dt=x[0])
                 ),
                 mixer=mixer,
@@ -182,7 +182,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         start = time()
 
         initial_dt = initial_dt or self.initial_dt
-        params0 = initial_dt if type(initial_dt) == tuple else [initial_dt]
+        params0 = initial_dt if isinstance(initial_dt, tuple) else [initial_dt]
         if self.evaluator is None:
             param_result = ParamResult(params0, time() - start, self, None)
         else:
