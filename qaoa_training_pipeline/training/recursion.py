@@ -118,14 +118,27 @@ class RecursionTrainer(BaseTrainer):
     def from_config(cls, config: Dict) -> "RecursionTrainer":
         """Create the trainer from a config file.
 
-        The parameter extender is chosen from one of the parameter extenders
-        specified in parameter_extenders.py.
+        The parameter extender is chosen from one of the parameter extenders specified in
+        parameter_extenders.py. Note that the config can be written as follows to allow
+        train.py to modify the evaluator init arguments from the command line.
+        {
+            "trainer_init": {
+                "trainer": "ScipyTrainer",
+                "trainer_init" {"minimize_args": {...}}
+            },
+            "evaluator": "MPSEvaluator",
+            "evaluator_init": {...}
+        }
         """
 
         if config["trainer"] != "ScipyTrainer":
             raise TrainingError(
                 f"{cls.__name__} only uses ScipyTrainer as trainer. Received " + config["trainer"]
             )
+
+        for key in ["evaluator", "evaluator_init"]:
+            if key in config:
+                config["trainer_init"][key] = config[key]
 
         trainer = ScipyTrainer.from_config(config["trainer_init"])
         parameter_extender = PARAMETEREXTENDERS[config["parameter_extender"]]

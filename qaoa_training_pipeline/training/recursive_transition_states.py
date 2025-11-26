@@ -91,7 +91,23 @@ class RecursiveTransitionStates(BaseTrainer):
 
     @classmethod
     def from_config(cls, config: Dict) -> "RecursiveTransitionStates":
-        """Create the trainer from a config file."""
+        """Create the trainer from a config file.
+
+        Note that the config can be written as folows to allow train.py to modify the evaluator
+        init arguments from the command line.
+        {
+            "trainer_init": {
+                "trainer": "ScipyTrainer",
+                "trainer_init" {"minimize_args": {...}}
+            },
+            "evaluator": "MPSEvaluator",
+            "evaluator_init": {...}
+        }
+        """
+
+        for key in ["evaluator", "evaluator_init"]:
+            if key in config:
+                config["trainer_init"][key] = config[key]
 
         if config["trainer"] != "ScipyTrainer":
             raise TrainingError(

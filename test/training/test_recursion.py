@@ -59,6 +59,26 @@ class TestRecursion(TrainingPipelineTestCase):
         trainer = RecursionTrainer.from_config(config)
         self.assertTrue(isinstance(trainer, RecursionTrainer))
 
+    def test_from_config_override(self):
+        """Test that we can setup from a config."""
+        config = {
+            "trainer": "ScipyTrainer",
+            "trainer_init": {
+                "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}},
+            },
+            "evaluator": "MPSEvaluator",
+            "evaluator_init": {
+                "bond_dim_circuit": 64,
+                "use_vidal_form": True,
+                "threshold_circuit": 0.001,
+            },
+            "parameter_extender": "interpolate",
+        }
+
+        trainer = RecursionTrainer.from_config(config)
+        self.assertTrue(isinstance(trainer, RecursionTrainer))
+        self.assertEqual(trainer.evaluator._max_bond_circuit, 64)
+
     def test_parse_train_kwargs(self):
         """Test parsing of training args."""
         scipy_trainer = ScipyTrainer(MPSEvaluator())
