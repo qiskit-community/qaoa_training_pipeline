@@ -179,3 +179,4 @@ class TestTQA(TrainingPipelineTestCase):
         self.assertTrue(len(result["energy_history"]) > 0)
         self.assertTrue(len(result["parameter_history"]) > 0)
         self.assertTrue(len(result["energy_evaluation_time"]) > 0)
+        self.assertEqual(trainer.qaoa_angles_function._tqa_schedule.__name__, "lr_schedule")
