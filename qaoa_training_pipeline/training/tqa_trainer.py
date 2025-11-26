@@ -145,6 +145,8 @@ class TQATrainer(BaseTrainer, HistoryMixin):
     ) -> ParamResult:
         """Train the QAOA parameters."""
         self.reset_history()
+        
+        initial_dt = (initial_dt, ) if isinstance(initial_dt, float) else initial_dt
         # Set the reps attribute on the angles function, if it supports one.
         # This allow us to override it later with a function that doesn't
         # require reps. We set reps here so that ParamResult.from_scipy_result
