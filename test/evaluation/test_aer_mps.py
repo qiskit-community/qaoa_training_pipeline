@@ -37,8 +37,9 @@ class TestStatevectorEvaluator(TestCase):
 
     def test_evaluate(self):
         """Basic test of the evaluator."""
-        energy1 = self.evaluator.evaluate(self.cost_op, params=[0.1, 0.3])
-        energy2 = self.qiskit_circuit_simulation(self.cost_op, [0.1, 0.3])
+        angles = [0.1, 0.3]
+        energy1 = self.evaluator.evaluate(self.cost_op, params=angles)
+        energy2 = self.qiskit_circuit_simulation(self.cost_op, angles)
         self.assertTrue(abs(energy1 - energy2) < 0.1)
 
     def test_optimize(self):
