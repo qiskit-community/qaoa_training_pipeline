@@ -47,6 +47,10 @@ class AerEvaluator(BaseEvaluator):
             mixer (Optional[QuantumCircuit], optional): the mixer of the QAOA circuit.
                 Defaults to None.
             initial_state (Optional[QuantumCircuit], optional): the initial state of the QAOA.
+            ansatz_circuit (Optional[Union[QuantumCircuit, SparsePauliOp]]: the circuit to be used
+                as ansatz. Can be given either directly as a `QuantumCircuit`, or as a `SparsePauliOp`,
+                and the circuit is constructed from the corresponding time-evolution operator.
+            
         """
 
         if isinstance(ansatz_circuit, SparsePauliOp):
