@@ -18,8 +18,8 @@ from qaoa_training_pipeline.evaluation.mps_aer import MPSAerEvaluator
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 
-class TestStatevectorEvaluator(TestCase):
-    """Test that the state vector evaluator works."""
+class TestAerMPSEvaluator(TestCase):
+    """Test that the MPS evaluator from qiskit aer works."""
 
     def setUp(self):
         """Setup the variables."""
