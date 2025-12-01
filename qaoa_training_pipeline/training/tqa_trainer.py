@@ -197,7 +197,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         return param_result
 
     @staticmethod
-    def tqa_schedule(reps: int, dt: float) -> np.array:
+    def tqa_schedule(reps: int, dt: Tuple[float]) -> np.array:
         """Create the TQA schedule."""
         dt = dt[0] if isinstance(dt, tuple) else dt
         grid = np.arange(1, reps + 1) - 0.5
