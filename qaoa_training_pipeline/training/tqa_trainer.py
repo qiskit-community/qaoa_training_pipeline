@@ -185,13 +185,12 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         start = time()
 
         initial_dt = initial_dt or self.initial_dt
-        params0 = initial_dt if isinstance(initial_dt, tuple) else [initial_dt]
         if self.evaluator is None:
-            param_result = ParamResult(params0, time() - start, self, None)
+            param_result = ParamResult(initial_dt, time() - start, self, None)
         else:
-            result = minimize(_energy, params0, **self._minimize_args)
+            result = minimize(_energy, initial_dt, **self._minimize_args)
             param_result = ParamResult.from_scipy_result(
-                result, params0, time() - start, self._sign, self
+                result, initial_dt, time() - start, self._sign, self
             )
         param_result.add_history(self)
 
