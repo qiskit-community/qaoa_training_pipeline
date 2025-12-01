@@ -147,3 +147,36 @@ class TestTQA(TrainingPipelineTestCase):
         kwargs = TQATrainer().parse_train_kwargs(kwargs_str)
 
         self.assertDictEqual(kwargs, {"reps": 3})
+
+    def test_lr_schedule(self):
+        """Test that we can create LR schedules from configs."""
+        evaluator = MPSEvaluator()
+
+        reps = 4
+        trainer = TQATrainer(evaluator, initial_dt=(0.5, 0.5))
+
+        cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
+
+        result: ParamResult = trainer.train(cost_op, reps=reps)
+
+        self.assertEqual(
+            len(result["optimized_params"]),
+            2,
+            msg="There is only one parameter, dt, for TQATrainer.",
+        )
+        self.assertEqual(
+            len(result["optimized_qaoa_angles"]),
+            2 * reps,
+            msg="Number of QAOA angles is not as expected.",
+        )
+        self.assertTrue(
+            len(trainer.qaoa_angles_function(result["optimized_params"])) == 2 * reps,
+            msg="Calling qaoa_angles_function without reps=... "
+            + "on trained TQATrainer should return list of angles.",
+        )
+
+        # Check that history is present.
+        self.assertTrue(len(result["energy_history"]) > 0)
+        self.assertTrue(len(result["parameter_history"]) > 0)
+        self.assertTrue(len(result["energy_evaluation_time"]) > 0)
+        self.assertEqual(trainer.qaoa_angles_function._tqa_schedule.__name__, "lr_schedule")
