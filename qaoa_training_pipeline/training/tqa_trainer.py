@@ -9,7 +9,7 @@
 """Classes to generate a beta and gamma schedule based on TQA."""
 
 from time import time
-from typing import Any, Dict, Optional
+from typing import Any, Tuple, Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -56,7 +56,7 @@ class TQATrainerFunction(BaseAnglesFunction):
                 f"reps must be provided to {self.__class__.__name__}(reps=...) or "
                 + "set with trainer.train(..., reps=...)"
             )
-        return self._tqa_schedule(reps=reps, dt=x[0])
+        return self._tqa_schedule(reps=reps, dt=x)
 
     # pylint: disable=unused-argument
     @classmethod
@@ -75,6 +75,11 @@ class TQATrainer(BaseTrainer, HistoryMixin):
     does not do any optimization. However, we can also use this class to perform a
     SciPy optimization of the end point of the TQA schedule.
 
+    Additionally, the trainer accepts a Linear Ramp parameters selection of QAOA as
+    presented in "Towards a Linear-Ramp QAOA protocol: Evidence of a scaling advantage in
+    solving some combinatorial optimization problems" published in npj Quantum Information
+    11, 131 (2025). It can be used to perform a SciPy optimization of the beta and gamma slopes.
+
 
     .. note::
 
@@ -91,13 +96,14 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         evaluator: Optional[BaseEvaluator] = None,
         minimize_args: Optional[Dict[str, Any]] = None,
         energy_minimization: bool = False,
-        initial_dt: float = 0.75,
+        initial_dt: float | Tuple[float, float] = 0.75,
     ) -> None:
         """Initialize an instance.
 
         Args:
-            evaluator: If an evaluator is given then we will try and optimize the
-                end points of the TQA schedule using SciPy.
+            evaluator: If an evaluator is given then we will try and optimize: (1) the
+                end points of the TQA schedule using SciPy if initial_dt is a float.
+                (2) The slopes of the Linear Ramp schedules if initial_dt is Tuple[float, float].
             minimize_args: Arguments for the minimization. By default, we assume COBYLA with
                 a small step size since the default TQA value of 0.75 is usually very good.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
@@ -106,10 +112,15 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             initial_dt: Initial dt if not provided to :meth:`train`. Defaults to
                 ``0.75``.
         """
+
+        initial_dt = (initial_dt,) if isinstance(initial_dt, float) else initial_dt
+
+        schedule_method = self.tqa_schedule if len(initial_dt) == 1 else self.lr_schedule
+
         BaseTrainer.__init__(
             self,
             evaluator,
-            qaoa_angles_function=TQATrainerFunction(self.tqa_schedule, reps=None),
+            qaoa_angles_function=TQATrainerFunction(schedule_method, reps=None),
         )
         HistoryMixin.__init__(self)
 
@@ -135,10 +146,12 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-        initial_dt: float | None = None,
+        initial_dt: float | Tuple[float, float] | None = None,
     ) -> ParamResult:
         """Train the QAOA parameters."""
         self.reset_history()
+
+        initial_dt = (initial_dt,) if isinstance(initial_dt, float) else initial_dt
         # Set the reps attribute on the angles function, if it supports one.
         # This allow us to override it later with a function that doesn't
         # require reps. We set reps here so that ParamResult.from_scipy_result
@@ -156,14 +169,13 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             estart = time()
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
-                params=self.tqa_schedule(reps, dt=x[0]),
+                params=self.qaoa_angles_function(x),
                 mixer=mixer,
                 initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
             )
 
             energy = float(energy)
-
             self._energy_evaluation_time.append(time() - estart)
             self._energy_history.append(self._sign * energy)
             self._parameter_history.append(list(float(val) for val in x))
@@ -174,22 +186,29 @@ class TQATrainer(BaseTrainer, HistoryMixin):
 
         initial_dt = initial_dt or self.initial_dt
         if self.evaluator is None:
-            param_result = ParamResult([initial_dt], time() - start, self, None)
+            param_result = ParamResult(initial_dt, time() - start, self, None)
         else:
-            params0 = [initial_dt]
-            result = minimize(_energy, params0, **self._minimize_args)
+            result = minimize(_energy, initial_dt, **self._minimize_args)
             param_result = ParamResult.from_scipy_result(
-                result, params0, time() - start, self._sign, self
+                result, initial_dt, time() - start, self._sign, self
             )
         param_result.add_history(self)
 
         return param_result
 
     @staticmethod
-    def tqa_schedule(reps: int, dt: float) -> np.array:
+    def tqa_schedule(reps: int, dt: Tuple[float]) -> np.array:
         """Create the TQA schedule."""
+        dt = dt[0] if isinstance(dt, tuple) else dt
         grid = np.arange(1, reps + 1) - 0.5
         return np.concatenate((1 - grid * dt / reps, grid * dt / reps)).tolist()
+
+    @staticmethod
+    def lr_schedule(reps: int, dt: Tuple[float, float]):
+        """Create the Linear Ramp schedule."""
+        betas = np.arange(1, reps + 1)[::-1] * dt[0] / reps
+        gammas = np.arange(1, reps + 1) * dt[1] / reps
+        return np.concatenate((betas, gammas)).tolist()
 
     def plot(
         self,
@@ -208,15 +227,36 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             line1 = axis.plot(self._energy_history, **plot_style, label="Energy")
 
             axis2 = axis.twinx()
-            plot_style["color"] = "forestgreen"
-            line2 = axis2.plot(
-                [val[0] for val in self._parameter_history], **plot_style, label="TQA dt"
-            )
+
+            if len(self._parameter_history[0]) == 1:
+                plot_style["color"] = "forestgreen"
+                line2 = axis2.plot(
+                    [val[0] for val in self._parameter_history], **plot_style, label="TQA dt"
+                )
+                axis2.set_ylabel("TQA dt value")
+                axis.legend(line1 + line2, [line1[0].get_label(), line2[0].get_label()])
+
+            elif len(self._parameter_history[0]) == 2:
+                plot_style["color"] = "tab:green"
+                line2 = axis2.plot(
+                    [val[0] for val in self._parameter_history],
+                    **plot_style,
+                    label=r"$\Delta_{\beta}$",
+                )
+                plot_style["color"] = "tab:red"
+                line3 = axis2.plot(
+                    [val[1] for val in self._parameter_history],
+                    **plot_style,
+                    label=r"$\Delta_{\gamma}$",
+                )
+                axis2.set_ylabel("LR slope values")
+                axis.legend(
+                    line1 + line2 + line3,
+                    [line1[0].get_label(), line2[0].get_label(), line3[0].get_label()],
+                )
 
             axis.set_xlabel("Iteration")
             axis.set_ylabel("Energy")
-            axis2.set_ylabel("TQA dt value")
-            axis.legend(line1 + line2, [line1[0].get_label(), line2[0].get_label()])
 
         return fig, axis
 
