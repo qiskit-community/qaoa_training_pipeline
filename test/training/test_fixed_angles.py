@@ -48,7 +48,7 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
         )
 
     def test_degree_one_local(self):
-        """One local-terms should not interfer with the degree computation."""
+        """One local-terms should not interfere with the degree computation."""
         one_local_op = SparsePauliOp.from_list(
             [
                 ("IIIZ", 1),
