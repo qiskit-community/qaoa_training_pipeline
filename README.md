@@ -178,6 +178,7 @@ This repository is still in development: new functionality is being added and th
 |      18 | Allow nbr of Fourrier coefficients to scale with QAOA depth  |          #27 |
 |      19 | Add an interface to the Qiskit Aer and its MPS evaluator     |          #36 |
 |      20 | Add linear ramp parameter optimization to the TQA trainer    |          #37 |
+|      21 | Fixed degree computation in the fixed angles trainer         |          #43 |
 
 ## IBM Public Repository Disclosure
 

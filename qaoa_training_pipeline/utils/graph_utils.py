@@ -25,12 +25,23 @@ from qiskit_optimization.algorithms import CplexOptimizer
 from qiskit_optimization.problems.quadratic_objective import ObjSense
 
 
-def operator_to_graph(operator: SparsePauliOp, pre_factor: float = 1.0) -> nx.Graph:
+def operator_to_graph(
+    operator: SparsePauliOp, pre_factor: float = 1.0, include_one_local: bool = True
+) -> nx.Graph:
     """Convert a cost operator to a graph.
 
     Limitations:
     * Restricted to quadratic cost operators given as sums over :math:`Z_iZ_j`.
     * Weighted quadratic cost operators are accepted and result in weighted graphs.
+
+    Args:
+        operator: The operator to convert to a graph.
+        pre_factor: The prefactor that will be applied to all the edges ontop of any weight
+            that the Pauli terms may have. For example, if `pre_factor` is 2 and the term
+            `ZiZj` has a weight of -3 then the graph with have an edge between nodes `(i, j)`
+            with a weight of -6.
+        include_one_local: If this is set to True (the default value), then the one-local
+            Pauli terms will be included in the graph as self edges.
 
     Raises:
         ValueError if the operator is not quadratic.
@@ -40,7 +51,8 @@ def operator_to_graph(operator: SparsePauliOp, pre_factor: float = 1.0) -> nx.Gr
         edge = [idx for idx, char in enumerate(pauli_str[::-1]) if char == "Z"]
 
         if len(edge) == 1:
-            edges.append((edge[0], edge[0], pre_factor * np.real(weight)))
+            if include_one_local:
+                edges.append((edge[0], edge[0], pre_factor * np.real(weight)))
         elif len(edge) == 2:
             edges.append((edge[0], edge[1], pre_factor * np.real(weight)))
         else:
