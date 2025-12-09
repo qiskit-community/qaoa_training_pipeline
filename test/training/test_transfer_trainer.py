@@ -29,12 +29,15 @@ class TestTransferTraininer(TrainingPipelineTestCase):
 
         # The data contains 4 instances of QAOA angles with depth 2.
         self._data = {
-            (2, 6, 9, 3.0, -0.5, 0.6): [
-                [2.0493, 0.2858, 0.5022, 0.9166],
-                [1.9483, 0.2896, 0.5436, 1.0704],
-                [0.6028, 0.4205, 0.4908, 0.7687],
-                [1.9433, 0.2150, 0.4336, 1.0426],
-            ]
+            (2, 6, 9, 3.0, -0.5, 0.6): {
+                "qaoa_angles": [
+                    [2.0493, 0.2858, 0.5022, 0.9166],
+                    [1.9483, 0.2896, 0.5436, 1.0704],
+                    [0.6028, 0.4205, 0.4908, 0.7687],
+                    [1.9433, 0.2150, 0.4336, 1.0426],
+                ],
+                "metadata": None,
+            }
         }
 
         self._qaoa_depth = 2
@@ -71,6 +74,8 @@ class TestTransferTraininer(TrainingPipelineTestCase):
         result = load_trainer.train(cost_op, qaoa_depth=self._qaoa_depth)
 
         self.assertEqual(len(result["optimized_qaoa_angles"]), 2 * self._qaoa_depth)
+
+        self.assertTrue("data_key" in result)
 
     def test_to_config(self):
         """Test that we can get a config and that it contains the correct entries."""
