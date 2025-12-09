@@ -10,9 +10,10 @@
 
 from typing import Dict, Optional
 
+from qiskit_aer.primitives import EstimatorV2 as AerEstimator
+
 from qaoa_training_pipeline.evaluation.aer_interface import AerEvaluator
 
-from qiskit_aer.primitives import EstimatorV2 as AerEstimator
 
 class StatevectorEvaluator(AerEvaluator):
     """Evaluates the energy of a QAOA circuit with Qiskit's StatevectorSimulator.
@@ -32,15 +33,23 @@ class StatevectorEvaluator(AerEvaluator):
 
         device = self._init_args.get("device")
         if device is not None and device != "GPU":
-            raise ValueError(f"Invalid device '{device}'. Only 'GPU' is supported for device parameter, or None/omit for CPU.")
-        
-        estimator = AerEstimator(options={
-            "backend_options": {"method": "statevector", **({"device": device} if device else {})},
-            **{k: v for k, v in self._init_args.items() if k != "device"}
-        })
+            raise ValueError(
+                f"Invalid device '{device}'. Only 'GPU' is supported for device parameter, "
+                "or None/omit for CPU."
+            )
+
+        estimator = AerEstimator(
+            options={
+                "backend_options": {
+                    "method": "statevector",
+                    **({"device": device} if device else {}),
+                },
+                **{k: v for k, v in self._init_args.items() if k != "device"},
+            }
+        )
 
         super().__init__(estimator=estimator)
-        
+
     def to_config(self) -> dict:
         config = super().to_config()
         config["statevector_init_args"] = self._init_args
