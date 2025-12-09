@@ -29,13 +29,18 @@ class StatevectorEvaluator(AerEvaluator):
                                    Can include "device": "GPU" for GPU acceleration.
         """
         self._init_args = statevector_init_args or {}
+
         device = self._init_args.get("device")
+        if device is not None and device != "GPU":
+            raise ValueError(f"Invalid device '{device}'. Only 'GPU' is supported for device parameter, or None/omit for CPU.")
+        
         estimator = AerEstimator(options={
             "backend_options": {"method": "statevector", **({"device": device} if device else {})},
             **{k: v for k, v in self._init_args.items() if k != "device"}
         })
 
         super().__init__(estimator=estimator)
+        
     def to_config(self) -> dict:
         config = super().to_config()
         config["statevector_init_args"] = self._init_args
