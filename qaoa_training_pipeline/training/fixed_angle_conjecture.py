@@ -114,7 +114,7 @@ class FixedAngleConjecture(BaseTrainer):
 
         # Since we only care about the degree of the graph the pre_factor is irrelevant.
         if degree is None:
-            graph = operator_to_graph(cost_op)
+            graph = operator_to_graph(cost_op, include_one_local=False)
 
             avg_degree = np.average([degree for _, degree in graph.degree()])
 

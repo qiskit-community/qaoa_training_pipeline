@@ -47,6 +47,26 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
             [0.5550603400685824, 0.29250781484335187, 0.4877097327098487, 0.8979876956225422],
         )
 
+    def test_degree_one_local(self):
+        """One local-terms should not interfere with the degree computation."""
+        one_local_op = SparsePauliOp.from_list(
+            [
+                ("IIIZ", 1),
+                ("IIZI", 1),
+                ("IZII", 1),
+                ("ZIII", 1),
+                ("IIZZ", 1),
+                ("IZIZ", 1),
+                ("ZIIZ", 1),
+                ("IZZI", 1),
+                ("ZIZI", 1),
+                ("ZZII", 1),
+            ]
+        )
+
+        result = FixedAngleConjecture().train(one_local_op, reps=2)
+        self.assertEqual(int(result["degree"]), 3)
+
     def test_energy(self):
         """Test the we can get the energy."""
         trainer = FixedAngleConjecture(StatevectorEvaluator())
