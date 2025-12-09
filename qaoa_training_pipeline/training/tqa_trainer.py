@@ -9,7 +9,7 @@
 """Classes to generate a beta and gamma schedule based on TQA."""
 
 from time import time
-from typing import Any, Tuple, Dict, Optional
+from typing import Any, Tuple, List, Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -96,7 +96,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         evaluator: Optional[BaseEvaluator] = None,
         minimize_args: Optional[Dict[str, Any]] = None,
         energy_minimization: bool = False,
-        initial_dt: float | Tuple[float, float] = 0.75,
+        initial_dt: float | Tuple[float, float] | List[float] = 0.75,
     ) -> None:
         """Initialize an instance.
 
@@ -146,12 +146,25 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-        initial_dt: float | Tuple[float, float] | None = None,
+        initial_dt: float | Tuple[float, float] | List[float] | None = None,
     ) -> ParamResult:
         """Train the QAOA parameters."""
         self.reset_history()
 
+        initial_dt = initial_dt or self.initial_dt
+
         initial_dt = (initial_dt,) if isinstance(initial_dt, float) else initial_dt
+
+        if (
+            len(initial_dt) == 2
+            and self.qaoa_angles_function._tqa_schedule.__name__ != "lr_schedule"
+        ):
+            raise ValueError("initial_dt must be a tuple of two floats for Linear Ramp schedule.")
+        if (
+            len(initial_dt) == 1
+            and self.qaoa_angles_function._tqa_schedule.__name__ != "tqa_schedule"
+        ):
+            raise ValueError("initial_dt must be a single float for TQA schedule.")
         # Set the reps attribute on the angles function, if it supports one.
         # This allow us to override it later with a function that doesn't
         # require reps. We set reps here so that ParamResult.from_scipy_result
@@ -184,7 +197,6 @@ class TQATrainer(BaseTrainer, HistoryMixin):
 
         start = time()
 
-        initial_dt = initial_dt or self.initial_dt
         if self.evaluator is None:
             param_result = ParamResult(initial_dt, time() - start, self, None)
         else:
@@ -268,7 +280,12 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             evaluator_cls = EVALUATORS[config["evaluator"]]
             evaluator = evaluator_cls.from_config(config["evaluator_init"])
 
-        return cls(evaluator, config.get("minimize_args", {}))
+        return cls(
+            evaluator,
+            config.get("minimize_args", {}),
+            config.get("energy_minimization", False),
+            config.get("initial_dt", 0.75),
+        )
 
     def to_config(self) -> dict:
         """Creates a serializeable dictionary to keep track of how results are created.
@@ -293,6 +310,8 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         for key, val in self.extract_train_kwargs(args_str).items():
             if key in ["reps"]:
                 train_kwargs[key] = int(val)
+            elif key == "initial_dt":
+                train_kwargs[key] = self.extract_list(val, dtype=float)
             else:
                 raise ValueError("Unknown key in provided train_kwargs.")
 
