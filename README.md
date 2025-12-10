@@ -180,7 +180,8 @@ This repository is still in development: new functionality is being added and th
 |      20 | Add linear ramp parameter optimization to the TQA trainer    |          #37 |
 |      21 | Fixed degree computation in the fixed angles trainer         |          #43 |
 |      22 | SV simulation moved to Qiskit Aer. GPU Support for SV        |          #44 |
-|      23 | Adding linear ramp parameter support in train.py             |          #46 |
+|      23 | Improve transparency of transfer trainer                     |          #45 |
+|      24 | Adding linear ramp parameter support in train.py             |          #46 |
 
 ## IBM Public Repository Disclosure
 
