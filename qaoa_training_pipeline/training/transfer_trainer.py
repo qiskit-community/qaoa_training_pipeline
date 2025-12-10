@@ -112,6 +112,15 @@ class TransferTrainer(BaseTrainer):
     ) -> ParamResult:
         """Performs the training."""
 
+        if mixer is not None:
+            raise NotImplementedError("Custom mixers are not yet supported.")
+
+        if initial_state is not None:
+            raise NotImplementedError("Custom initial states are not yet supported.")
+
+        if ansatz_circuit is not None:
+            raise NotImplementedError("Custom Ansatze are not yet supported.")
+
         start = time()
 
         # 1. Extract features of the cost operator.
@@ -127,7 +136,7 @@ class TransferTrainer(BaseTrainer):
         # angles that correspond to the features. One dimension is the dimension
         # of the angles while the second one can correspond to multiple cost operators
         # that match to the same feature key.
-        qaoa_angles = self._angle_aggregator(self._data[data_key])
+        qaoa_angles = self._angle_aggregator(self._data[data_key]["qaoa_angles"])
 
         if self._evaluator is not None:
             energy = self._evaluator.evaluate(cost_op, qaoa_angles)
@@ -140,7 +149,10 @@ class TransferTrainer(BaseTrainer):
                 "Check the underlying data used in the transfer."
             )
 
-        return ParamResult(qaoa_angles, time() - start, self, energy)
+        result = ParamResult(qaoa_angles, time() - start, self, energy)
+        result["data_key"] = data_key
+
+        return result
 
     def validate_data(self):
         """Validation that the input data is a dict."""
