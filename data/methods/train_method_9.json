@@ -1,0 +1,15 @@
+{
+    "trainer_chain": [
+        {
+            "trainer": "TQATrainer",
+            "trainer_init": {
+                "evaluator": "MPSEvaluator",
+                "evaluator_init": {},
+                "initial_dt":[0.5, 0.5]
+            },
+            
+            "train_kwargs": {}
+        }
+    ],
+    "description": "optimized TQATrainer with MPSEvaluator"
+}

@@ -267,3 +267,32 @@ class TestTrain(TrainingPipelineTestCase):
 
             cost_op = SparsePauliOp.from_list(result["cost_operator"])
             self.assertSetEqual(set(cost_op.to_list()), set(expected_op.to_list()))
+
+    def test_tqa_train(self):
+        """Test that we can call train.py."""
+        reps = 10
+        test_args = [
+            "prog",
+            "--input",
+            "test/data/test_graph.json",
+            "--config",
+            "data/methods/train_method_9.json",
+            "--train_kwargs0",
+            f"reps:{reps}",
+            "--problem_class",
+            "maxcut",
+        ]
+
+        op1 = [("IZZ", -0.5), ("ZIZ", -0.5)]
+        expected = SparsePauliOp.from_list(op1)
+
+        with patch.object(sys, "argv", test_args):
+            args, _ = get_script_args()
+            result = train(args)
+
+            cost_op = SparsePauliOp.from_list(result["cost_operator"])
+            print(result.keys())
+            self.assertEqual(result["args"]["problem_class"], "maxcut")
+            self.assertEqual(cost_op, expected)
+            self.assertEqual(result[0]["x0"], [0.5, 0.5])
+            self.assertEqual(len(result[0]["optimized_qaoa_angles"]), 2 * reps)
