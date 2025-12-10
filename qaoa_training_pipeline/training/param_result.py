@@ -47,7 +47,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 21,
+            "qaoa_training_pipeline_version": 22,
         }
 
         # Convert, e.g., np.float to float
