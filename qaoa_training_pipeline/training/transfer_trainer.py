@@ -117,7 +117,7 @@ class TransferTrainer(BaseTrainer):
 
         if initial_state is not None:
             raise NotImplementedError("Custom initial states are not yet supported.")
-        
+
         if ansatz_circuit is not None:
             raise NotImplementedError("Custom Ansatze are not yet supported.")
 
