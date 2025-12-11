@@ -13,6 +13,8 @@ from typing import Optional, List
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -52,7 +54,7 @@ class TransitionStatesTrainer(BaseTrainer):
         return self._trainer.minimization
 
     @property
-    def transition_states_data(self) -> list:
+    def transition_states_data(self) -> dict | None:
         """The optimization results for all the transition states."""
         return self._all_ts
 
@@ -182,8 +184,8 @@ class TransitionStatesTrainer(BaseTrainer):
     def plot(
         self,
         parameter_history: bool = False,
-        axis: Optional[plt.Axes] = None,
-        fig: Optional[plt.Figure] = None,
+        axis: Optional[Axes] = None,
+        fig: Optional[Figure] = None,
         colors: Optional[list] = None,
         **plot_args,
     ):
@@ -208,25 +210,25 @@ class TransitionStatesTrainer(BaseTrainer):
         plot_style.update(plot_args)
 
         colors = colors or list(mcolors.TABLEAU_COLORS.values())
+        assert isinstance(self._all_ts, dict)
 
         if parameter_history:
             line_styles = ["-", ":", "--", "-."]
-
             for idx, result in enumerate(self._all_ts.values()):
                 params_hist = result["parameter_history"]
 
                 for param_idx in range(len(params_hist[0])):
                     axis.plot(
                         [param[param_idx] for param in params_hist],
-                        **plot_style,
                         label=f"TS{idx} param. {param_idx}",
                         ls=line_styles[idx % 4],
+                        kwargs=plot_style,
                     )
         else:
             for idx, result in enumerate(self._all_ts.values()):
                 axis.plot(
                     result["energy_history"],
-                    **plot_style,
+                    kwargs=plot_style,
                     label=f"TS{idx}",
                     color=colors[idx % len(colors)],
                 )
@@ -242,7 +244,7 @@ class TransitionStatesTrainer(BaseTrainer):
 
         trainer_name = config["trainer"]
 
-        # Note: we cannot user the TRAINERS mapping otherwise we will circular import outselves.
+        # Note: we cannot user the TRAINERS mapping otherwise we will circular import ourselves.
         if trainer_name == "ScipyTrainer":
             return cls(ScipyTrainer.from_config(config["trainer_init"]))
         elif trainer_name == "DepthOneScanTrainer":

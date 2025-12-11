@@ -26,7 +26,7 @@ class ParamResult:
     This class ensures that we have elementary information such as information on the
     platform in addition to training duration and parameters. The class includes a
     `qaoa_training_pipeline_version` variable. This variable should be updated manually
-    in each new commit to the repository. The addeded functionality is tracked in
+    in each new commit to the repository. The added functionality is tracked in
     a table in the main README.md.
     """
 
@@ -93,7 +93,7 @@ class ParamResult:
 
     # pylint: disable=(too-many-positional-arguments
     @classmethod
-    def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> dict:
+    def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> 'ParamResult':
         """Standardizes results from SciPy such that it can be serialized."""
 
         param_result = cls(

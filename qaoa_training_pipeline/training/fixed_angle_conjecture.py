@@ -12,9 +12,10 @@ import json
 import os
 import warnings
 from time import time
-from typing import Optional
+from typing import Iterable, Mapping, Optional, Sequence
 import numpy as np
-
+# cspell: ignore reportviews
+from networkx.classes.reportviews import DegreeView
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
@@ -25,6 +26,7 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
+# cspell: ignore Wurtz Danylo Lykov
 class FixedAngleConjecture(BaseTrainer):
     """Fixed angle conjecture.
 
@@ -51,9 +53,10 @@ class FixedAngleConjecture(BaseTrainer):
             evaluator: If an evaluator is provided the energy of the cost operator at the fixed
                 angles will be evaluated and included in the result of `train`.
         """
-        super().__init__(evaluator)
+        if evaluator:
+            super().__init__(evaluator)
 
-        self._data = None
+        self._data: dict[str, dict] | None = None
         data_path = os.path.join(os.path.dirname(__file__), "data", "fixed_angle_conjecture.json")
         with open(data_path, "r") as fin:
             self._data = json.load(fin)
@@ -70,7 +73,7 @@ class FixedAngleConjecture(BaseTrainer):
         self,
         cost_op: SparsePauliOp,
         reps: int = 1,
-        degree: int = None,
+        degree: int | None = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
@@ -83,7 +86,7 @@ class FixedAngleConjecture(BaseTrainer):
         approximation has not yet been tested.
 
         Args:
-            cost_op: The cost operator. This argument may be used to infere the degree of the
+            cost_op: The cost operator. This argument may be used to infer the degree of the
                 graph if the `degree` argument is None.
             reps: The number of QAOA repetitions. This argument is used.
             degree: The degree of the k-regular graph to use. By default, this argument is None
@@ -116,18 +119,21 @@ class FixedAngleConjecture(BaseTrainer):
         if degree is None:
             graph = operator_to_graph(cost_op, include_one_local=False)
 
-            avg_degree = np.average([degree for _, degree in graph.degree()])
+            assert isinstance(graph.degree, DegreeView)
+            avg_degree = np.average([degree for _, degree in graph.degree])
 
             degree_key = str(int(np.round(avg_degree)))
         else:
             degree_key = str(degree)
 
+        assert isinstance(self._data, Iterable)
         if degree_key not in self._data:
             raise NotImplementedError(
                 f"The degree {degree_key} is not in the fixed-angle conjecture database. "
                 "In the future this class may compute the desired fixed angles."
             )
 
+        assert isinstance(self._data, (Sequence, Mapping)), "obj must be a Sequence or Mapping"
         if str(reps) not in self._data[degree_key]:
             raise NotImplementedError(
                 f"The desired QAOA depth {reps} is not in the fixed-angle conjecture database. "
@@ -163,9 +169,9 @@ class FixedAngleConjecture(BaseTrainer):
         return cls(evaluator)
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary to keep track of how results are created.
+        """Creates a serializable dictionary to keep track of how results are created.
 
-        Note: This datastructure is not intended for us to recreate the class instance.
+        Note: This data structure is not intended for us to recreate the class instance.
         """
         return {
             "trainer_name": self.__class__.__name__,
@@ -178,7 +184,7 @@ class FixedAngleConjecture(BaseTrainer):
         Args:
             args_str: The input args are the number of repetitions and optionally the
                 desired degree. The arguments string takes the form `reps:val:degree:val`. If no
-            degree is desired then do not provide it and it will be infered from the graph.
+            degree is desired then do not provide it and it will be inferred from the graph.
         """
         train_kwargs = dict()
         for key, val in self.extract_train_kwargs(args_str).items():

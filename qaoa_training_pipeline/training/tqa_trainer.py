@@ -9,8 +9,10 @@
 """Classes to generate a beta and gamma schedule based on TQA."""
 
 from time import time
-from typing import Any, Tuple, List, Dict, Optional
+from typing import Any, Callable, Tuple, List, Dict, Optional
 
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 from qiskit import QuantumCircuit
@@ -33,7 +35,7 @@ class TQATrainerFunction(BaseAnglesFunction):
     to :meth:`__call__`, then an error is raised.
     """
 
-    def __init__(self, tqa_schedule_method: callable, reps: int | None = None) -> None:
+    def __init__(self, tqa_schedule_method: Callable, reps: int | None = None) -> None:
         """Create an instance of a TQATrainer QAOA angles function.
 
         Args:
@@ -65,6 +67,7 @@ class TQATrainerFunction(BaseAnglesFunction):
         raise RuntimeError(f"{cls.__name__} cannot be constructed from a config.")
 
 
+# cspell: ignore Trotterized maxiter rhobeg
 class TQATrainer(BaseTrainer, HistoryMixin):
     """Trotterized Quantum Annealing parameter generation.
 
@@ -96,7 +99,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         evaluator: Optional[BaseEvaluator] = None,
         minimize_args: Optional[Dict[str, Any]] = None,
         energy_minimization: bool = False,
-        initial_dt: float | Tuple[float, float] | List[float] = 0.75,
+        initial_dt: tuple[float, float] | list[float] = [0.75],
     ) -> None:
         """Initialize an instance.
 
@@ -113,15 +116,17 @@ class TQATrainer(BaseTrainer, HistoryMixin):
                 ``0.75``.
         """
 
-        initial_dt = (initial_dt,) if isinstance(initial_dt, float) else initial_dt
+        initial_dt_list = [initial_dt] if isinstance(initial_dt, float) else initial_dt
 
-        schedule_method = self.tqa_schedule if len(initial_dt) == 1 else self.lr_schedule
+        schedule_method = self.tqa_schedule if len(initial_dt_list) == 1 else self.lr_schedule
 
         BaseTrainer.__init__(
             self,
             evaluator,
             qaoa_angles_function=TQATrainerFunction(schedule_method, reps=None),
         )
+        self.qaoa_angles_function: TQATrainerFunction
+        self._qaoa_angles_function: TQATrainerFunction
         HistoryMixin.__init__(self)
 
         self._minimize_args = {"method": "COBYLA", "options": {"maxiter": 20, "rhobeg": 0.1}}
@@ -146,14 +151,14 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-        initial_dt: float | Tuple[float, float] | List[float] | None = None,
+        initial_dt: Tuple[float, float] | List[float] | None = None,
     ) -> ParamResult:
         """Train the QAOA parameters."""
         self.reset_history()
 
         initial_dt = initial_dt or self.initial_dt
 
-        initial_dt = (initial_dt,) if isinstance(initial_dt, float) else initial_dt
+        initial_dt = [initial_dt] if isinstance(initial_dt, float) else initial_dt
 
         if (
             len(initial_dt) == 2
@@ -179,7 +184,8 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             If self._sign is -1, i.e., the default set by `energy_minimization`
             then the scipy.minimize is converted into a maximization.
             """
-            estart = time()
+            e_start = time()
+            assert self._evaluator
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
                 params=self.qaoa_angles_function(x),
@@ -189,7 +195,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             )
 
             energy = float(energy)
-            self._energy_evaluation_time.append(time() - estart)
+            self._energy_evaluation_time.append(time() - e_start)
             self._energy_history.append(self._sign * energy)
             self._parameter_history.append(list(float(val) for val in x))
 
@@ -198,7 +204,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         start = time()
 
         if self.evaluator is None:
-            param_result = ParamResult(initial_dt, time() - start, self, None)
+            param_result = ParamResult(list(initial_dt), time() - start, self, None)
         else:
             result = minimize(_energy, initial_dt, **self._minimize_args)
             param_result = ParamResult.from_scipy_result(
@@ -209,7 +215,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         return param_result
 
     @staticmethod
-    def tqa_schedule(reps: int, dt: Tuple[float]) -> np.array:
+    def tqa_schedule(reps: int, dt: Tuple[float] | float) -> np.ndarray:
         """Create the TQA schedule."""
         dt = dt[0] if isinstance(dt, tuple) else dt
         grid = np.arange(1, reps + 1) - 0.5
@@ -224,8 +230,8 @@ class TQATrainer(BaseTrainer, HistoryMixin):
 
     def plot(
         self,
-        axis: Optional[plt.Axes] = None,
-        fig: Optional[plt.Figure] = None,
+        axis: Optional[Axes] = None,
+        fig: Optional[Figure] = None,
         **plot_args,
     ):
         """Plot the optimization."""
@@ -246,7 +252,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
                     [val[0] for val in self._parameter_history], **plot_style, label="TQA dt"
                 )
                 axis2.set_ylabel("TQA dt value")
-                axis.legend(line1 + line2, [line1[0].get_label(), line2[0].get_label()])
+                axis.legend(line1 + line2, [str(line1[0].get_label()), str(line2[0].get_label())])
 
             elif len(self._parameter_history[0]) == 2:
                 plot_style["color"] = "tab:green"
@@ -264,7 +270,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
                 axis2.set_ylabel("LR slope values")
                 axis.legend(
                     line1 + line2 + line3,
-                    [line1[0].get_label(), line2[0].get_label(), line3[0].get_label()],
+                    [str(line[0].get_label()) for line in [line1, line2, line3]],
                 )
 
             axis.set_xlabel("Iteration")
@@ -288,9 +294,9 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         )
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary to keep track of how results are created.
+        """Creates a serializable dictionary to keep track of how results are created.
 
-        Note: This datastructure is not intended for us to recreate the class instance.
+        Note: This data structure is not intended for us to recreate the class instance.
         """
         evaluator_str = "None"
         if self._evaluator is not None:
