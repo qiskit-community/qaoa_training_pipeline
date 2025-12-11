@@ -12,9 +12,11 @@ from time import time
 from typing import Optional
 import numpy as np
 
+from networkx.classes.reportviews import DegreeView
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
+from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
@@ -40,6 +42,7 @@ class ReweightingTrainer(BaseTrainer):
         super().__init__(trainer1.evaluator)
 
         self._trainer_unweighted = trainer1
+        assert isinstance(self.evaluator, BaseEvaluator)
 
         if trainer2 is None:
             self._trainer_weighted = ScipyTrainer(
@@ -113,7 +116,7 @@ class ReweightingTrainer(BaseTrainer):
             mixer=mixer,
             initial_state=initial_state,
             ansatz_circuit=ansatz_circuit,
-            **trainer1_kwargs,
+            kwargs=trainer1_kwargs,
         )
 
         params0 = self.scale_parameters(result1)
@@ -135,25 +138,27 @@ class ReweightingTrainer(BaseTrainer):
         """
         # Compute the average degree of the node. nx.degree is insensitive to weights.
         graph = operator_to_graph(cost_op)
-        self._average_degree = np.average(list(val for _, val in graph.degree()))
+        assert isinstance(graph.degree, DegreeView)
+        self._average_degree = np.average(list(val for _, val in graph.degree))
 
         # Extract the edge weights. We will need them later on.
         self._edge_weights = [
-            np.real(pauli.coeffs[0]) for pauli in cost_op if abs(pauli.coeffs[0]) > 1e-16
+            np.real(pauli.coeffs[0]) for pauli in cost_op if pauli.coeffs and abs(pauli.coeffs[0]) > 1e-16
         ]
 
         # Define the new operator.
         new_op = [
-            (pauli.paulis[0].to_label(), 1) for pauli in cost_op if abs(pauli.coeffs[0]) > 1e-16
+            (pauli.paulis.to_labels()[0], 1) for pauli, label in cost_op if pauli.coeffs and abs(pauli.coeffs[0]) > 1e-16
         ]
         return SparsePauliOp.from_list(new_op)
 
-    def scale_parameters(self, result: dict) -> list:
+    def scale_parameters(self, result: ParamResult) -> list:
         """Rescale the optimal gamma before optimizing again.
 
         The rescaling is done following the works of Sureshbabu et al. in Quantum 8,
         1231 (2024). In particular, see Theorem 3 (informal) on page 2.
         """
+        assert self._edge_weights
         scale = 1 / np.sqrt(
             sum(weight**2 for weight in self._edge_weights) / len(self._edge_weights)
         )
