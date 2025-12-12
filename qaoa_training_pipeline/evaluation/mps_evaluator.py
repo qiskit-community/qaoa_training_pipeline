@@ -178,8 +178,8 @@ class MPSEvaluator(BaseEvaluator):
         assert cost_op.num_qubits
         if self._use_swap_strategy:
             self._swap_strategy = make_swap_strategy(
-                [(val[0][0], val[0][1]) for val in edges],
-                cost_op.num_qubits,
+                [tuple(val[0]) for val in edges], 
+                cost_op.num_qubits,            
             )
 
             # If we use a SWAP strategy and the QAOA depth is odd we must permute the cost op.

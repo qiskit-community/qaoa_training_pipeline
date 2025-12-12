@@ -53,8 +53,7 @@ class FixedAngleConjecture(BaseTrainer):
             evaluator: If an evaluator is provided the energy of the cost operator at the fixed
                 angles will be evaluated and included in the result of `train`.
         """
-        if evaluator:
-            super().__init__(evaluator)
+        super().__init__(evaluator)
 
         self._data: dict[str, dict] | None = None
         data_path = os.path.join(os.path.dirname(__file__), "data", "fixed_angle_conjecture.json")

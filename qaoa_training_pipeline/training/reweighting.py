@@ -111,12 +111,13 @@ class ReweightingTrainer(BaseTrainer):
 
         unweighted_cost_op = self.unweight(cost_op)
 
+        trainer1_kwargs = trainer1_kwargs or {}
         result1 = self._trainer_unweighted.train(
             unweighted_cost_op,
             mixer=mixer,
             initial_state=initial_state,
             ansatz_circuit=ansatz_circuit,
-            kwargs=trainer1_kwargs,
+            **trainer1_kwargs,
         )
 
         params0 = self.scale_parameters(result1)
@@ -148,7 +149,7 @@ class ReweightingTrainer(BaseTrainer):
 
         # Define the new operator.
         new_op = [
-            (pauli.paulis.to_labels()[0], 1) for pauli, label in cost_op if pauli.coeffs and abs(pauli.coeffs[0]) > 1e-16
+            (pauli.paulis.to_labels()[0], 1) for pauli in cost_op if pauli.coeffs and abs(pauli.coeffs[0]) > 1e-16
         ]
         return SparsePauliOp.from_list(new_op)
 
