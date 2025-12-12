@@ -229,12 +229,20 @@ def train(args: Optional[List]):
         # Parse evaluator init key-word arguments given at runtime.
         evaluator_init_kwargs_str = getattr(args, f"evaluator_init_kwargs{train_idx}")
         if evaluator_init_kwargs_str is not None:
-            if "evaluator" in conf["trainer_init"]:
-                evaluator_cls = EVALUATORS[conf["trainer_init"]["evaluator"]]
+            # Handle standard trainers and recursive trainers (nested)
+            trainer_init = conf["trainer_init"]
+            target_init = None
 
-                evaluator_init = conf["trainer_init"].get("evaluator_init", dict())
+            if "evaluator" in trainer_init:
+                target_init = trainer_init
+            elif "trainer_init" in trainer_init and "evaluator" in trainer_init["trainer_init"]:
+                target_init = trainer_init["trainer_init"]
+
+            if target_init:
+                evaluator_cls = EVALUATORS[target_init["evaluator"]]
+                evaluator_init = target_init.get("evaluator_init", dict())
                 evaluator_init.update(evaluator_cls.parse_init_kwargs(evaluator_init_kwargs_str))
-                conf["trainer_init"]["evaluator_init"] = evaluator_init
+                target_init["evaluator_init"] = evaluator_init
             else:
                 raise ValueError(
                     f"evaluator_init_kwargs{train_idx} given but no evaluator "
