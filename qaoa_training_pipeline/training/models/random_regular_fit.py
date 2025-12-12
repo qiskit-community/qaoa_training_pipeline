@@ -56,7 +56,7 @@ class RandomRegularDepthOneFit(BaseTrainer):
         """
         super().__init__(evaluator)
 
-        from qaoa_training_pipeline.training import models
+        from qaoa_training_pipeline import models
 
         default_model_file = str(resources.files(models) / "regular_depth1.json")
         model_file = model_file or default_model_file
