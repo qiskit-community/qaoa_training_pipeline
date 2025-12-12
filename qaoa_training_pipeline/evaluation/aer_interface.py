@@ -13,7 +13,7 @@ from typing import List, Optional, Union
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp
-
+from qiskit.quantum_info.operators.base_operator import BaseOperator
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
 
@@ -34,7 +34,7 @@ class AerEvaluator(BaseEvaluator):
         self,
         cost_op: SparsePauliOp,
         params: List[float],
-        mixer: Optional[QuantumCircuit] = None,
+        mixer: Optional[BaseOperator] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[Union[QuantumCircuit, SparsePauliOp]] = None,
     ) -> float:
