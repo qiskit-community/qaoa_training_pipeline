@@ -15,7 +15,7 @@ import numpy as np
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp, Operator
-from qiskit.quantum_info import PauliList
+from qiskit.quantum_info import PauliList, Pauli
 
 from qaoa_training_pipeline.utils.graph_utils import circuit_to_graph, operator_to_graph
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
@@ -79,10 +79,15 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             The energy for the given graph.
         """
         pauli_list = cost_op.paulis[0]
-        assert isinstance(pauli_list, PauliList), "Cost operator must define a list of Pauli operators"
+        length = 0
+        if isinstance(pauli_list, PauliList):
+            length = len(pauli_list)
+        elif isinstance(pauli_list, Pauli):
+            length = pauli_list.num_qubits
+            assert isinstance(length, int)
         graph = nx.adjacency_matrix(
             operator_to_graph(cost_op),
-            nodelist=range(len(pauli_list)),
+            nodelist=range(length),
         ).toarray()
 
         if len(params) != 2:
@@ -96,7 +101,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         else:
             circuit_graph = nx.adjacency_matrix(
                 circuit_to_graph(ansatz_circuit),
-                nodelist=range(len(pauli_list)),
+                nodelist=range(length),
             ).toarray()
 
         # Compute the energy from the two-qubit correlators

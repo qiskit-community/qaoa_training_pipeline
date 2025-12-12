@@ -223,7 +223,7 @@ def solve_max_cut(cost_op: SparsePauliOp, energy: Optional[float] = None):
     """
     graph = operator_to_graph(cost_op, pre_factor=-2)
 
-    opt_problem = Maxcut(np.array(nx.adjacency_matrix(graph, nodelist=range(graph.order()))))
+    opt_problem = Maxcut(nx.adjacency_matrix(graph, nodelist=range(graph.order())).toarray())
 
     # Get the maximum cut value
     cplex_result_max = CplexOptimizer().solve(opt_problem.to_quadratic_program())
@@ -246,7 +246,7 @@ def solve_max_cut(cost_op: SparsePauliOp, energy: Optional[float] = None):
     return max_cut, min_cut, approximation_ratio
 
 
-def make_swap_strategy(edges: List[Tuple[int, int]], num_qubits: int) -> SwapStrategy:
+def make_swap_strategy(edges: List[Tuple[int, ...]], num_qubits: int) -> SwapStrategy:
     """Create the SWAP strategy that implements the graph.
 
     Create a SWAP strategy for a line that reaches full connectivity and then simplify it.
