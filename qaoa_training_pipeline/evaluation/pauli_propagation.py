@@ -6,7 +6,7 @@
 
 """Pauli propagation-based QAOA evaluator."""
 
-import importlib
+import importlib.util
 from typing import Optional, Union
 import warnings
 import numpy as np
@@ -15,16 +15,18 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.converters import circuit_to_dag
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.circuit.library import qaoa_ansatz
+from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
 
+# cspell: ignore juliacall seval qarg qargs overlapwithzero
 # Safely import Julia if is is installed.
 jl_loader = importlib.util.find_spec("juliacall")
 HAS_JL = jl_loader is not None
 if HAS_JL:
     # pylint: disable=no-name-in-module
-    from juliacall import Main as jl
+    from juliacall import Main as jl  # type: ignore
     from juliacall import convert
 
     try:
@@ -132,7 +134,7 @@ class PPEvaluator(BaseEvaluator):
         self,
         cost_op: SparsePauliOp,
         params: list[float],
-        mixer: Optional[QuantumCircuit] = None,
+        mixer: Optional[BaseOperator] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
     ) -> float:
@@ -154,16 +156,18 @@ class PPEvaluator(BaseEvaluator):
         circuit = transpile(bound_circuit, basis_gates=SUPPORTED_GATES)
 
         pp_circuit, parameter_map = self.qc_to_pp(circuit)
-        pp_observable = self.sparsepauliop_to_pp(cost_op)
+        pp_observable = self.sparse_pauli_op_to_pp(cost_op)
 
         pp_params = [params[i] if isinstance(i, int) else i for i in parameter_map]
+        assert pp
         pauli_sum = pp.propagate(pp_circuit, pp_observable, pp_params, **self.pp_kwargs)
         return pp.overlapwithzero(pauli_sum)
 
-    def sparsepauliop_to_pp(self, op: SparsePauliOp):
+    def sparse_pauli_op_to_pp(self, op: SparsePauliOp):
         """Returns the PP PauliSum representation of the SparsePauliOp."""
-        nqubits = op.num_qubits
-        pp_paulisum = pp.PauliSum(nqubits)
+        n_qubits = op.num_qubits
+        assert pp
+        pp_pauli_sum = pp.PauliSum(n_qubits)
         for pauli, qubits, coefficient in op.to_sparse_list():
             pauli_symbols = pp.seval("Vector{Symbol}")()
             for p in pauli:
@@ -172,15 +176,15 @@ class PPEvaluator(BaseEvaluator):
             for q in qubits:
                 jl.push_b(pp_qubits, q + 1)
 
-            pp.add_b(pp_paulisum, pauli_symbols, pp_qubits, coefficient.real)
-        return pp_paulisum
+            pp.add_b(pp_pauli_sum, pauli_symbols, pp_qubits, coefficient.real)
+        return pp_pauli_sum
 
     def qc_to_pp(
         self, circuit: QuantumCircuit
     ) -> tuple[list[tuple[str, list[int]]], list[Union[int, float]]]:
         """
         Args:
-            circuit: The Qiskit cirucit with no free parameters.
+            circuit: The Qiskit circuit with no free parameters.
 
         Returns:
             pp_circuits: A representation of the circuit on which we can call the Pauli propagation code.
@@ -198,6 +202,7 @@ class PPEvaluator(BaseEvaluator):
 
         # The circuit must only contain supported gates.
         op_nodes = list(dag.topological_op_nodes())
+        assert pp
         pp_circuit = pp.seval("Vector{Gate}")()
         parameter_map = []
         for node in op_nodes:
