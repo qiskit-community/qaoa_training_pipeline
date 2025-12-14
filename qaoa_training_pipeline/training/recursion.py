@@ -166,7 +166,7 @@ class RecursionTrainer(BaseTrainer):
         if axis is None or fig is None:
             fig, axis = plt.subplots(1, 1)
 
-        assert self._all_results
+        assert self._all_results, "_all_results must be defined before calling plot()"
         recursion_idx = sorted(self._all_results.keys())
         energies = [self._all_results[key]["energy"] for key in recursion_idx]
 

@@ -151,7 +151,7 @@ class LightConeEvaluator(BaseEvaluator):
         """
         edges = self.make_radius_edges(edge, radius=len(params) // 2)
 
-        assert self.graph
+        assert self.graph, "graph must be defined before calling make_radius_circuit()"
         paulis, src_edge = self.make_sub_correlators(edges, edge, len(self.graph))
 
         ansatz = qaoa_ansatz(
@@ -182,7 +182,7 @@ class LightConeEvaluator(BaseEvaluator):
             A dict where the keys are the edges in the graph to include and the values
             are the weights of the edges.
         """
-        assert self.graph
+        assert self.graph, "graph must be defined before calling make_radius_circuit()"
         ego1 = nx.generators.ego_graph(self.graph, edge[0], radius=radius)
         ego2 = nx.generators.ego_graph(self.graph, edge[1], radius=radius)
 

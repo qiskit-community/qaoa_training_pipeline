@@ -159,7 +159,7 @@ class ReweightingTrainer(BaseTrainer):
         The rescaling is done following the works of Sureshbabu et al. in Quantum 8,
         1231 (2024). In particular, see Theorem 3 (informal) on page 2.
         """
-        assert self._edge_weights
+        assert self._edge_weights, "_edge_weights must be defined before calling scale_parameters()"
         scale = 1 / np.sqrt(
             sum(weight**2 for weight in self._edge_weights) / len(self._edge_weights)
         )

@@ -104,7 +104,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
             qaoa_angles = self._qaoa_angles_function(x)
 
-            assert self._evaluator
+            assert self._evaluator, "_evaluator must be defined before calling _energy()"
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
                 params=qaoa_angles,
@@ -127,7 +127,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             result, params0, time() - start, self._sign, self
         )
 
-        assert self._evaluator
+        assert self._evaluator, "_evaluator must be defined before calling train()"
         param_result.update(self._evaluator.get_results_from_last_iteration())
 
         return param_result
