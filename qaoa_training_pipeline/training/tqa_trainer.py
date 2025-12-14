@@ -185,7 +185,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             then the scipy.minimize is converted into a maximization.
             """
             e_start = time()
-            assert self._evaluator
+            assert self._evaluator, "_evaluator must be defined before calling _energy()"
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
                 params=self.qaoa_angles_function(x),

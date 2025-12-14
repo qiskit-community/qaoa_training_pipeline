@@ -175,7 +175,7 @@ class MPSEvaluator(BaseEvaluator):
             raise NotImplementedError("Swap strategy not supported for HOBO problems")
 
         # Make the swap strategy.
-        assert cost_op.num_qubits
+        assert cost_op.num_qubits, "num_qubits must be defined in cost operator before calling evaluate()"
         if self._use_swap_strategy:
             self._swap_strategy = make_swap_strategy(
                 [tuple(val[0]) for val in edges], 

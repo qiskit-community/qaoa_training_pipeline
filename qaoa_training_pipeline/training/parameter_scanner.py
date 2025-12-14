@@ -122,7 +122,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
                 qaoa_angles = self._qaoa_angles_function([param1, param2])
 
-                assert self._evaluator
+                assert self._evaluator, "_evaluator must be defined before calling train()"
                 energy = self._evaluator.evaluate(
                     cost_op,
                     qaoa_angles,
@@ -174,7 +174,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         if axis is None or fig is None:
             fig, axis = plt.subplots(1, 1)
 
-        assert self._params1 and self._params2
+        assert self._params1 and self._params2, "self_params must be defined before calling plot"
         ggs, bbs = np.meshgrid(self._params2, self._params1)
         c_set = axis.contourf(ggs, bbs, self._energies, levels=30)
         axis.set_xlabel(xlabel)

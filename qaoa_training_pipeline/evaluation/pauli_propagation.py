@@ -159,14 +159,14 @@ class PPEvaluator(BaseEvaluator):
         pp_observable = self.sparse_pauli_op_to_pp(cost_op)
 
         pp_params = [params[i] if isinstance(i, int) else i for i in parameter_map]
-        assert pp
+        assert pp, "pp must be defined before calling evaluate()"
         pauli_sum = pp.propagate(pp_circuit, pp_observable, pp_params, **self.pp_kwargs)
         return pp.overlapwithzero(pauli_sum)
 
     def sparse_pauli_op_to_pp(self, op: SparsePauliOp):
         """Returns the PP PauliSum representation of the SparsePauliOp."""
         n_qubits = op.num_qubits
-        assert pp
+        assert pp, "pp must be defined before calling sparse_pauli_op_to_pp()"
         pp_pauli_sum = pp.PauliSum(n_qubits)
         for pauli, qubits, coefficient in op.to_sparse_list():
             pauli_symbols = pp.seval("Vector{Symbol}")()
@@ -202,7 +202,7 @@ class PPEvaluator(BaseEvaluator):
 
         # The circuit must only contain supported gates.
         op_nodes = list(dag.topological_op_nodes())
-        assert pp
+        assert pp, "pp must be defined before calling qc_to_op()"
         pp_circuit = pp.seval("Vector{Gate}")()
         parameter_map = []
         for node in op_nodes:

@@ -178,7 +178,7 @@ class SATMapper(BasePreprocessor):
 
         # Perform a binary search over the number of swap layers to find the minimum
         # number of swap layers that satisfies the subgraph isomorphism problem.
-        assert max_layers
+        assert max_layers, "max_layers must be defined before calling find_initial_mappings()"
         while min_layers < max_layers:
             num_layers = (min_layers + max_layers) // 2
 
@@ -214,8 +214,8 @@ class SATMapper(BasePreprocessor):
                 sol = solver.get_model()
                 e_time = solver.time()
 
-                assert sol 
-                assert e_time
+                assert sol, "solver from get_model() was undefined"
+                assert e_time, "solver ran without defining e_time"
                 if status:
                     # If the SAT problem is satisfiable, convert the solution to a mapping.
                     mapping = [vid2mapping[idx] for idx in sol if idx > 0]
