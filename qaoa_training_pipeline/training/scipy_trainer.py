@@ -9,7 +9,7 @@
 """This module is an interface to SciPy's minimize function."""
 
 from time import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, Optional
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -76,7 +76,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
     def train(
         self,
         cost_op: SparsePauliOp,
-        params0: List[float],
+        params0: Iterable[float],
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
