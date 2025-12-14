@@ -174,13 +174,14 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         if axis is None or fig is None:
             fig, axis = plt.subplots(1, 1)
 
-        assert self._params1 and self._params2, "self_params must be defined before calling plot"
+        assert self._params1 is not None, "self._params1 must be defined before calling plot"
+        assert self._params2 is not None, "self._params2 must be defined before calling plot"
         ggs, bbs = np.meshgrid(self._params2, self._params1)
         c_set = axis.contourf(ggs, bbs, self._energies, levels=30)
         axis.set_xlabel(xlabel)
         axis.set_ylabel(ylabel)
-        assert isinstance(self._opt_param1, np.ndarray)
-        assert isinstance(self._opt_param2, np.ndarray)
+        assert isinstance(self._opt_param1, float)
+        assert isinstance(self._opt_param2, float)
         axis.scatter([self._opt_param2], [self._opt_param1], s=10, marker="*", color="w")
         fig.colorbar(c_set, ax=axis, label="Energy")
 
