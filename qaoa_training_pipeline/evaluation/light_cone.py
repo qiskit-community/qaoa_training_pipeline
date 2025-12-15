@@ -8,15 +8,15 @@
 
 """Perform a naive light-cone simulation of QAOA."""
 
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 import networkx as nx
 import numpy as np
 from qiskit import transpile
-
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
-from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import StatevectorEstimator
+from qiskit.quantum_info import SparsePauliOp
 from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
@@ -125,7 +125,10 @@ class LightConeEvaluator(BaseEvaluator):
         results = [primitive_result[i] for i in range(len(primitive_result))]
 
         # Compute and return the observable.
-        energy = sum(w * float(res.data.evs) for res, w in zip(results, weights))   # pyright: ignore[reportAttributeAccessIssue]
+        energy = sum(
+            w * float(res.data.evs)  # pyright: ignore[reportAttributeAccessIssue]
+            for res, w in zip(results, weights)
+        )
 
         return np.real(energy)
 

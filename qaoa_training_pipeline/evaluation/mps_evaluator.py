@@ -8,12 +8,10 @@
 
 """MPS-based QAOA evaluator."""
 
+from math import prod, sqrt
 from typing import Dict, List, Optional
 
-from math import sqrt, prod
-
 import numpy as np
-
 from qiskit.circuit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
@@ -175,11 +173,13 @@ class MPSEvaluator(BaseEvaluator):
             raise NotImplementedError("Swap strategy not supported for HOBO problems")
 
         # Make the swap strategy.
-        assert cost_op.num_qubits, "num_qubits must be defined in cost operator before calling evaluate()"
+        assert (
+            cost_op.num_qubits
+        ), "num_qubits must be defined in cost operator before calling evaluate()"
         if self._use_swap_strategy:
             self._swap_strategy = make_swap_strategy(
-                [tuple(val[0]) for val in edges], 
-                cost_op.num_qubits,            
+                [tuple(val[0]) for val in edges],
+                cost_op.num_qubits,
             )
 
             # If we use a SWAP strategy and the QAOA depth is odd we must permute the cost op.

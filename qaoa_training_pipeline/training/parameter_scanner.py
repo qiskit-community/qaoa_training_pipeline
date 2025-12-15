@@ -10,26 +10,27 @@
 
 from time import time
 from typing import List, Optional, Tuple
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
+
 import matplotlib.pyplot as plt
 import numpy as np
-
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
+from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.functions import (
-    BaseAnglesFunction,
-    IdentityFunction,
-    FUNCTIONS,
-)
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+
 # cspell: ignore argmin contourf colorbar
 from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
+from qaoa_training_pipeline.training.functions import (
+    FUNCTIONS,
+    BaseAnglesFunction,
+    IdentityFunction,
+)
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.evaluation import EVALUATORS
 
 
 class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
@@ -202,7 +203,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
             config.get("energy_minimization", False),
-            qaoa_angles_function = function,
+            qaoa_angles_function=function,
         )
 
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:

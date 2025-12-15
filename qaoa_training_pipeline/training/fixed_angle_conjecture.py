@@ -13,7 +13,9 @@ import os
 import warnings
 from time import time
 from typing import Iterable, Mapping, Optional, Sequence
+
 import numpy as np
+
 # cspell: ignore reportviews
 from networkx.classes.reportviews import DegreeView
 from qiskit import QuantumCircuit
