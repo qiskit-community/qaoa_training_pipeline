@@ -8,9 +8,10 @@
 
 """Class to store result data."""
 
-from dataclasses import dataclass
 import platform
-from typing import Optional, TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional
+
 import numpy as np
 
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
@@ -56,7 +57,7 @@ class ParamResult:
             float(val) for val in trainer.qaoa_angles_function(optimized_params)
         ]
         self.data["train_duration"] = duration
-        self.data["energy"] = float(energy) if isinstance(energy, np.floating) else energy
+        self.data["energy"] = float(energy) if isinstance(energy, np.floating) else str(energy)
         self.data["trainer"] = trainer.to_config()
 
     def __contains__(self, item):
@@ -93,7 +94,7 @@ class ParamResult:
 
     # pylint: disable=(too-many-positional-arguments
     @classmethod
-    def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> 'ParamResult':
+    def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> "ParamResult":
         """Standardizes results from SciPy such that it can be serialized."""
 
         param_result = cls(
