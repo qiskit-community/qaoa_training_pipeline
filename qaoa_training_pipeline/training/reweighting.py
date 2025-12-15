@@ -10,18 +10,18 @@
 
 from time import time
 from typing import Optional
-import numpy as np
 
+import numpy as np
 from networkx.classes.reportviews import DegreeView
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
+from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
+from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -144,12 +144,16 @@ class ReweightingTrainer(BaseTrainer):
 
         # Extract the edge weights. We will need them later on.
         self._edge_weights = [
-            np.real(pauli.coeffs[0]) for pauli in cost_op if pauli.coeffs and abs(pauli.coeffs[0]) > 1e-16
+            np.real(pauli.coeffs[0])
+            for pauli in cost_op
+            if pauli.coeffs and abs(pauli.coeffs[0]) > 1e-16
         ]
 
         # Define the new operator.
         new_op = [
-            (pauli.paulis.to_labels()[0], 1) for pauli in cost_op if pauli.coeffs and abs(pauli.coeffs[0]) > 1e-16
+            (pauli.paulis.to_labels()[0], 1)
+            for pauli in cost_op
+            if pauli.coeffs and abs(pauli.coeffs[0]) > 1e-16
         ]
         return SparsePauliOp.from_list(new_op)
 

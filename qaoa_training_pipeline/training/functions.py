@@ -10,12 +10,12 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
-
 from matplotlib.axes import Axes
-from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 
 class BaseAnglesFunction(ABC):
@@ -108,7 +108,7 @@ class FourierFunction(BaseAnglesFunction):
         return config
 
     @classmethod
-    def from_config(cls, config: dict) -> 'FourierFunction':
+    def from_config(cls, config: dict) -> "FourierFunction":
         """Initialize the Fourier function."""
         return cls(config.get("depth", None))
 
@@ -271,7 +271,7 @@ class PCAFunction(BaseAnglesFunction):
         return config
 
     @classmethod
-    def from_config(cls, config: dict) -> 'PCAFunction':
+    def from_config(cls, config: dict) -> "PCAFunction":
         """Initialize the Fourier function."""
 
         pca_func = cls(config["num_components"])

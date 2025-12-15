@@ -15,8 +15,11 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training.functions import (
+    BaseAnglesFunction,
+    IdentityFunction,
+)
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.training.functions import BaseAnglesFunction, IdentityFunction
 
 
 class BaseTrainer(ABC):
@@ -25,7 +28,7 @@ class BaseTrainer(ABC):
     def __init__(
         self,
         evaluator: BaseEvaluator | None = None,
-        qaoa_angles_function: BaseAnglesFunction | None = None
+        qaoa_angles_function: BaseAnglesFunction | None = None,
     ) -> None:
         """Initialise the trainer.
 
