@@ -182,6 +182,7 @@ This repository is still in development: new functionality is being added and th
 |      22 | SV simulation moved to Qiskit Aer. GPU Support for SV        |          #44 |
 |      23 | Improve transparency of transfer trainer                     |          #45 |
 |      24 | Adding linear ramp parameter support in train.py             |          #46 |
+|      25 | Enable GPU on SV simulation via init_kwargs "GPU"            |          #47 |
 
 ## IBM Public Repository Disclosure
 
