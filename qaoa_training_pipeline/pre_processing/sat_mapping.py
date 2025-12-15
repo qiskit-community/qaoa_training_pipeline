@@ -13,17 +13,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
-from time import time
 from threading import Timer
+from time import time
 from typing import Optional
 
 import networkx as nx
-from networkx.classes.reportviews import DegreeView
 import numpy as np
-
+from networkx.classes.reportviews import DegreeView
 from pysat.formula import CNF, IDPool
 from pysat.solvers import Solver
-
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
 
 from qaoa_training_pipeline.pre_processing.base_processing import BasePreprocessor
@@ -216,18 +214,17 @@ class SATMapper(BasePreprocessor):
 
                 assert sol, "solver from get_model() was undefined"
                 assert e_time, "solver ran without defining e_time"
+                assert isinstance(status, bool), "solver status returned with non-boolean value"
+                sol = {i: x for i, x in enumerate(sol)}
+                mapping = []
                 if status:
                     # If the SAT problem is satisfiable, convert the solution to a mapping.
                     mapping = [vid2mapping[idx] for idx in sol if idx > 0]
-                    sol = {i: x for i, x in enumerate(sol)}
-                    binary_search_results[num_layers] = SATResult(status, sol, mapping, e_time)
                     max_layers = num_layers
                 else:
                     # If the SAT problem is unsatisfiable, return the last satisfiable solution.
-                    # TODO: make sure this is implemented correctly
-                    sol = {i: x for i, x in enumerate(sol)}
-                    binary_search_results[num_layers] = SATResult(False, sol, [], e_time)
                     min_layers = num_layers + 1
+                binary_search_results[num_layers] = SATResult(status, sol, mapping, e_time)
 
         return binary_search_results
 
