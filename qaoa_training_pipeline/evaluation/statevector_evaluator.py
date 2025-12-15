@@ -22,14 +22,20 @@ class StatevectorEvaluator(AerEvaluator):
     when working with small-scale problem instances.
     """
 
-    def __init__(self, statevector_init_args: Optional[Dict] = None) -> None:
+    def __init__(
+        self, statevector_init_args: Optional[Dict] = None, device: Optional[str] = None
+    ) -> None:
         """Initialize the statevector evaluator.
 
         Args:
             statevector_init_args: The arguments to initialize the StatevectorSimulator with.
                                    Can include "device": "GPU" for GPU acceleration.
+            device: The device to use for the simulation. If provided, it overrides the device
+                    in statevector_init_args.
         """
         self._init_args = statevector_init_args or {}
+        if device:
+            self._init_args["device"] = device
 
         device = self._init_args.get("device")
         if device is not None and device != "GPU":
@@ -49,6 +55,27 @@ class StatevectorEvaluator(AerEvaluator):
         )
 
         super().__init__(estimator=estimator)
+
+    @classmethod
+    def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
+        """Parse initialization kwargs.
+
+        If you are using the GPU, the input string should be "GPU".
+        Any other string will be ignored.
+
+        Args:
+            init_kwargs: The initialization arguments as a string.
+
+        Returns:
+            dict: The parsed initialization arguments.
+        """
+        if init_kwargs is None:
+            return dict()
+
+        if init_kwargs.upper() == "GPU":
+            return {"device": "GPU"}
+
+        return {}
 
     def to_config(self) -> dict:
         config = super().to_config()
