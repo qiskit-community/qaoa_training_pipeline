@@ -9,9 +9,11 @@
 """Class to scan param2 and param1 in depth-one QAOA to get the optimal point."""
 
 from time import time
-from typing import List, Optional, Tuple
+import math
+from typing import List, Optional, Tuple, Hashable
 import matplotlib.pyplot as plt
 import numpy as np
+import networkx as nx
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -27,6 +29,8 @@ from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.evaluation import EVALUATORS
+from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
+
 
 
 class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
@@ -218,3 +222,258 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
                 raise ValueError("Unknown key in provided train_kwargs.")
 
         return train_kwargs
+
+
+class DepthOneGammaScanTrainer(DepthOneScanTrainer):
+    """Scan Gamma values and computes beta value analytically as per https://arxiv.org/pdf/2501.16419"""
+    def __init__(
+        self,
+        evaluator: BaseEvaluator,
+        energy_minimization: bool = False,
+        qaoa_angles_function: Optional[BaseAnglesFunction] = None,
+    ):
+        """Initialize the class instance.
+
+        Args:
+            evaluator: The evaluator that computes the energy.
+            energy_minimization: Allows us to switch between minimizing the energy or maximizing
+                the energy. The default and assumed convention in this repository is to
+                maximize the energy.
+            qaoa_angles_function: A function to convert optimization parameters into QAOA
+                angles. By default, this is the identity function. Ideally, this argument is
+                an instance of `BaseAnglesFunction` but we allow any callable here that maps
+                optimization parameters to QAOA angles.
+        """
+        super().__init__(evaluator=evaluator, energy_minimization=energy_minimization, qaoa_angles_function=qaoa_angles_function)
+        
+        # Override parent initialization sice we are only scanning values for gamma and not beta 
+        self._default_range = (0, 2 * np.pi)
+
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    def train(
+        self,
+        cost_op: SparsePauliOp,
+        mixer: Optional[QuantumCircuit] = None,
+        initial_state: Optional[QuantumCircuit] = None,
+        ansatz_circuit: Optional[QuantumCircuit] = None,
+        parameter_ranges: Optional[List[Tuple[float, float]]] = None,
+        num_points: Optional[int] = 15,
+    ) -> ParamResult:
+        r"""Train the parameters by doing a 1D scan and setting beta to the analytical optimal solution per gamma.
+
+        Args:
+            cost_op: The cost operator :math:`H_C` of the problem we want to solve.
+            mixer: A quantum circuit representing the mixer of QAOA. This allows us to
+                accommodate, e.g., warm-start QAOA. If this is None, then we assume the
+                standard QAOA mixer.
+            initial_state: A quantum circuit the represents the initial state. If None is
+                given then we default to the equal superposition state |+>.
+            ansatz_circuit: The ansatz circuit in case it differs from the standard QAOA
+                circuit given by :math:`\exp(-i\param2 H_C)`.
+            parameter_ranges:  The parameter range for gamma over which to scan. If
+                this argument is not provided we default to `(0, 2 * np.pi)`.
+            num_points: The number of points in the gamma range to take. This
+                method will thus evaluate the energy `num_points**2` times.
+        """
+        self.reset_history()
+        start = time()
+
+        parameter_ranges = parameter_ranges or self._default_range
+
+        self._energies = np.zeros(num_points, dtype=float)
+
+        # By default params1 keep the value for beta and params2 scans gamma
+        self._params1 = np.zeros(num_points)
+        self._params2 = np.linspace(parameter_ranges[0], parameter_ranges[1], num_points)
+
+        self._opt_param2, self._opt_param1 = None, None
+        graph = operator_to_graph(cost_op)
+
+        for idx, param2 in enumerate(self._params2):
+            estart = time()
+            param1 = self._beta_star_for_gamma(graph,param2)
+            self._params1[idx] = param1
+
+            qaoa_angles = self._qaoa_angles_function([param1, param2])
+            energy = self._evaluator.evaluate(
+                cost_op,
+                qaoa_angles,
+                mixer,
+                initial_state,
+                ansatz_circuit,
+            )
+            self._energies[idx] = float(np.real(energy))
+
+            self._energy_evaluation_time.append(time() - estart)
+            self._energy_history.append(float(np.real(energy)))
+            self._parameter_history.append([float(param1), float(param2)])
+
+        # update the last optimal beta for the last gamma
+        param1 = self._beta_star_for_gamma(graph,param2)
+        self._params1[idx] = param1
+        
+        min_idx, opt_energy = self._extrema_locator(self._energies)
+        opt_param1, opt_param2 = self._params1[min_idx], self._params2[min_idx]
+
+        self._opt_param2 = opt_param2
+        self._opt_param1 = opt_param1
+
+        opt_result = ParamResult([opt_param1, opt_param2], time() - start, self, opt_energy)
+        opt_result["num_points"] = num_points
+        opt_result["parameter_ranges"] = parameter_ranges
+        opt_result.add_history(self)
+
+        return opt_result
+
+    def _beta_star_for_gamma(
+        self,
+        G: nx.Graph,
+        gamma: float,
+        weight_attr: str = "weight"
+    ) -> float:
+        """
+        Compute beta*(gamma) per Theorem 5 (https://arxiv.org/pdf/2501.16419) (field-free Ising, QAOA p=1) for a given gamma and graph G.
+
+        Returns beta* in [0, pi].
+
+        Formula: beta* = (1/4) * (atan2(2A(gamma), B(gamma)) + pi).  
+        """
+        A, B = self._compute_A_B_for_gamma(G, gamma, weight_attr=weight_attr)
+
+        # Handle the degenerate case: if both A and B are ~0, the landscape is flat in beta.
+        if abs(A) < 1e-15 and abs(B) < 1e-15:
+            return 0.0  # any beta works; choose 0 for determinism
+
+        if self._energy_minimization:
+            beta = 0.25 * (math.atan2(2.0 * A, B) + math.pi)
+        else:
+            beta = 0.25 * math.atan2(2.0 * A, B)
+
+        return beta
+
+
+    def _edge_weight(self, G: nx.Graph, u: Hashable, v: Hashable, weight_attr: str = "weight") -> float:
+        """Fetch edge weight (u,v) J_uv. default weight is 1.0."""
+        data = G.get_edge_data(u, v, default={})
+        return float(data.get(weight_attr, 1.0))
+
+
+    def _prod_cos_edges_from_node(self, G: nx.Graph, node: Hashable, nbrs: set, gamma: float, weight_attr: str) -> float:
+        """
+        Compute Prod_{w ∈ nbrs} cos( 2 * J_{node,w} * gamma ).
+        Empty product returns 1.0.
+        """
+        if not nbrs:
+            return 1.0
+        val = 1.0
+        for w in nbrs:
+            J_nw = self._edge_weight(G, node, w, weight_attr)
+            val *= math.cos(2.0 * J_nw * gamma)
+        return val
+
+
+    def _prod_cos_triangle_terms(
+        self,
+        G: nx.Graph,
+        u: Hashable,
+        v: Hashable,
+        mutual_nbrs: set,
+        gamma: float,
+        weight_attr: str,
+        plus: bool
+    ) -> float:
+        """
+        Compute Ptod_{f ∈ mutual_nbrs} cos( 2*J_{u,f}*gamma + 2*J_{v,f}*gamma ).
+        Empty product returns 1.0.
+        """
+        if not mutual_nbrs:
+            return 1.0
+        val = 1.0
+        for f in mutual_nbrs:
+            Ju_f = self._edge_weight(G, u, f, weight_attr)
+            Jv_f = self._edge_weight(G, v, f, weight_attr)
+            angle = 2.0 * Ju_f * gamma + 2.0 * Jv_f * gamma 
+            val *= math.cos(angle)
+        return val
+
+
+    def _compute_A_B_for_gamma(
+        self,
+        G: nx.Graph,
+        gamma: float,
+        weight_attr: str = "weight"
+    ) -> tuple[float, float]:
+        """
+        Compute A(gamma) and B(gamma) per Theorem 5 for an Ising model without fields.
+
+        """ 
+        if not isinstance(G, nx.Graph) or G.is_directed():
+            raise ValueError("Provide an undirected NetworkX Graph (nx.Graph).")
+
+        A = 0.0
+        B = 0.0
+
+        # Iterate each undirected edge once
+        for u, v in G.edges():
+            Ju_v = self._edge_weight(G, u, v, weight_attr)
+            g_uv = 2.0 * Ju_v * gamma  # gamma'_{uv} = 2 * J_uv * gamma
+
+            Nu_minus_v = set(G.neighbors(u)) - {v}
+            Nv_minus_u = set(G.neighbors(v)) - {u}
+            Fuv = Nu_minus_v & Nv_minus_u # mutual neighbors of v and u, i.e. nodes that create a traingle with u and v in the graph 
+
+            #A(gamma) term
+            prod_v = self._prod_cos_edges_from_node(G, v, Nv_minus_u, gamma, weight_attr)
+            prod_u = self._prod_cos_edges_from_node(G, u, Nu_minus_v, gamma, weight_attr)
+            A += (Ju_v / 2.0) * math.sin(g_uv) * (prod_v + prod_u)
+
+            #B(gamma) term
+            Nv_noF = Nv_minus_u - Fuv
+            Nu_noF = Nu_minus_v - Fuv
+
+            prod_v_noF = self._prod_cos_edges_from_node(G, v, Nv_noF, gamma, weight_attr)
+            prod_u_noF = self._prod_cos_edges_from_node(G, u, Nu_noF, gamma, weight_attr)
+
+            tri_plus  = self._prod_cos_triangle_terms(G, u, v, Fuv, gamma, weight_attr, plus=True)
+            tri_minus = self._prod_cos_triangle_terms(G, u, v, Fuv, gamma, weight_attr, plus=False)
+
+            B += (Ju_v / 2.0) * (prod_v_noF * prod_u_noF) * (tri_plus - tri_minus)
+
+        return A, B
+
+    def plot(
+        self,
+        axis: Optional[plt.Axes] = None,
+        fig: Optional[plt.Figure] = None,
+        xlabel: str = r"$\gamma$",
+        ylabel: str = r"$\beta$",
+    ):
+        """Make a plot of the training.
+
+        If giving the `axis` then the figure object must also be given. Otherwise,
+        you get new objects.
+
+        Args:
+            axis: Axis on which to plot.
+            fig: The figure object.
+            xlabel: Label for the x-axis. This is needed if we are using a function to relate
+                the scanned parameters to QAOA anagles.
+            ylabel: Label for the y-axis. This is needed if we are using a function to relate
+                the scanned parameters to QAOA anagles.
+        """
+
+        if axis is None or fig is None:
+            fig, axis = plt.subplots(1, 1)
+
+        sc = axis.scatter(self._params1, self._params2, c=self._energies, cmap='viridis', s=40, edgecolor='none')
+        axis.set_xlabel('beta')
+        axis.set_ylabel('gamma')
+        cbar = plt.colorbar(sc)
+        cbar.set_label('Energy')
+        plt.tight_layout()
+
+        return fig, axis
+
+
+
+
