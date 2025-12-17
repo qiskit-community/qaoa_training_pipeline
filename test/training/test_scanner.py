@@ -13,8 +13,9 @@ from test import TrainingPipelineTestCase
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
-from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
+from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer, DepthOneGammaScanTrainer
 from qaoa_training_pipeline.training.functions import IdentityFunction
+from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
 class TestDepthOneScanTrainer(TrainingPipelineTestCase):
@@ -64,3 +65,71 @@ class TestDepthOneScanTrainer(TrainingPipelineTestCase):
         self.assertTrue(isinstance(trainer, DepthOneScanTrainer))
         self.assertTrue(trainer._energy_minimization)
         self.assertTrue(isinstance(trainer.qaoa_angles_function, IdentityFunction))
+
+class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
+    """Tests of the class DepthOneGammaScanTrainer."""
+
+    def setUp(self):
+        """Setup variables."""
+        self.trainer = DepthOneGammaScanTrainer(EfficientDepthOneEvaluator())
+        self.cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1), ("ZZII", -1)])
+        self.G = operator_to_graph(self.cost_op)
+
+
+    def test_simple(self):
+        """Basic test of the class DepthOneScanTrainer."""
+        result = self.trainer.train(self.cost_op, num_points=3)
+        self.assertTrue(len(result["energy_history"]) == 3)
+
+    def test_scan_range(self):
+        """Test that when we specify a range the angles stay in that range."""
+        kwargs = self.trainer.parse_train_kwargs("num_points:3:parameter_ranges:3.3/4.5")
+        result = self.trainer.train(self.cost_op, **kwargs)
+
+        opt_params = result["optimized_params"]
+        self.assertTrue(opt_params[1] >= 3.3)
+        self.assertTrue(opt_params[1] <= 4.5)
+
+    def test_from_config(self):
+        """Test the serialization."""
+        config = {
+            "evaluator": "EfficientDepthOneEvaluator",
+            "evaluator_init": {},
+            "energy_minimization": True,
+            "qaoa_angles_function": "IdentityFunction",
+            "qaoa_angles_function_init": {},
+        }
+
+        trainer = DepthOneGammaScanTrainer.from_config(config)
+
+        self.assertTrue(isinstance(trainer, DepthOneGammaScanTrainer))
+        self.assertTrue(trainer._energy_minimization)
+        self.assertTrue(isinstance(trainer.qaoa_angles_function, IdentityFunction))
+    
+    def test_prod_cos_edges_from_node(self):
+        prod = self.trainer._prod_cos_edges_from_node(self.G, node=0, nbrs=[1,2,3], gamma=1.5, weight_attr="weight")
+        expected_prod = -0.9702769379215033
+        assert prod == expected_prod
+    
+    def test_prod_cos_triangle_terms(self):
+        prod = self.trainer._prod_cos_triangle_terms(self.G, u=0, v=3, mutual_nbrs=[2], gamma=1.5, weight_attr="weight", plus=True)
+        expected_prod = 0.960170286650366
+        self.assertAlmostEqual(prod, expected_prod)
+        prod = self.trainer._prod_cos_triangle_terms(self.G, u=0, v=3, mutual_nbrs=[2], gamma=1.5, weight_attr="weight", plus=False)
+        expected_prod = 1
+        self.assertAlmostEqual(prod, expected_prod)
+
+    
+    def test_compute_A_B_for_gamma(self):
+        A, B = self.trainer._compute_A_B_for_gamma(self.G, gamma=1.5)
+        expected_A = -0.0013910591808833639
+        self.assertAlmostEqual(A, expected_A)
+        expected_B = -0.01951626068306727
+        self.assertAlmostEqual(B, expected_B)
+    
+    def test_beta_star_for_gamma(self):
+        beta = self.trainer._beta_star_for_gamma(self.G, gamma=1.5)
+        expected_beta = -0.7499982063376642
+        self.assertAlmostEqual(beta, expected_beta)
+
+
