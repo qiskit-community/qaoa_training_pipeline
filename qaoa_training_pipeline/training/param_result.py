@@ -12,8 +12,6 @@ import platform
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-import numpy as np
-
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 
 if TYPE_CHECKING:
@@ -57,7 +55,7 @@ class ParamResult:
             float(val) for val in trainer.qaoa_angles_function(optimized_params)
         ]
         self.data["train_duration"] = duration
-        self.data["energy"] = float(energy) if isinstance(energy, np.floating) else str(energy)
+        self.data["energy"] = "NA" if energy is None else float(energy)
         self.data["trainer"] = trainer.to_config()
 
     def __contains__(self, item):
