@@ -246,8 +246,8 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         """
         super().__init__(evaluator=evaluator, energy_minimization=energy_minimization, qaoa_angles_function=qaoa_angles_function)
         
-        # Override parent initialization sice we are only scanning values for gamma and not beta 
-        self._default_range = (0, 2 * np.pi)
+        # Override parent initialization sice we are only scanning values for gamma and not beta, and put it in a list for consistency with parent API 
+        self._default_range = [(0, 2 * np.pi)]
 
     # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
@@ -284,7 +284,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         # By default params1 keep the value for beta and params2 scans gamma
         self._params1 = np.zeros(num_points)
-        self._params2 = np.linspace(parameter_ranges[0], parameter_ranges[1], num_points)
+        self._params2 = np.linspace(parameter_ranges[0][0], parameter_ranges[0][1], num_points)
 
         self._opt_param2, self._opt_param1 = None, None
         graph = operator_to_graph(cost_op)
@@ -392,7 +392,10 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         for f in mutual_nbrs:
             Ju_f = self._edge_weight(G, u, f, weight_attr)
             Jv_f = self._edge_weight(G, v, f, weight_attr)
-            angle = 2.0 * Ju_f * gamma + 2.0 * Jv_f * gamma 
+            if plus:
+                angle = 2.0 * Ju_f * gamma + 2.0 * Jv_f * gamma 
+            else:
+                angle = 2.0 * Ju_f * gamma - 2.0 * Jv_f * gamma 
             val *= math.cos(angle)
         return val
 
