@@ -149,6 +149,20 @@ def prepare_train_kwargs(config: dict):
             raise NotImplementedError(f"Serialization is not yet implemented for {name}.")
 
 
+def set_problem_class_recursive(trainer_init: dict, problem_class: str):
+    """Recursively set problem_class in trainer config, including nested trainers.
+    
+    Args:
+        trainer_init: The trainer_init dictionary to modify
+        problem_class: The problem class name to set
+    """
+    trainer_init["_problem_class"] = problem_class
+    
+    # Check if there's a nested trainer (e.g., RecursionTrainer contains ScipyTrainer)
+    if "trainer_init" in trainer_init and isinstance(trainer_init["trainer_init"], dict):
+        set_problem_class_recursive(trainer_init["trainer_init"], problem_class)
+
+
 def train(args: Optional[List]):
     """Main function that does the training.
 
@@ -205,6 +219,14 @@ def train(args: Optional[List]):
     with open(args.config, "r") as fin:
         full_config = json.load(fin)
 
+    # Store problem class info in config for trainers to access
+    if class_str is not None:
+        class_info = class_str.split(":")
+        class_name = class_info[0].lower()
+        full_config["_problem_class"] = class_name
+    else:
+        full_config["_problem_class"] = None
+
     trainer_chain_config = full_config["trainer_chain"]
 
     all_results, result = {}, {}
@@ -250,6 +272,9 @@ def train(args: Optional[List]):
                 )
 
         trainer_cls = TRAINERS[trainer_name]
+        # Pass problem class info to trainer config if available (including nested trainers)
+        if "_problem_class" in full_config and full_config["_problem_class"] is not None:
+            set_problem_class_recursive(conf["trainer_init"], full_config["_problem_class"])
         trainer = trainer_cls.from_config(conf["trainer_init"])
 
         # Hook to deserialize any input to train that was serialized.
