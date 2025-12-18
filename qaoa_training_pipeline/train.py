@@ -151,13 +151,13 @@ def prepare_train_kwargs(config: dict):
 
 def set_problem_class_recursive(trainer_init: dict, problem_class: str):
     """Recursively set problem_class in trainer config, including nested trainers.
-    
+
     Args:
         trainer_init: The trainer_init dictionary to modify
         problem_class: The problem class name to set
     """
     trainer_init["_problem_class"] = problem_class
-    
+
     # Check if there's a nested trainer (e.g., RecursionTrainer contains ScipyTrainer)
     if "trainer_init" in trainer_init and isinstance(trainer_init["trainer_init"], dict):
         set_problem_class_recursive(trainer_init["trainer_init"], problem_class)
