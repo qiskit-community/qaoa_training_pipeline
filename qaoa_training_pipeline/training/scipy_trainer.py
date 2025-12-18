@@ -36,7 +36,6 @@ from qaoa_training_pipeline.utils.labs.labs_utils import (
     process_labs_post_optimization,
 )
 
-
 class ScipyTrainer(BaseTrainer, HistoryMixin):
     """A trainer that wraps SciPy's minimize function."""
 
@@ -64,7 +63,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
                 optimization parameters to QAOA angles.
             objective: The objective to optimize. Can be "energy" (default) or "overlap".
                 When "overlap", maximizes overlap with ground state subspace (only for LABS problems).
-            problem_class: Optional problem class name (e.g., "labs").
+            problem_class: Optional problem class name (e.g., "labs"). 
         """
         BaseTrainer.__init__(self, evaluator, qaoa_angles_function)
         HistoryMixin.__init__(self)
@@ -77,12 +76,21 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         # Sign to control whether we minimize or maximize the energy
         self._energy_minimization = energy_minimization
         self._sign = 1 if energy_minimization else -1
-
+                
         # Problem class (e.g., "labs") - used to identify LABS problems
         self._problem_class = problem_class
 
         # Objective type: "energy" or "overlap" (for LABS problems)
         self._objective = objective
+
+        # Validate that overlap objective is only used with LABS problems
+        if objective == "overlap":
+            if problem_class is None or problem_class.lower() != "labs":
+                raise ValueError(
+                    "Overlap optimization is only supported for LABS problems. "
+                    f"Received objective='overlap' with problem_class='{problem_class}'. "
+                    "Please set --problem_class labs:N to use overlap optimization."
+                )
 
     @property
     def minimization(self) -> bool:
@@ -138,7 +146,15 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             return energy
 
         # Check if this is a LABS problem
-        is_labs = self._problem_class is not None and self._problem_class.lower() == "labs"
+        is_labs = (self._problem_class is not None and self._problem_class.lower() == "labs")
+
+        # Additional validation: overlap objective requires LABS problem
+        if self._objective == "overlap" and not is_labs:
+            raise ValueError(
+                "Overlap optimization is only supported for LABS problems. "
+                f"Received objective='overlap' but problem_class='{self._problem_class}' "
+                "is not LABS. Please set --problem_class labs:N to use overlap optimization."
+            )
 
         if is_labs:
             # Delegate to LABS utils to create the energy function
@@ -163,7 +179,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         )
 
         param_result.update(self._evaluator.get_results_from_last_iteration())
-
+                
         if is_labs:
             # Process all LABS-specific post-optimization tasks
             param_result = process_labs_post_optimization(
