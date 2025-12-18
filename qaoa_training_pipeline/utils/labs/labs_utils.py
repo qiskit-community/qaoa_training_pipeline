@@ -94,6 +94,56 @@ true_optimal_energy = {
     35: 73,
 }
 
+# -----------------------------------------------------------------------------
+# LABS training pipeline helpers (CLI / config overrides)
+# -----------------------------------------------------------------------------
+
+
+def _replace_value_recursive(conf, old_value: str, new_value: str):
+    """Recursively replace exact string values in nested dict/list configs."""
+    if isinstance(conf, dict):
+        for k, v in conf.items():
+            if isinstance(v, str) and v == old_value:
+                conf[k] = new_value
+            else:
+                _replace_value_recursive(v, old_value, new_value)
+    elif isinstance(conf, list):
+        for item in conf:
+            _replace_value_recursive(item, old_value, new_value)
+
+
+def _set_energy_minimization_default_recursive(trainer_conf, energy_minimization: bool):
+    """Recursively set default energy_minimization for ScipyTrainer if not specified."""
+    if not isinstance(trainer_conf, dict):
+        return
+
+    if trainer_conf.get("trainer") == "ScipyTrainer":
+        trainer_init = trainer_conf.get("trainer_init")
+        if isinstance(trainer_init, dict) and "energy_minimization" not in trainer_init:
+            trainer_init["energy_minimization"] = energy_minimization
+
+    for val in trainer_conf.values():
+        if isinstance(val, dict):
+            _set_energy_minimization_default_recursive(val, energy_minimization)
+        elif isinstance(val, list):
+            for item in val:
+                if isinstance(item, dict):
+                    _set_energy_minimization_default_recursive(item, energy_minimization)
+
+
+def apply_labs_training_config_overrides(trainer_chain_config):
+    """Apply LABS-specific in-memory overrides to a trainer_chain config.
+
+    This lets wrappers (like scripts/run_methods.sh) avoid mutating method JSON files.
+    """
+    # LABS has higher-than-quadratic terms; EfficientDepthOneEvaluator is invalid.
+    _replace_value_recursive(
+        trainer_chain_config, "EfficientDepthOneEvaluator", "StatevectorEvaluator"
+    )
+    # LABS convention in this repo: minimize energy by default in SciPy trainers,
+    # but only if the method JSON didn't explicitly specify it.
+    _set_energy_minimization_default_recursive(trainer_chain_config, True)
+
 
 def is_labs_problem(cost_op, tolerance: float = 1e-10) -> bool:
     """Check if a SparsePauliOp represents a LABS problem.
