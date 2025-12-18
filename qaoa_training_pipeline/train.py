@@ -37,6 +37,10 @@ from qaoa_training_pipeline.training import TRAINERS
 from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.utils.problem_classes import PROBLEM_CLASSES
 
+from qaoa_training_pipeline.utils.labs.labs_utils import (
+    apply_labs_training_config_overrides,
+)  # pylint: disable=import-outside-toplevel
+
 
 def get_script_args():
     """Get the command line input arguments."""
@@ -85,6 +89,18 @@ def get_script_args():
         required=True,
         type=str,
         help="The path to the json file that specifies the training configuration.",
+    )
+
+    parser.add_argument(
+        "--objective",
+        required=False,
+        type=str,
+        choices=["energy", "overlap"],
+        help=(
+            "Override the objective used by ScipyTrainer. "
+            "Supported values are 'energy' (default) and 'overlap' (LABS only). "
+            "If provided, this overrides any 'objective' field in the method JSON."
+        ),
     )
 
     parser.add_argument(
@@ -149,6 +165,56 @@ def prepare_train_kwargs(config: dict):
             raise NotImplementedError(f"Serialization is not yet implemented for {name}.")
 
 
+def set_problem_class_recursive(trainer_conf: dict, problem_class: str):
+    """Recursively set problem_class in trainer config, including nested trainers.
+
+    Args:
+        trainer_conf: A trainer config dict or trainer_init dict to modify
+        problem_class: The problem class name to set
+    """
+    if not isinstance(trainer_conf, dict):
+        return
+
+    if problem_class == "labs":
+        apply_labs_training_config_overrides(trainer_conf)
+
+    # Support being called on either a full trainer config (with "trainer_init") or directly
+    # on a trainer_init dict.
+    if "trainer_init" in trainer_conf and isinstance(trainer_conf["trainer_init"], dict):
+        trainer_conf["trainer_init"]["_problem_class"] = problem_class
+        set_problem_class_recursive(trainer_conf["trainer_init"], problem_class)
+        return
+
+    trainer_conf["_problem_class"] = problem_class
+
+    # Check if there's a nested trainer (e.g., RecursionTrainer contains ScipyTrainer)
+    if "trainer_init" in trainer_conf and isinstance(trainer_conf["trainer_init"], dict):
+        set_problem_class_recursive(trainer_conf["trainer_init"], problem_class)
+
+
+def set_objective_recursive(trainer_conf: dict, objective: str):
+    """Recursively set objective for ScipyTrainer configs (including nested trainers).
+
+    This is an in-memory override so users can switch objectives from the CLI without
+    editing method JSON files.
+    """
+    if not isinstance(trainer_conf, dict):
+        return
+
+    if trainer_conf.get("trainer") == "ScipyTrainer":
+        trainer_init = trainer_conf.get("trainer_init")
+        if isinstance(trainer_init, dict):
+            trainer_init["objective"] = objective
+
+    for val in trainer_conf.values():
+        if isinstance(val, dict):
+            set_objective_recursive(val, objective)
+        elif isinstance(val, list):
+            for item in val:
+                if isinstance(item, dict):
+                    set_objective_recursive(item, objective)
+
+
 def train(args: Optional[List]):
     """Main function that does the training.
 
@@ -205,6 +271,14 @@ def train(args: Optional[List]):
     with open(args.config, "r") as fin:
         full_config = json.load(fin)
 
+    # Store problem class info in config for trainers to access
+    if class_str is not None:
+        class_info = class_str.split(":")
+        class_name = class_info[0].lower()
+        full_config["_problem_class"] = class_name
+    else:
+        full_config["_problem_class"] = None
+
     trainer_chain_config = full_config["trainer_chain"]
 
     all_results, result = {}, {}
@@ -225,6 +299,11 @@ def train(args: Optional[List]):
     # Loop over all the trainers.
     for train_idx, conf in enumerate(trainer_chain_config):
         trainer_name = conf["trainer"]
+
+        # Optional CLI override: objective for ScipyTrainer (including nested ScipyTrainer).
+        objective = getattr(args, "objective", None)
+        if objective is not None:
+            set_objective_recursive(conf, objective)
 
         # Parse evaluator init key-word arguments given at runtime.
         evaluator_init_kwargs_str = getattr(args, f"evaluator_init_kwargs{train_idx}")
@@ -250,6 +329,9 @@ def train(args: Optional[List]):
                 )
 
         trainer_cls = TRAINERS[trainer_name]
+        # Pass problem class info to trainer config if available (including nested trainers)
+        if "_problem_class" in full_config and full_config["_problem_class"] is not None:
+            set_problem_class_recursive(conf, full_config["_problem_class"])
         trainer = trainer_cls.from_config(conf["trainer_init"])
 
         # Hook to deserialize any input to train that was serialized.

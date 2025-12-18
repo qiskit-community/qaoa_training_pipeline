@@ -10,11 +10,14 @@
 
 from typing import Optional
 
+from qiskit.quantum_info import SparsePauliOp
 from qiskit_optimization.applications import StableSet
 from qiskit_optimization.converters import QuadraticProgramToQubo
 
 from qaoa_training_pipeline.utils.data_utils import input_to_operator
 from qaoa_training_pipeline.utils.graph_utils import dict_to_graph
+
+from qaoa_training_pipeline.utils.labs.labs_utils import get_terms_offset
 
 
 class MaxCut:
@@ -80,7 +83,76 @@ class MaxIndependentSet:
         return cost_op
 
 
+class LABS:
+    """Produce LABS cost operators for a given problem size N."""
+
+    DEFAULT_N = 10  # Default problem size if not specified  # pylint: disable=invalid-name
+
+    def __init__(self, num_qubits: Optional[int] = None):
+        """Create the LABS problem class.
+        Args:
+            num_qubits: The problem size (number of spins).
+        """
+        self._num_qubits = num_qubits or self.DEFAULT_N
+        if self._num_qubits <= 0:
+            self._num_qubits = self.DEFAULT_N
+
+    @classmethod
+    def from_str(cls, input_str: Optional[str] = "") -> "LABS":
+        """Create the class from a string specifying N.
+
+        Args:
+            input_str: String specifying problem size (e.g., "15" for N=15).
+        """
+        num_qubits = None
+        if input_str:
+            try:
+                num_qubits = int(input_str)
+            except ValueError:
+                pass  # Will use DEFAULT_N
+        return cls(num_qubits)
+
+    def cost_operator(
+        self, input_data: Optional[dict] = None  # pylint: disable=unused-argument
+    ) -> SparsePauliOp:
+        """Create the cost operator from the problem size N.
+
+        Note: The input_data is ignored for LABS, as the problem
+        is fully defined by N provided at initialization.
+
+        Args:
+            input_data: An optional dict, ignored.
+
+        Returns:
+            A SparsePauliOp representing the LABS Hamiltonian H_C.
+        """
+        num_qubits = self._num_qubits
+        terms, _ = get_terms_offset(
+            num_qubits
+        )  # We ignore the offset since it drops out in the final calculation
+
+        pauli_list = []
+
+        for weight, nodes in terms:
+            # Create a base of all 'I's
+            paulis = ["I"] * num_qubits
+            for idx in nodes:
+                if idx >= num_qubits:
+                    # This should not happen with a correct get_terms_offset
+                    raise IndexError(f"Node index {idx} out of bounds for N={num_qubits}")
+                # Place 'Z' at the specified indices
+                paulis[idx] = "Z"
+
+            # Reverse the string for Qiskit's little-endian convention
+            pauli_string = "".join(paulis)[::-1]
+            pauli_list.append((pauli_string, weight))
+
+        # The return value is the SparsePauliOp
+        return SparsePauliOp.from_list(pauli_list)
+
+
 PROBLEM_CLASSES = {
     "maxcut": MaxCut,
     "mis": MaxIndependentSet,
+    "labs": LABS,
 }
