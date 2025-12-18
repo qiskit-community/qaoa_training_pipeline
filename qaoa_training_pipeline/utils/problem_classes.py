@@ -86,16 +86,16 @@ class MaxIndependentSet:
 class LABS:
     """Produce LABS cost operators for a given problem size N."""
 
-    DEFAULT_N = 10  # Default problem size if not specified
+    DEFAULT_N = 10  # Default problem size if not specified  # pylint: disable=invalid-name
 
-    def __init__(self, N: Optional[int] = None):
+    def __init__(self, num_qubits: Optional[int] = None):
         """Create the LABS problem class.
         Args:
-            N: The problem size (number of spins).
+            num_qubits: The problem size (number of spins).
         """
-        self._N = N or self.DEFAULT_N
-        if self._N <= 0:
-            self._N = self.DEFAULT_N
+        self._num_qubits = num_qubits or self.DEFAULT_N
+        if self._num_qubits <= 0:
+            self._num_qubits = self.DEFAULT_N
 
     @classmethod
     def from_str(cls, input_str: Optional[str] = "") -> "LABS":
@@ -104,15 +104,17 @@ class LABS:
         Args:
             input_str: String specifying problem size (e.g., "15" for N=15).
         """
-        N = None
+        num_qubits = None
         if input_str:
             try:
-                N = int(input_str)
+                num_qubits = int(input_str)
             except ValueError:
                 pass  # Will use DEFAULT_N
-        return cls(N)
+        return cls(num_qubits)
 
-    def cost_operator(self, input_data: Optional[dict] = None) -> SparsePauliOp:
+    def cost_operator(
+        self, input_data: Optional[dict] = None  # pylint: disable=unused-argument
+    ) -> SparsePauliOp:
         """Create the cost operator from the problem size N.
 
         Note: The input_data is ignored for LABS, as the problem
@@ -124,20 +126,20 @@ class LABS:
         Returns:
             A SparsePauliOp representing the LABS Hamiltonian H_C.
         """
-        N = self._N
+        num_qubits = self._num_qubits
         terms, _ = get_terms_offset(
-            N
+            num_qubits
         )  # We ignore the offset since it drops out in the final calculation
 
         pauli_list = []
 
         for weight, nodes in terms:
             # Create a base of all 'I's
-            paulis = ["I"] * N
+            paulis = ["I"] * num_qubits
             for idx in nodes:
-                if idx >= N:
+                if idx >= num_qubits:
                     # This should not happen with a correct get_terms_offset
-                    raise IndexError(f"Node index {idx} out of bounds for N={N}")
+                    raise IndexError(f"Node index {idx} out of bounds for N={num_qubits}")
                 # Place 'Z' at the specified indices
                 paulis[idx] = "Z"
 
