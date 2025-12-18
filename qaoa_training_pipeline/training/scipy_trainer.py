@@ -29,6 +29,14 @@ from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
+# Import LABS utilities for verification
+from qaoa_training_pipeline.utils.labs.labs_utils import (
+    is_labs_problem,
+    create_labs_energy_function,
+    process_labs_post_optimization,
+)
+
+
 class ScipyTrainer(BaseTrainer, HistoryMixin):
     """A trainer that wraps SciPy's minimize function."""
 
@@ -38,6 +46,8 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         minimize_args: Optional[Dict[str, Any]] = None,
         energy_minimization: bool = False,
         qaoa_angles_function: Optional[BaseAnglesFunction] = None,
+        objective: str = "energy",
+        problem_class: Optional[str] = None,
     ):
         """Initialize the trainer.
 
@@ -52,6 +62,9 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
                 angles. By default, this is the identity function. Ideally, this argument is
                 an instance of `BaseAnglesFunction` but we allow any callable here that maps
                 optimization parameters to QAOA angles.
+            objective: The objective to optimize. Can be "energy" (default) or "overlap".
+                When "overlap", maximizes overlap with ground state subspace (only for LABS problems).
+            problem_class: Optional problem class name (e.g., "labs").
         """
         BaseTrainer.__init__(self, evaluator, qaoa_angles_function)
         HistoryMixin.__init__(self)
@@ -64,6 +77,12 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         # Sign to control whether we minimize or maximize the energy
         self._energy_minimization = energy_minimization
         self._sign = 1 if energy_minimization else -1
+
+        # Problem class (e.g., "labs") - used to identify LABS problems
+        self._problem_class = problem_class
+
+        # Objective type: "energy" or "overlap" (for LABS problems)
+        self._objective = objective
 
     @property
     def minimization(self) -> bool:
@@ -118,6 +137,25 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
             return energy
 
+        # Check if this is a LABS problem
+        is_labs = self._problem_class is not None and self._problem_class.lower() == "labs"
+
+        if is_labs:
+            # Delegate to LABS utils to create the energy function
+            _energy = create_labs_energy_function(
+                cost_op=cost_op,
+                qaoa_angles_function=self._qaoa_angles_function,
+                evaluator=self._evaluator,
+                sign=self._sign,
+                energy_evaluation_time=self._energy_evaluation_time,
+                energy_history=self._energy_history,
+                parameter_history=self._parameter_history,
+                mixer=mixer,
+                initial_state=initial_state,
+                ansatz_circuit=ansatz_circuit,
+                objective=self._objective,
+            )
+
         result = minimize(_energy, np.array(params0), **self._minimize_args)
 
         param_result = ParamResult.from_scipy_result(
@@ -125,6 +163,15 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         )
 
         param_result.update(self._evaluator.get_results_from_last_iteration())
+
+        if is_labs:
+            # Process all LABS-specific post-optimization tasks
+            param_result = process_labs_post_optimization(
+                cost_op=cost_op,
+                param_result=param_result,
+                mixer=mixer,
+                initial_state=initial_state,
+            )
 
         return param_result
 
@@ -182,6 +229,8 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             config.get("minimize_args", None),
             energy_minimization=config.get("energy_minimization", None),
             qaoa_angles_function=function,
+            objective=config.get("objective", "energy"),
+            problem_class=config.get("_problem_class", None),
         )
 
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
