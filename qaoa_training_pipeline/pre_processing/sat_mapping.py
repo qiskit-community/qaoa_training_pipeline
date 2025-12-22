@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from itertools import combinations
 from threading import Timer
@@ -214,7 +215,10 @@ class SATMapper(BasePreprocessor):
                 e_time = solver.time()
 
                 assert sol, "solver from get_model() was undefined"
-                assert e_time, "solver ran without defining e_time"
+                # e_time is sometimes None on concurrency on windows machines so this assert was relaxed
+                if e_time is None:
+                    warnings.warn("solver ran without defining e_time", RuntimeWarning)
+                    e_time = 0.0
                 assert isinstance(status, bool), "solver status returned with non-boolean value"
                 mapping = []
                 if status:
