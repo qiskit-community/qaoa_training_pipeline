@@ -10,18 +10,17 @@
 
 import copy
 import json
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
+
 import networkx as nx
 import numpy as np
-
 from qiskit import QuantumCircuit
 from qiskit.circuit import ParameterExpression
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler import CouplingMap
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
-
-from qiskit_optimization.applications import Maxcut
 from qiskit_optimization.algorithms import CplexOptimizer
+from qiskit_optimization.applications import Maxcut
 from qiskit_optimization.problems.quadratic_objective import ObjSense
 
 
@@ -276,7 +275,7 @@ def make_swap_strategy(edges: List[Tuple[int, ...]], num_qubits: int) -> SwapStr
         n1, n2 = edge
         max_layers = max(max_layers, tentative_strat.distance_matrix[n1, n2])
 
-    layers = tuple([tuple(tentative_strat.swap_layer(idx)) for idx in range(max_layers)])
+    layers = tuple(tuple(tentative_strat.swap_layer(idx)) for idx in range(max_layers))
     cmap = CouplingMap([(i, i + 1) for i in range(num_qubits - 1)])
     swap_strat = SwapStrategy(coupling_map=cmap, swap_layers=layers)
 

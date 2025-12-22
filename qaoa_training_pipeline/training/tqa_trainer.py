@@ -9,12 +9,12 @@
 """Classes to generate a beta and gamma schedule based on TQA."""
 
 from time import time
-from typing import Any, Callable, Tuple, List, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from scipy.optimize import minimize
@@ -99,7 +99,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         evaluator: Optional[BaseEvaluator] = None,
         minimize_args: Optional[Dict[str, Any]] = None,
         energy_minimization: bool = False,
-        initial_dt: tuple[float, float] | list[float] = [0.75],
+        initial_dt: tuple[float, float] | list[float] | None = None,
     ) -> None:
         """Initialize an instance.
 
@@ -115,7 +115,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             initial_dt: Initial dt if not provided to :meth:`train`. Defaults to
                 ``0.75``.
         """
-
+        initial_dt = initial_dt or [0.75]
         initial_dt_list = [initial_dt] if isinstance(initial_dt, float) else initial_dt
 
         schedule_method = self.tqa_schedule if len(initial_dt_list) == 1 else self.lr_schedule
