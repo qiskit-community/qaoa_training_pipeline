@@ -8,5 +8,8 @@
 
 """Module level imports."""
 
-from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer, DepthOneGammaScanTrainer
+from qaoa_training_pipeline.training.parameter_scanner import (
+    DepthOneScanTrainer,
+    DepthOneGammaScanTrainer,
+)
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
