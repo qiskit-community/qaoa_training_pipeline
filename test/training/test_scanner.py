@@ -13,7 +13,10 @@ from test import TrainingPipelineTestCase
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
-from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer, DepthOneGammaScanTrainer
+from qaoa_training_pipeline.training.parameter_scanner import (
+    DepthOneScanTrainer,
+    DepthOneGammaScanTrainer,
+)
 from qaoa_training_pipeline.training.functions import IdentityFunction
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
@@ -66,6 +69,7 @@ class TestDepthOneScanTrainer(TrainingPipelineTestCase):
         self.assertTrue(trainer._energy_minimization)
         self.assertTrue(isinstance(trainer.qaoa_angles_function, IdentityFunction))
 
+
 class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
     """Tests of the class DepthOneGammaScanTrainer."""
 
@@ -73,8 +77,7 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
         """Setup variables."""
         self.trainer = DepthOneGammaScanTrainer(EfficientDepthOneEvaluator())
         self.cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1), ("ZZII", -1)])
-        self.G = operator_to_graph(self.cost_op)
-
+        self.graph = operator_to_graph(self.cost_op)
 
     def test_simple(self):
         """Basic test of the class DepthOneScanTrainer."""
@@ -105,31 +108,47 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
         self.assertTrue(isinstance(trainer, DepthOneGammaScanTrainer))
         self.assertTrue(trainer._energy_minimization)
         self.assertTrue(isinstance(trainer.qaoa_angles_function, IdentityFunction))
-    
+
     def test_prod_cos_edges_from_node(self):
-        prod = self.trainer._prod_cos_edges_from_node(self.G, node=0, nbrs=[1,2,3], gamma=1.5, weight_attr="weight")
+        """
+        Test the product term of edges connected to a node.
+        """
+        prod = self.trainer._prod_cos_edges_from_node(
+            self.graph, node=0, nbrs=[1, 2, 3], gamma=1.5, weight_attr="weight"
+        )
         expected_prod = -0.9702769379215033
         assert prod == expected_prod
-    
+
     def test_prod_cos_triangle_terms(self):
-        prod = self.trainer._prod_cos_triangle_terms(self.G, u=0, v=3, mutual_nbrs=[2], gamma=1.5, weight_attr="weight", plus=True)
+        """
+        Test the product term of edges connected to a node and it's neighbor, creating a triangle.
+
+        """
+        prod = self.trainer._prod_cos_triangle_terms(
+            self.graph, u=0, v=3, mutual_nbrs=[2], gamma=1.5, weight_attr="weight", plus=True
+        )
         expected_prod = 0.960170286650366
         self.assertAlmostEqual(prod, expected_prod)
-        prod = self.trainer._prod_cos_triangle_terms(self.G, u=0, v=3, mutual_nbrs=[2], gamma=1.5, weight_attr="weight", plus=False)
+        prod = self.trainer._prod_cos_triangle_terms(
+            self.graph, u=0, v=3, mutual_nbrs=[2], gamma=1.5, weight_attr="weight", plus=False
+        )
         expected_prod = 1
         self.assertAlmostEqual(prod, expected_prod)
 
-    
-    def test_compute_A_B_for_gamma(self):
-        A, B = self.trainer._compute_A_B_for_gamma(self.G, gamma=1.5)
-        expected_A = -0.0013910591808833639
-        self.assertAlmostEqual(A, expected_A)
-        expected_B = -0.01951626068306727
-        self.assertAlmostEqual(B, expected_B)
-    
+    def test_compute_a_b_matrices_for_gamma(self):
+        """
+        Test the computation of A and B matrices as shown in the paper.
+        """
+        a_matrix, b_matrix = self.trainer._compute_a_b_matrices_for_gamma(self.graph, gamma=1.5)
+        expected_a_matrix = -0.0013910591808833639
+        self.assertAlmostEqual(a_matrix, expected_a_matrix)
+        expected_b_matrix = -0.01951626068306727
+        self.assertAlmostEqual(b_matrix, expected_b_matrix)
+
     def test_beta_star_for_gamma(self):
-        beta = self.trainer._beta_star_for_gamma(self.G, gamma=1.5)
+        """
+        Test that the optimal beta value is received for a set gamma.
+        """
+        beta = self.trainer._beta_star_for_gamma(self.graph, gamma=1.5)
         expected_beta = -0.7499982063376642
         self.assertAlmostEqual(beta, expected_beta)
-
-
