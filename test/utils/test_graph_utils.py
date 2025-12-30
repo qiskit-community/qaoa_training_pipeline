@@ -47,6 +47,19 @@ class TestGraphUtils(TrainingPipelineTestCase):
             [0, -1, 1, 2, -1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0],
         )
 
+    def test_operator_to_graph_isolated_vertex(self):
+        """Test conversion between operator and graph."""
+
+        cost_op = SparsePauliOp.from_list([("IIZZI", -1), ("IZIZI", 1), ("ZIIZI", 2)])
+
+        graph = operator_to_graph(cost_op)
+
+        assert graph.number_of_nodes() == 5
+        self.assertListEqual(
+            nx.adjacency_matrix(graph, nodelist=[0, 1, 2, 3, 4]).toarray().flatten().tolist(),
+            [0, 0, 0, 0, 0, 0, 0, -1, 1, 2, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0],
+        )
+
     def test_operator_to_graph_single_z(self):
         """Test conversion between operator and graph."""
 

@@ -47,6 +47,10 @@ def operator_to_graph(
         ValueError if the operator is not quadratic.
     """
     graph, edges = nx.Graph(), []
+
+    n_qubits = operator.num_qubits
+    graph.add_nodes_from(range(n_qubits))
+
     for pauli_str, weight in operator.to_list():
         edge = [idx for idx, char in enumerate(pauli_str[::-1]) if char == "Z"]
 
@@ -180,9 +184,7 @@ def circuit_to_graph(circuit: QuantumCircuit) -> nx.Graph:
             edge = (qreg.index(inst.qubits[0]), qreg.index(inst.qubits[1]))
 
         else:
-            raise ValueError(
-                "Instructions with more than 2 qubits cannot be converted to graph edges."
-            )
+            raise ValueError("Instructions with more than 2 qubits cannot be converted to graph edges.")
 
         if edge in seen_edges:
             raise ValueError(f"Circuit contains multiple times the edge {edge}.")
