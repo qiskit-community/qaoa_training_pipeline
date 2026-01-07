@@ -17,8 +17,8 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.pre_processing.feature_extraction import (
-    BaseFeatureExtractor,
     FEATURE_EXTRACTORS,
+    GraphFeatureExtractor,
 )
 from qaoa_training_pipeline.pre_processing.feature_matching import (
     BaseFeatureMatcher,
@@ -50,10 +50,10 @@ class TransferTrainer(BaseTrainer):
     def __init__(
         self,
         data_loader: BaseDataLoader,
-        feature_extractor: BaseFeatureExtractor,
-        feature_matcher: BaseFeatureMatcher = None,
-        angle_aggregator: BaseAngleAggregator = None,
-        evaluator: Optional[BaseEvaluator] = None,
+        feature_extractor: GraphFeatureExtractor,
+        feature_matcher: BaseFeatureMatcher | None = None,
+        angle_aggregator: BaseAngleAggregator | None = None,
+        evaluator: Optional[BaseEvaluator] | None = None,
     ):
         """Setup a class to train based on existing data.
 
@@ -141,7 +141,7 @@ class TransferTrainer(BaseTrainer):
         if self._evaluator is not None:
             energy = self._evaluator.evaluate(cost_op, qaoa_angles)
         else:
-            energy = "NA"
+            energy = None
 
         if len(qaoa_angles) // 2 != qaoa_depth:
             raise ValueError(
@@ -176,7 +176,7 @@ class TransferTrainer(BaseTrainer):
 
     def to_config(self):
         """Produce a config for the transfer trainer."""
-        config = {"trainer_name": self.__class__.__name__}
+        config: dict[str, str | dict] = {"trainer_name": self.__class__.__name__}
         config["data_loader"] = self._data_loader.__class__.__name__
         config["data_loader_init"] = self._data_loader.to_config()
 
@@ -201,7 +201,7 @@ class TransferTrainer(BaseTrainer):
 
     @classmethod
     def from_config(cls, config: Dict) -> "TransferTrainer":
-        """Creat a class from a config."""
+        """Create a class from a config."""
         data_loader_cls = DATA_LOADERS[config["data_loader"]]
         feature_extractor_cls = FEATURE_EXTRACTORS[config["feature_extractor"]]
         feature_matcher_cls = FEATURE_MATCHERS[config["feature_matcher"]]
