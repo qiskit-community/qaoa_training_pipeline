@@ -9,14 +9,17 @@
 """Base trainer interface."""
 
 from abc import ABC, abstractmethod
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training.functions import (
+    BaseAnglesFunction,
+    IdentityFunction,
+)
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.training.functions import BaseAnglesFunction, IdentityFunction
 
 
 class BaseTrainer(ABC):
@@ -24,8 +27,8 @@ class BaseTrainer(ABC):
 
     def __init__(
         self,
-        evaluator: Optional[BaseEvaluator] = None,
-        qaoa_angles_function: Optional[Callable] = None,
+        evaluator: BaseEvaluator | None = None,
+        qaoa_angles_function: BaseAnglesFunction | None = None,
     ) -> None:
         """Initialise the trainer.
 
@@ -41,7 +44,7 @@ class BaseTrainer(ABC):
         self._qaoa_angles_function = qaoa_angles_function or IdentityFunction()
 
     @property
-    def evaluator(self) -> BaseEvaluator:
+    def evaluator(self) -> BaseEvaluator | None:
         """Return the evaluator of the trainer."""
         return self._evaluator
 
@@ -75,13 +78,13 @@ class BaseTrainer(ABC):
         raise NotImplementedError("Sub-classes must implement `from_config`.")
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary to keep track of how results are created.
+        """Creates a serializable dictionary to keep track of how results are created.
 
-        Note: This datastructure is not intended for us to recreate the class instance.
+        Note: This data structure is not intended for us to recreate the class instance.
         """
         return {
             "trainer_name": self.__class__.__name__,
-            "evaluator": self._evaluator.to_config(),
+            "evaluator": self._evaluator.to_config() if self._evaluator else None,
             "qaoa_angles_function": self._qaoa_angles_function.to_config(),
         }
 

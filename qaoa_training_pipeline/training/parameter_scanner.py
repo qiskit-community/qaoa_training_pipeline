@@ -10,23 +10,27 @@
 
 from time import time
 from typing import List, Optional, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
-
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
+from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+
+# cspell: ignore argmin contourf colorbar
+from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
 from qaoa_training_pipeline.training.functions import (
+    FUNCTIONS,
     BaseAnglesFunction,
     IdentityFunction,
-    FUNCTIONS,
 )
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.evaluation import EVALUATORS
 
 
 class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
@@ -55,8 +59,8 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
         # Parameters that will be filled by the scanner.
         self._energies = None
-        self._params2 = None
-        self._params1 = None
+        self._params2: np.typing.ArrayLike | None = None
+        self._params1: np.typing.ArrayLike | None = None
 
         # This could be set in a subsequent PR by other methods, e.g., interpolation.
         # This is a callable that takes as input the 2D energies scan.
@@ -67,7 +71,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         self._opt_param2 = None
 
         # Default parameter range over which to scan.
-        self._default_range = ((0, np.pi), (0, 2 * np.pi))
+        self._default_range = [(0.0, np.pi), (0.0, 2 * np.pi)]
 
     @property
     def minimization(self) -> bool:
@@ -82,7 +86,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
         parameter_ranges: Optional[List[Tuple[float, float]]] = None,
-        num_points: Optional[int] = 15,
+        num_points: int = 15,
     ) -> ParamResult:
         r"""Train the parameters by doing a 2D scan.
 
@@ -115,10 +119,11 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
         for idx1, param1 in enumerate(self._params1):
             for idx2, param2 in enumerate(self._params2):
-                estart = time()
+                e_start = time()
 
                 qaoa_angles = self._qaoa_angles_function([param1, param2])
 
+                assert self._evaluator, "_evaluator must be defined before calling train()"
                 energy = self._evaluator.evaluate(
                     cost_op,
                     qaoa_angles,
@@ -128,13 +133,13 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
                 )
                 self._energies[idx1, idx2] = float(np.real(energy))
 
-                self._energy_evaluation_time.append(time() - estart)
+                self._energy_evaluation_time.append(time() - e_start)
                 self._energy_history.append(float(np.real(energy)))
                 self._parameter_history.append([float(param1), float(param2)])
 
         min_idx, opt_energy = self._extrema_locator(self._energies)
-        min_idxb, min_idxg = min_idx // num_points, min_idx % num_points
-        opt_param1, opt_param2 = self._params1[min_idxb], self._params2[min_idxg]
+        min_idx_b, min_idx_g = min_idx // num_points, min_idx % num_points
+        opt_param1, opt_param2 = self._params1[min_idx_b], self._params2[min_idx_g]
 
         self._opt_param2 = opt_param2
         self._opt_param1 = opt_param1
@@ -148,8 +153,8 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
     def plot(
         self,
-        axis: Optional[plt.Axes] = None,
-        fig: Optional[plt.Figure] = None,
+        axis: Optional[Axes] = None,
+        fig: Optional[Figure] = None,
         xlabel: str = r"$\gamma$",
         ylabel: str = r"$\beta$",
     ):
@@ -162,26 +167,30 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
             axis: Axis on which to plot.
             fig: The figure object.
             xlabel: Label for the x-axis. This is needed if we are using a function to relate
-                the scanned parameters to QAOA anagles.
+                the scanned parameters to QAOA angles.
             ylabel: Label for the y-axis. This is needed if we are using a function to relate
-                the scanned parameters to QAOA anagles.
+                the scanned parameters to QAOA angles.
         """
 
         if axis is None or fig is None:
             fig, axis = plt.subplots(1, 1)
 
+        assert self._params1 is not None, "self._params1 must be defined before calling plot"
+        assert self._params2 is not None, "self._params2 must be defined before calling plot"
         ggs, bbs = np.meshgrid(self._params2, self._params1)
-        cset = axis.contourf(ggs, bbs, self._energies, levels=30)
+        c_set = axis.contourf(ggs, bbs, self._energies, levels=30)
         axis.set_xlabel(xlabel)
         axis.set_ylabel(ylabel)
+        assert isinstance(self._opt_param1, float)
+        assert isinstance(self._opt_param2, float)
         axis.scatter([self._opt_param2], [self._opt_param1], s=10, marker="*", color="w")
-        fig.colorbar(cset, ax=axis, label="Energy")
+        fig.colorbar(c_set, ax=axis, label="Energy")
 
         return fig, axis
 
     @classmethod
     def from_config(cls, config: dict) -> "DepthOneScanTrainer":
-        """Create an intance from a config."""
+        """Create an instance from a config."""
 
         evaluator_cls = EVALUATORS[config["evaluator"]]
 
@@ -193,12 +202,12 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
-            config.get("energy_minimization", None),
-            function,
+            config.get("energy_minimization", False),
+            qaoa_angles_function=function,
         )
 
     def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
-        """Parse the trainig arguments.
+        """Parse the training arguments.
 
         These are given in the form:
         num_points:val:parameter_ranges:low/high/low/high_...
