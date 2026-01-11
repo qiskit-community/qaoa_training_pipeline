@@ -97,22 +97,14 @@ class FixedAngleConjecture(BaseTrainer):
             ansatz_circuit: Not used.
         """
 
-        if mixer is not None:
-            warnings.warn(
-                f"{self.__class__.__name__} ignores the mixer input. Returning standard angles."
-            )
+        def _warn_ignored_inputs(**kwargs):
+            for name, variable in kwargs.items():
+                if variable is not None:
+                    warnings.warn(f"{self.__class__.__name__} ignores {name} input")
 
-        if initial_state is not None:
-            warnings.warn(
-                f"{self.__class__.__name__} ignores the initial_state input. "
-                "Returning standard angles."
-            )
-
-        if ansatz_circuit is not None:
-            warnings.warn(
-                f"{self.__class__.__name__} ignores the ansatz_circuit input. "
-                "Returning standard angles."
-            )
+        _warn_ignored_inputs(
+            mixer=mixer, initial_state=initial_state, ansatz_circuit=ansatz_circuit
+        )
 
         start = time()
 
