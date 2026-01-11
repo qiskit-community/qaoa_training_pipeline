@@ -224,7 +224,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
 
 class DepthOneGammaScanTrainer(DepthOneScanTrainer):
-    """Scan Gamma values and computes beta value analytically as per https://arxiv.org/pdf/2501.16419"""
+    """Scan Gamma values and compute the optimal beta value analytically as per https://arxiv.org/pdf/2501.16419"""
 
     def __init__(
         self,
