@@ -152,3 +152,14 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
         beta = self.trainer._beta_star_for_gamma(self.graph, gamma=1.5)
         expected_beta = -0.7499982063376642
         self.assertAlmostEqual(beta, expected_beta)
+
+    def test_consistency_between_trainers(self):
+        depth_one_trainer = DepthOneScanTrainer(EfficientDepthOneEvaluator())
+        result_depth_one_trainer = depth_one_trainer.train(self.cost_op, num_points=100)
+        result_opt_beta = self.trainer.train(self.cost_op, num_points=100)
+        self.assertAlmostEqual(result_opt_beta["energy"], result_depth_one_trainer["energy"], places=3)
+
+        # with less points being scanned, the optimal beta trainer should give better result
+        result_depth_one_trainer = depth_one_trainer.train(self.cost_op, num_points=10)
+        result_opt_beta = self.trainer.train(self.cost_op, num_points=10)
+        assert result_opt_beta["energy"] >= result_depth_one_trainer["energy"]

@@ -256,7 +256,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         # Override parent initialization sice we are only scanning values for gamma and not beta,
         # and put it in a list for consistency with parent API
-        self._default_range = (0, 2 * np.pi)
+        self._default_range = ((0, 2 * np.pi),)
 
     # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
