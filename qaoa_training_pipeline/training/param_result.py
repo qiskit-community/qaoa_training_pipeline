@@ -47,7 +47,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 25,
+            "qaoa_training_pipeline_version": 27,
         }
 
         # Convert, e.g., np.float to float
@@ -96,9 +96,7 @@ class ParamResult:
     def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> dict:
         """Standardizes results from SciPy such that it can be serialized."""
 
-        param_result = cls(
-            result.pop("x").tolist(), train_duration, trainer, sign * result.pop("fun")
-        )
+        param_result = cls(result.pop("x").tolist(), train_duration, trainer, sign * result.pop("fun"))
 
         result = dict(result)
 
