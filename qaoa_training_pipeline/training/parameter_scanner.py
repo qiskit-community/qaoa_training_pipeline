@@ -224,7 +224,11 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
 
 class DepthOneGammaScanTrainer(DepthOneScanTrainer):
-    """Scan Gamma values and compute the optimal beta value analytically as per https://arxiv.org/pdf/2501.16419"""
+    """Scan Gamma values and compute the optimal beta value analytically for each gamma as per https://arxiv.org/pdf/2501.16419 -
+    "Near-Optimal Parameter Tuning of Level-1 QAOA for Ising Models".
+    The gurentee for optimality of the beta parameter here is dependant on using the standard mixer Hm = sum X_j.
+    For other mixer hamiltonian the value of the beta computed here might be non optimal.
+    """
 
     def __init__(
         self,
@@ -252,7 +256,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         # Override parent initialization sice we are only scanning values for gamma and not beta,
         # and put it in a list for consistency with parent API
-        self._default_range = [(0, 2 * np.pi)]
+        self._default_range = (0, 2 * np.pi)
 
     # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
