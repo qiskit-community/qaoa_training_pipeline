@@ -10,7 +10,8 @@
 
 import copy
 import json
-from typing import Optional, List, Tuple, Mapping
+from typing import Optional, List, Tuple
+from collections.abc import Mapping
 import networkx as nx
 import numpy as np
 
