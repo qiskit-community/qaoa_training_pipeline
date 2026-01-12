@@ -10,7 +10,7 @@
 
 import copy
 import json
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Mapping
 import networkx as nx
 import numpy as np
 
@@ -88,6 +88,83 @@ def operator_to_list_of_hyperedges(
         edge = [idx for idx, char in enumerate(pauli_str[::-1]) if char == "Z"]
         edges.append([edge, pre_factor * np.real(weight)])
     return edges
+
+
+def graph_to_operator_with_partial_assignment(
+    graph: nx.Graph,
+    assignment: Mapping,  # {node: -1, 0, +1}, missing nodes treated as 0
+    pre_factor: float = 1.0,
+    include_constant: bool = True,
+) -> SparsePauliOp:
+    """
+    Convert a graph into a SparsePauliOp with a partial spin assignment applied.
+
+    Each edge (i, j) maps to:
+      - Z_i Z_j term if both i and j are free (assignment 0),
+      - Z_i term scaled by the fixed spin of j if j is fixed and i is free,
+      - Z_j term scaled by the fixed spin of i if i is fixed and j is free,
+      - a constant shift (identity term) if both i and j are fixed.
+
+    Args:
+        graph: A networkx undirected graph (optionally weighted via edge attr 'weight').
+        assignment: Mapping {node: -1, 0, +1} for partial assignment. Missing nodes default to 0.
+                    +1/-1 are fixed spins, 0 means free.
+        pre_factor: Multiplies the edge weights (default 1.0).
+                    For maximum cut conventions, set pre_factor to -0.5
+        include_constant: If True, include the constant energy offset arising from edges between
+                          two fixed vertices as an identity term. This does not affect optimization,
+                          but preserves the exact energy.
+
+    Returns:
+        A `SparsePauliOp` representing the reduced Hamiltonian on the current qubit register.
+    """
+    # Establish qubit ordering and index map
+    nodes = list(graph.nodes())
+    n = len(nodes)
+    idx = {node: k for k, node in enumerate(nodes)}
+
+    pauli_list = []
+    const = 0.0
+
+    def get_fixed_spin(node):
+        s = assignment.get(node, 0)
+        if s not in (-1, 0, +1):
+            raise ValueError(f"Assignment for node {node} must be in {{-1, 0, +1}}, got {s}.")
+        return s
+
+    for u, v, data in graph.edges(data=True):
+        weight = data["weight"] if "weight" in data else 1.0
+        spin_u = get_fixed_spin(u)
+        spin_v = get_fixed_spin(v)
+
+        if spin_u == 0 and spin_v == 0:
+            # Free-free edge -> ZZ term
+            paulis = ["I"] * n
+            paulis[idx[u]] = "Z"
+            paulis[idx[v]] = "Z"
+            # Reverse for qiskit ordering convention
+            pauli_list.append(("".join(paulis)[::-1], pre_factor * weight))
+
+        elif spin_u != 0 and spin_v == 0:
+            # u fixed, v free -> linear Z_v term with coefficient w * s_u
+            paulis = ["I"] * n
+            paulis[idx[v]] = "Z"
+            pauli_list.append(("".join(paulis)[::-1], pre_factor * weight * spin_u))
+
+        elif spin_u == 0 and spin_v != 0:
+            # u free, v fixed -> linear Z_u term with coefficient w * s_v
+            paulis = ["I"] * n
+            paulis[idx[u]] = "Z"
+            pauli_list.append(("".join(paulis)[::-1], pre_factor * weight * spin_v))
+
+        else:
+            # both fixed -> constant term: w * s_u * s_v
+            const += pre_factor * weight * spin_u * spin_v
+
+    if include_constant and const != 0.0:
+        pauli_list.append(("I" * n, const))  # identity term (no reverse needed)
+
+    return SparsePauliOp.from_list(pauli_list)
 
 
 def graph_to_operator(graph: nx.Graph, pre_factor: float = 1.0) -> SparsePauliOp:
@@ -180,9 +257,7 @@ def circuit_to_graph(circuit: QuantumCircuit) -> nx.Graph:
             edge = (qreg.index(inst.qubits[0]), qreg.index(inst.qubits[1]))
 
         else:
-            raise ValueError(
-                "Instructions with more than 2 qubits cannot be converted to graph edges."
-            )
+            raise ValueError("Instructions with more than 2 qubits cannot be converted to graph edges.")
 
         if edge in seen_edges:
             raise ValueError(f"Circuit contains multiple times the edge {edge}.")

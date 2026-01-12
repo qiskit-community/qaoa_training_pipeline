@@ -28,6 +28,7 @@ from qaoa_training_pipeline.utils.graph_utils import (
     circuit_to_graph,
     graph_to_operator,
     solve_max_cut,
+    graph_to_operator_with_partial_assignment,
 )
 
 
@@ -173,6 +174,22 @@ class TestGraphUtils(TrainingPipelineTestCase):
         expected = SparsePauliOp.from_list([("IZZ", 1.0), ("ZIZ", 1.0), ("IIZ", 1.0)])
 
         self.assertEqual(paulis.paulis, expected.paulis)
+
+    def test_graph_to_operator_with_partial_assignment(self):
+        """Test the convertion to hamiltonian with a partial assignment"""
+        graph = nx.from_edgelist([(0, 1), (0, 2), (1, 2), (0, 3), (1, 4)])
+        assignment = {1: 1, 2: -1, 4: -1}
+        paulis = graph_to_operator_with_partial_assignment(graph, assignment=assignment)
+        expected = SparsePauliOp.from_list(
+            [
+                ("IIIIZ", 1.0),
+                ("IIIIZ", -1.0),
+                ("IZIIZ", 1.0),
+                ("IIIII", -2.0),
+            ]
+        )
+        self.assertEqual(paulis.paulis, expected.paulis)
+        self.assertTrue(np.allclose(paulis.coeffs, expected.coeffs))
 
     def test_weighted_graph_to_operator(self):
         """Test the conversion from a weighted graph to an operator."""
