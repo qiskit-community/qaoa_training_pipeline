@@ -150,6 +150,58 @@ class LABS:
         # The return value is the SparsePauliOp
         return SparsePauliOp.from_list(pauli_list)
 
+    @staticmethod
+    def apply_training_config_overrides(trainer_conf: dict):
+        """Apply LABS-specific overrides to training configuration.
+
+        This hook allows LABS to modify trainer configs (e.g., set energy_minimization=True).
+        """
+        from qaoa_training_pipeline.utils.labs.labs_utils import (  # pylint: disable=import-outside-toplevel
+            apply_labs_training_config_overrides,
+        )
+
+        apply_labs_training_config_overrides(trainer_conf)
+
+    @staticmethod
+    def post_process_result(cost_op: SparsePauliOp, result) -> dict:
+        """Post-process training result to add LABS-specific metrics.
+
+        Computes labs_energy, p_opt, tts for the main result and any nested results
+        (e.g., from RecursionTrainer).
+
+        Args:
+            cost_op: The LABS cost operator
+            result: Training result (ParamResult or dict)
+
+        Returns:
+            Updated result dict with LABS metrics
+        """
+        from qaoa_training_pipeline.utils.labs.labs_utils import (  # pylint: disable=import-outside-toplevel
+            process_labs_post_optimization,
+            true_optimal_energy,
+        )
+
+        # Process the main result
+        result = process_labs_post_optimization(cost_op=cost_op, param_result=result)
+
+        # Add optimal energy for reference
+        if cost_op.num_qubits in true_optimal_energy:
+            result["optimal_energy"] = true_optimal_energy[cost_op.num_qubits]
+
+        # Process nested results (e.g., from RecursionTrainer with numeric keys 2, 3, etc.)
+        data = result.data if hasattr(result, "data") else result
+        for key in list(data.keys()):
+            is_numeric_key = isinstance(key, int) or (isinstance(key, str) and key.isdigit())
+            if is_numeric_key:
+                nested = data[key]
+                if isinstance(nested, dict) and "optimized_qaoa_angles" in nested:
+                    nested = process_labs_post_optimization(cost_op=cost_op, param_result=nested)
+                    if cost_op.num_qubits in true_optimal_energy:
+                        nested["optimal_energy"] = true_optimal_energy[cost_op.num_qubits]
+                    data[key] = nested
+
+        return result
+
 
 PROBLEM_CLASSES = {
     "maxcut": MaxCut,
