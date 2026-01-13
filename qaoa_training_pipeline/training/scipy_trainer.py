@@ -70,7 +70,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         """Return True if the energy is minimized."""
         return self._sign == 1
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
@@ -125,7 +125,6 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         )
 
         param_result.update(self._evaluator.get_results_from_last_iteration())
-        print(f'Duration: {time() - start:.2f} s')
 
         return param_result
 
