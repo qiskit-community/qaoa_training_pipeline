@@ -487,10 +487,10 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             fig, axis = plt.subplots(1, 1)
 
         sc = axis.scatter(
-            self._params1, self._params2, c=self._energies, cmap="viridis", s=40, edgecolor="none"
+            self._params2, self._params1, c=self._energies, cmap="viridis", s=40, edgecolor="none"
         )
-        axis.set_xlabel("beta")
-        axis.set_ylabel("gamma")
+        axis.set_xlabel(xlabel)
+        axis.set_ylabel(ylabel)
         cbar = plt.colorbar(sc)
         cbar.set_label("Energy")
         plt.tight_layout()
