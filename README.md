@@ -183,6 +183,7 @@ This repository is still in development: new functionality is being added and th
 |      23 | Improve transparency of transfer trainer                     |          #45 |
 |      24 | Adding linear ramp parameter support in train.py             |          #46 |
 |      25 | Enable GPU on SV simulation via init_kwargs "GPU"            |          #47 |
+|      28 | Bug fix - Add vertices to the graph in operator_to_graph     |          #52 |
 
 ## IBM Public Repository Disclosure
 
