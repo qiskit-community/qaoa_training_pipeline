@@ -10,21 +10,21 @@
 
 import copy
 import json
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
+
 import networkx as nx
 import numpy as np
-
 from qiskit import QuantumCircuit
 from qiskit.circuit import ParameterExpression
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler import CouplingMap
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
-
-from qiskit_optimization.applications import Maxcut
 from qiskit_optimization.algorithms import CplexOptimizer
+from qiskit_optimization.applications import Maxcut
 from qiskit_optimization.problems.quadratic_objective import ObjSense
 
 
+# cspell: ignore cmap qreg qregs solcplex strat
 def operator_to_graph(
     operator: SparsePauliOp, pre_factor: float = 1.0, include_one_local: bool = True
 ) -> nx.Graph:
@@ -36,7 +36,7 @@ def operator_to_graph(
 
     Args:
         operator: The operator to convert to a graph.
-        pre_factor: The prefactor that will be applied to all the edges ontop of any weight
+        pre_factor: The pre-factor that will be applied to all the edges on top of any weight
             that the Pauli terms may have. For example, if `pre_factor` is 2 and the term
             `ZiZj` has a weight of -3 then the graph with have an edge between nodes `(i, j)`
             with a weight of -6.
@@ -63,16 +63,16 @@ def operator_to_graph(
     return graph
 
 
-def operator_to_list_of_hyperedges(
+def operator_to_list_of_hyper_edges(
     operator: SparsePauliOp, pre_factor: float = 1.0
-) -> List[Tuple[List[int], float]]:
+) -> list[tuple[list[int], float]]:
     """Convert a cost operator into a list of edges
 
     Unlike `operator_to_graph`, which converts the sparse Pauli operator
     into a networkx graph, here we represent the graph as a list of edges,
     with the corresponding weight. This function should be used if the
     cost operator is not quadratic, but contains higher-order terms.
-    In fact, networkx does not support hyperedges
+    In fact, networkx does not support hyper-edges
 
     Args:
         operator (SparsePauliOp): input cost operator
@@ -97,13 +97,13 @@ def graph_to_operator(graph: nx.Graph, pre_factor: float = 1.0) -> SparsePauliOp
 
     Args:
         graph: A networkx graph that is possibly weighted.
-        pre_factor: A pre_factor that multiplies the weights in the graph. This prefactor defaults
+        pre_factor: A pre_factor that multiplies the weights in the graph. This pre-factor defaults
             to `1.0`. For example, to reproduce the cost operator of a maximum cut problem from a
             graph, this pre-factor must be set to -0.5 as discussed in detail in the Conventions
             section of the README of this repository.
 
     Returns:
-        A `SparcePauliOp` instance that corresponds to the graph.
+        A `SparsePauliOp` instance that corresponds to the graph.
     """
     pauli_list = []
     for node1, node2, data in graph.edges(data=True):
@@ -222,7 +222,7 @@ def solve_max_cut(cost_op: SparsePauliOp, energy: Optional[float] = None):
     """
     graph = operator_to_graph(cost_op, pre_factor=-2)
 
-    opt_problem = Maxcut(nx.adjacency_matrix(graph, nodelist=range(graph.order())))
+    opt_problem = Maxcut(nx.adjacency_matrix(graph, nodelist=range(graph.order())).toarray())
 
     # Get the maximum cut value
     cplex_result_max = CplexOptimizer().solve(opt_problem.to_quadratic_program())
@@ -245,7 +245,7 @@ def solve_max_cut(cost_op: SparsePauliOp, energy: Optional[float] = None):
     return max_cut, min_cut, approximation_ratio
 
 
-def make_swap_strategy(edges: List[Tuple[int]], num_qubits: int) -> SwapStrategy:
+def make_swap_strategy(edges: List[Tuple[int, ...]], num_qubits: int) -> SwapStrategy:
     """Create the SWAP strategy that implements the graph.
 
     Create a SWAP strategy for a line that reaches full connectivity and then simplify it.
@@ -263,7 +263,7 @@ def make_swap_strategy(edges: List[Tuple[int]], num_qubits: int) -> SwapStrategy
     Returns:
         A line swap strategy truncated to implement the graph in as few layers as possible.
     """
-    tentative_strat = SwapStrategy.from_line(range(num_qubits))
+    tentative_strat = SwapStrategy.from_line(list(range(num_qubits)))
 
     # Optimize the swap strategy in case we do not need all the layers.
     max_layers = 0
@@ -275,7 +275,7 @@ def make_swap_strategy(edges: List[Tuple[int]], num_qubits: int) -> SwapStrategy
         n1, n2 = edge
         max_layers = max(max_layers, tentative_strat.distance_matrix[n1, n2])
 
-    layers = [tentative_strat.swap_layer(idx) for idx in range(max_layers)]
+    layers = tuple(tuple(tentative_strat.swap_layer(idx)) for idx in range(max_layers))
     cmap = CouplingMap([(i, i + 1) for i in range(num_qubits - 1)])
     swap_strat = SwapStrategy(coupling_map=cmap, swap_layers=layers)
 
