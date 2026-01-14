@@ -14,7 +14,7 @@ Example usage:
  python -m train --input ../data/example_graph.json --config ../data/example_config.json
 ```
 
-In the example above, the problem is contained in `exmaple_graph.json` which defines the
+In the example above, the problem is contained in `example_graph.json` which defines the
 graph that we want to optimize. The way in which we want to train is given in the
 `example_config.json` file. This file specifies which trainers to use and the input
 to initialize them, call them, as well as the evaluators to use. Crucially, the training
@@ -25,7 +25,6 @@ capable of extracting input from a previously obtained training result.
 
 import argparse
 from datetime import datetime
-from typing import Optional, List
 import os
 import json
 import numpy as np
@@ -63,8 +62,8 @@ def get_script_args():
     )
 
     description = "A pre-factor that multiplies all the weights in the input. "
-    description += "This argument is optional, defaults to 1.0, and connot "
-    description += "be used in conjuction with `--problem_class`."
+    description += "This argument is optional, defaults to 1.0, and cannot "
+    description += "be used in conjunction with `--problem_class`."
 
     parser.add_argument(
         "--pre_processing",
@@ -123,7 +122,7 @@ def get_script_args():
         )
 
     for idx in range(10):
-        help_str = f"A string to specify the init kwargs of evalutor in trainer {idx}. To see how"
+        help_str = f"A string to specify the init kwargs of evaluator in trainer {idx}. To see how"
         help_str += "this is used go and check the parse_init_kwargs method in the evaluators."
 
         parser.add_argument(
@@ -133,12 +132,12 @@ def get_script_args():
             help=help_str,
         )
 
-    run_args, run_additionals = parser.parse_known_args()
-    return run_args, run_additionals
+    run_args, additional_args = parser.parse_known_args()
+    return run_args, additional_args
 
 
 def prepare_train_kwargs(config: dict):
-    """Deserizalise the input arguments for the train function.
+    """Deserialize the input arguments for the train function.
 
     This is a hook that will allow us to prepare the input arguments to the train
     function. This might do steps like deserializer mixer circuits, ansatz circuits,
@@ -149,7 +148,7 @@ def prepare_train_kwargs(config: dict):
             raise NotImplementedError(f"Serialization is not yet implemented for {name}.")
 
 
-def train(args: Optional[List]):
+def train(args: argparse.Namespace):
     """Main function that does the training.
 
     The training is configurable based on system inputs. Use the `help` function to get
@@ -221,7 +220,7 @@ def train(args: Optional[List]):
         all_results["pre_processing"] = None
 
     # Convert to real for serialization since optimization problems are a diagonal Hc.
-    all_results["cost_operator"] = [(l, np.real(c)) for l, c in input_problem.to_list()]
+    all_results["cost_operator"] = [(item, np.real(c)) for item, c in input_problem.to_list()]
 
     # Save files specified from the cmd line override file names in the json config.
     save_file = getattr(args, "save_file", None)

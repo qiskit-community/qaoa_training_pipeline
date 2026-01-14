@@ -63,8 +63,9 @@ class MaxIndependentSet:
                 penalty in from of the edge constraints.
         """
         try:
+            assert input_str
             penalty = float(input_str)
-        except ValueError:
+        except (ValueError, AssertionError):
             penalty = cls.DEFAULT_PENALTY
 
         return cls(penalty)

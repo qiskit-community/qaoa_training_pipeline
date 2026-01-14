@@ -2,6 +2,8 @@
 
 from time import time
 from typing import Dict, Optional
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 
@@ -106,7 +108,7 @@ class RecursiveTransitionStates(BaseTrainer):
         """Return the configuration of the trainer."""
         return {
             "trainer_name": self.__class__.__name__,
-            "evaluator": self._evaluator.to_config(),
+            "evaluator": self._evaluator.to_config() if self._evaluator else None,
             "trainer": self._trainer.to_config(),
         }
 
@@ -125,14 +127,15 @@ class RecursiveTransitionStates(BaseTrainer):
 
     def plot(
         self,
-        axis: Optional[plt.Axes] = None,
-        fig: Optional[plt.Figure] = None,
+        axis: Optional[Axes] = None,
+        fig: Optional[Figure] = None,
         **plot_args,
     ):
         """Plot the energy progression throughout the recursion."""
         if axis is None or fig is None:
             fig, axis = plt.subplots(1, 1)
 
+        assert self._all_results, "_all_results must be defined before calling plot()"
         rts_idx = sorted(self._all_results.keys())
         energies = [self._all_results[key]["energy"] for key in rts_idx]
 

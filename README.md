@@ -175,7 +175,7 @@ This repository is still in development: new functionality is being added and th
 |      15 | Remove python 3.9 support                                    |          #31 |
 |      16 | Fix TQATrainer qaoa_angles_function and returned ParamResult |          #35 |
 |      17 | Add QAOA-PCA and data based trainers                         |          #32 |
-|      18 | Allow nbr of Fourrier coefficients to scale with QAOA depth  |          #27 |
+|      18 | Allow nbr of Fourier coefficients to scale with QAOA depth   |          #27 |
 |      19 | Add an interface to the Qiskit Aer and its MPS evaluator     |          #36 |
 |      20 | Add linear ramp parameter optimization to the TQA trainer    |          #37 |
 |      21 | Fixed degree computation in the fixed angles trainer         |          #43 |
@@ -184,6 +184,7 @@ This repository is still in development: new functionality is being added and th
 |      24 | Adding linear ramp parameter support in train.py             |          #46 |
 |      25 | Enable GPU on SV simulation via init_kwargs "GPU"            |          #47 |
 |      26 | Add LABS with overlap optimization and GPU support           |          #48 |
+|      27 | Clean up pylance warning (type hinting, not None, etc.)      |          #50 |
 
 ## IBM Public Repository Disclosure
 
