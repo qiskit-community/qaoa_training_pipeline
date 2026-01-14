@@ -276,9 +276,8 @@ def train(args: argparse.Namespace):
         result = trainer.train(input_problem, **train_kwargs)
 
         # Apply problem-specific post-processing if the hook exists
-        if (
-            full_config["_problem_class_instance"] is not None
-            and hasattr(full_config["_problem_class_instance"], "post_process_result")
+        if full_config["_problem_class_instance"] is not None and hasattr(
+            full_config["_problem_class_instance"], "post_process_result"
         ):
             result = full_config["_problem_class_instance"].post_process_result(
                 input_problem, result
