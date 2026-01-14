@@ -183,6 +183,7 @@ This repository is still in development: new functionality is being added and th
 |      23 | Improve transparency of transfer trainer                     |          #45 |
 |      24 | Adding linear ramp parameter support in train.py             |          #46 |
 |      25 | Enable GPU on SV simulation via init_kwargs "GPU"            |          #47 |
+|      29 | Add function to convert a graph with partial assignment to hamiltonian | #53 | 
 
 ## IBM Public Repository Disclosure
 
