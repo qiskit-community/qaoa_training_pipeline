@@ -37,6 +37,7 @@ from qaoa_training_pipeline.training import TRAINERS
 from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.utils.problem_classes import PROBLEM_CLASSES
 
+
 def get_script_args():
     """Get the command line input arguments."""
 
@@ -148,33 +149,6 @@ def prepare_train_kwargs(config: dict):
             raise NotImplementedError(f"Serialization is not yet implemented for {name}.")
 
 
-def set_problem_class_recursive(trainer_conf: dict, problem_class_instance):
-    """Recursively set problem_class in trainer config, including nested trainers.
-
-    Also applies any problem-specific config overrides via the hook pattern.
-
-    Args:
-        trainer_conf: A trainer config dict or trainer_init dict to modify
-        problem_class_instance: The instantiated problem class (e.g., LABS, MaxCut)
-    """
-    if not isinstance(trainer_conf, dict):
-        return
-
-    # Apply problem-specific config overrides if the hook exists
-    if hasattr(problem_class_instance, "apply_training_config_overrides"):
-        problem_class_instance.apply_training_config_overrides(trainer_conf)
-
-    # Support being called on either a full trainer config (with "trainer_init") or directly
-    # on a trainer_init dict.
-    if "trainer_init" in trainer_conf and isinstance(trainer_conf["trainer_init"], dict):
-        set_problem_class_recursive(trainer_conf["trainer_init"], problem_class_instance)
-        return
-
-    # Check if there's a nested trainer (e.g., RecursionTrainer contains ScipyTrainer)
-    if "trainer_init" in trainer_conf and isinstance(trainer_conf["trainer_init"], dict):
-        set_problem_class_recursive(trainer_conf["trainer_init"], problem_class_instance)
-
-
 def train(args: Optional[List]):
     """Main function that does the training.
 
@@ -207,7 +181,6 @@ def train(args: Optional[List]):
         input_data = pre_processor(input_data)
 
     # Create the cost operator either from input or a supported problem class.
-    problem_class_instance = None
     if class_str is not None:
         class_info = class_str.split(":")
         class_name = class_info[0].lower()
@@ -225,6 +198,7 @@ def train(args: Optional[List]):
         problem_class_instance = PROBLEM_CLASSES[class_name].from_str(class_init_str)
         input_problem = problem_class_instance.cost_operator(input_data)
     else:
+        problem_class_instance = None
         pre_factor = pre_factor or 1.0
         input_problem = input_to_operator(input_data, pre_factor=pre_factor)
 
@@ -280,9 +254,6 @@ def train(args: Optional[List]):
                 )
 
         trainer_cls = TRAINERS[trainer_name]
-        # Apply problem-specific config overrides if available (including nested trainers)
-        if full_config["_problem_class_instance"] is not None:
-            set_problem_class_recursive(conf, full_config["_problem_class_instance"])
         trainer = trainer_cls.from_config(conf["trainer_init"])
 
         # Hook to deserialize any input to train that was serialized.

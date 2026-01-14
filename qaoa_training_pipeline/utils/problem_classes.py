@@ -84,7 +84,11 @@ class MaxIndependentSet:
 
 
 class LABS:
-    """Produce LABS cost operators for a given problem size N."""
+    """Produce LABS cost operators for a given problem size N.
+
+    Note: LABS has quartic (4-body) terms in the Hamiltonian, so it is NOT compatible
+    with EfficientDepthOneEvaluator, which only supports quadratic (2-body) terms.
+    """
 
     DEFAULT_N = 10  # Default problem size if not specified  # pylint: disable=invalid-name
 
@@ -120,11 +124,15 @@ class LABS:
         Note: The input_data is ignored for LABS, as the problem
         is fully defined by N provided at initialization.
 
+        The Hamiltonian is NEGATED so that lower LABS energy corresponds to
+        higher eigenvalue, matching the convention used by MaxCut/MIS
+        (best solution = highest eigenvalue = maximize).
+
         Args:
             input_data: An optional dict, ignored.
 
         Returns:
-            A SparsePauliOp representing the LABS Hamiltonian H_C.
+            A SparsePauliOp representing the negated LABS Hamiltonian -H_C.
         """
         num_qubits = self._num_qubits
         terms, _ = get_terms_offset(
@@ -145,22 +153,11 @@ class LABS:
 
             # Reverse the string for Qiskit's little-endian convention
             pauli_string = "".join(paulis)[::-1]
-            pauli_list.append((pauli_string, weight))
+            # Negate weight so best LABS solution has highest eigenvalue
+            pauli_list.append((pauli_string, -weight))
 
-        # The return value is the SparsePauliOp
+        # The return value is the SparsePauliOp (negated)
         return SparsePauliOp.from_list(pauli_list)
-
-    @staticmethod
-    def apply_training_config_overrides(trainer_conf: dict):
-        """Apply LABS-specific overrides to training configuration.
-
-        This hook allows LABS to modify trainer configs (e.g., set energy_minimization=True).
-        """
-        from qaoa_training_pipeline.utils.labs.labs_utils import (  # pylint: disable=import-outside-toplevel
-            apply_labs_training_config_overrides,
-        )
-
-        apply_labs_training_config_overrides(trainer_conf)
 
     @staticmethod
     def post_process_result(cost_op: SparsePauliOp, result) -> dict:
@@ -169,8 +166,11 @@ class LABS:
         Computes labs_energy, p_opt, tts for the main result and any nested results
         (e.g., from RecursionTrainer).
 
+        Note: Since the Hamiltonian is negated, the energy values need to be
+        negated back to get the true LABS energy.
+
         Args:
-            cost_op: The LABS cost operator
+            cost_op: The LABS cost operator (negated)
             result: Training result (ParamResult or dict)
 
         Returns:
@@ -181,8 +181,10 @@ class LABS:
             true_optimal_energy,
         )
 
-        # Process the main result
-        result = process_labs_post_optimization(cost_op=cost_op, param_result=result)
+        # Process the main result (handles negated Hamiltonian internally)
+        result = process_labs_post_optimization(
+            cost_op=cost_op, param_result=result, hamiltonian_negated=True
+        )
 
         # Add optimal energy for reference
         if cost_op.num_qubits in true_optimal_energy:
@@ -195,7 +197,9 @@ class LABS:
             if is_numeric_key:
                 nested = data[key]
                 if isinstance(nested, dict) and "optimized_qaoa_angles" in nested:
-                    nested = process_labs_post_optimization(cost_op=cost_op, param_result=nested)
+                    nested = process_labs_post_optimization(
+                        cost_op=cost_op, param_result=nested, hamiltonian_negated=True
+                    )
                     if cost_op.num_qubits in true_optimal_energy:
                         nested["optimal_energy"] = true_optimal_energy[cost_op.num_qubits]
                     data[key] = nested
