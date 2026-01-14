@@ -53,6 +53,7 @@ true_optimal_energy = {
     35: 73,
 }
 
+
 def is_labs_problem(cost_op, tolerance: float = 1e-10) -> bool:
     """Check if a SparsePauliOp represents a LABS problem.
 
@@ -147,7 +148,7 @@ def get_terms_offset(N: int):
 
 @njit()
 def energy_vals(s: Sequence, N: int | None = None) -> float:
-    """Compute LABS energy values from a string of spins
+    r"""Compute LABS energy values from a string of spins
 
     Parameters
     ----------
@@ -174,7 +175,7 @@ def energy_vals(s: Sequence, N: int | None = None) -> float:
 
 
 def energy_vals_from_bitstring(x, N: int | None = None) -> float:
-    """Convenience function
+    r"""Convenience function
     Useful to get the LABS energy values for bitstrings which are {0,1}^N
 
     Parameters
@@ -249,9 +250,7 @@ def process_labs_post_optimization(
     return param_result
 
 
-def process_labs_results(
-    cost_op, param_result: dict, hamiltonian_negated: bool = False
-) -> tuple:
+def process_labs_results(cost_op, param_result: dict, hamiltonian_negated: bool = False) -> tuple:
     """Process and report LABS-specific results.
 
     This function checks if the cost operator is a LABS problem, calculates
