@@ -53,57 +53,6 @@ true_optimal_energy = {
     35: 73,
 }
 
-# -----------------------------------------------------------------------------
-# LABS training pipeline helpers (CLI / config overrides)
-# -----------------------------------------------------------------------------
-
-
-def _replace_value_recursive(conf, old_value: str, new_value: str):
-    """Recursively replace exact string values in nested dict/list configs."""
-    if isinstance(conf, dict):
-        for k, v in conf.items():
-            if isinstance(v, str) and v == old_value:
-                conf[k] = new_value
-            else:
-                _replace_value_recursive(v, old_value, new_value)
-    elif isinstance(conf, list):
-        for item in conf:
-            _replace_value_recursive(item, old_value, new_value)
-
-
-def _set_energy_minimization_default_recursive(trainer_conf, energy_minimization: bool):
-    """Recursively set default energy_minimization for ScipyTrainer if not specified."""
-    if not isinstance(trainer_conf, dict):
-        return
-
-    if trainer_conf.get("trainer") == "ScipyTrainer":
-        trainer_init = trainer_conf.get("trainer_init")
-        if isinstance(trainer_init, dict) and "energy_minimization" not in trainer_init:
-            trainer_init["energy_minimization"] = energy_minimization
-
-    for val in trainer_conf.values():
-        if isinstance(val, dict):
-            _set_energy_minimization_default_recursive(val, energy_minimization)
-        elif isinstance(val, list):
-            for item in val:
-                if isinstance(item, dict):
-                    _set_energy_minimization_default_recursive(item, energy_minimization)
-
-
-def apply_labs_training_config_overrides(trainer_chain_config):
-    """Apply LABS-specific in-memory overrides to a trainer_chain config.
-
-    This lets wrappers (like scripts/run_methods.sh) avoid mutating method JSON files.
-    """
-    # LABS has higher-than-quadratic terms; EfficientDepthOneEvaluator is invalid.
-    _replace_value_recursive(
-        trainer_chain_config, "EfficientDepthOneEvaluator", "StatevectorEvaluator"
-    )
-    # LABS convention in this repo: minimize energy by default in SciPy trainers,
-    # but only if the method JSON didn't explicitly specify it.
-    _set_energy_minimization_default_recursive(trainer_chain_config, True)
-
-
 def is_labs_problem(cost_op, tolerance: float = 1e-10) -> bool:
     """Check if a SparsePauliOp represents a LABS problem.
 
@@ -144,11 +93,12 @@ def is_labs_problem(cost_op, tolerance: float = 1e-10) -> bool:
                 has_invalid_terms = True
                 break
 
-        # Check quartic terms specifically - they must have weight 4 in LABS
+        # Check quartic terms specifically - they must have weight ±4 in LABS
+        # (negative if Hamiltonian was negated for maximization convention)
         if z_count == 4:
             has_quartic_terms = True
             abs_coeff = abs(coeff)
-            # Quartic terms in LABS have weight 4
+            # Quartic terms in LABS have weight ±4
             if abs(abs_coeff - 4.0) > tolerance:
                 has_invalid_terms = True
                 break
@@ -254,6 +204,7 @@ def process_labs_post_optimization(
     param_result: dict,
     mixer=None,
     initial_state=None,
+    hamiltonian_negated: bool = False,
 ) -> dict:
     """Process all LABS-specific post-optimization tasks.
 
@@ -271,6 +222,9 @@ def process_labs_post_optimization(
         The mixer circuit
     initial_state : QuantumCircuit, optional
         The initial state circuit
+    hamiltonian_negated : bool
+        If True, the Hamiltonian was negated (for maximization convention),
+        so energy values need to be negated back to get true LABS energy.
 
     Returns
     -------
@@ -278,7 +232,9 @@ def process_labs_post_optimization(
         Updated param_result with all LABS-specific fields
     """
     # Process LABS-specific results (energy reporting, offset calculation)
-    param_result, _ = process_labs_results(cost_op, param_result)
+    param_result, _ = process_labs_results(
+        cost_op, param_result, hamiltonian_negated=hamiltonian_negated
+    )
 
     # Analyze LABS wavefunction and calculate TTS
     labs_analysis = analyze_labs_wavefunction(
@@ -293,7 +249,9 @@ def process_labs_post_optimization(
     return param_result
 
 
-def process_labs_results(cost_op, param_result: dict) -> tuple:
+def process_labs_results(
+    cost_op, param_result: dict, hamiltonian_negated: bool = False
+) -> tuple:
     """Process and report LABS-specific results.
 
     This function checks if the cost operator is a LABS problem, calculates
@@ -305,6 +263,9 @@ def process_labs_results(cost_op, param_result: dict) -> tuple:
         The cost operator
     param_result : dict
         The parameter result dictionary to update
+    hamiltonian_negated : bool
+        If True, the Hamiltonian was negated (for maximization convention),
+        so energy values need to be negated back to get true LABS energy.
 
     Returns
     -------
@@ -317,7 +278,11 @@ def process_labs_results(cost_op, param_result: dict) -> tuple:
     labs_offset = get_terms_offset(cost_op.num_qubits)[1] if is_labs else None
 
     # Calculate LABS energy (with offset)
+    # If Hamiltonian was negated, negate back to get true LABS energy
     hamiltonian_energy = param_result["energy"]
+    if hamiltonian_negated:
+        hamiltonian_energy = -hamiltonian_energy
+
     if labs_offset is not None:
         labs_energy = hamiltonian_energy + labs_offset
         param_result["labs_energy"] = labs_energy
