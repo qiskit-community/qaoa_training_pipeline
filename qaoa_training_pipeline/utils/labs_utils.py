@@ -39,7 +39,7 @@ def is_labs_problem(cost_op, tolerance: float = 1e-10) -> bool:
     for pauli, coeff in cost_op.to_list():
         z_count = pauli.count("Z")
 
-        if z_count != 2 and z_count != 4:
+        if z_count not in {2, 4}:
             if z_count > 0:
                 has_invalid_terms = True
                 break
@@ -145,4 +145,3 @@ def compute_labs_energy_from_bits(bits: np.ndarray) -> float:
     """
     spins = 1 - 2 * bits
     return compute_labs_energy(spins)
-
