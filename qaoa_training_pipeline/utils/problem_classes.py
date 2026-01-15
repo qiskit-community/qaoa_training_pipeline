@@ -17,7 +17,7 @@ from qiskit_optimization.converters import QuadraticProgramToQubo
 from qaoa_training_pipeline.utils.data_utils import input_to_operator
 from qaoa_training_pipeline.utils.graph_utils import dict_to_graph
 
-from qaoa_training_pipeline.utils.labs.labs_utils import get_terms_offset
+from qaoa_training_pipeline.utils.labs_utils import build_labs_hamiltonian_terms
 
 
 class MaxCut:
@@ -91,7 +91,7 @@ class LABS:
     with EfficientDepthOneEvaluator, which only supports quadratic (2-body) terms.
     """
 
-    DEFAULT_N = 10  # Default problem size if not specified  # pylint: disable=invalid-name
+    DEFAULT_N = 10  # pylint: disable=invalid-name
 
     def __init__(self, num_qubits: Optional[int] = None):
         """Create the LABS problem class.
@@ -125,87 +125,35 @@ class LABS:
         Note: The input_data is ignored for LABS, as the problem
         is fully defined by N provided at initialization.
 
-        The Hamiltonian is NEGATED so that lower LABS energy corresponds to
-        higher eigenvalue, matching the convention used by MaxCut/MIS
-        (best solution = highest eigenvalue = maximize).
+        Note: LABS is a minimization problem. Use energy_minimization=True
+        in ScipyTrainer config when optimizing LABS.
 
         Args:
             input_data: An optional dict, ignored.
 
         Returns:
-            A SparsePauliOp representing the negated LABS Hamiltonian -H_C.
+            A SparsePauliOp representing the LABS Hamiltonian H_C.
         """
         num_qubits = self._num_qubits
-        terms, _ = get_terms_offset(
-            num_qubits
-        )  # We ignore the offset since it drops out in the final calculation
+        terms, offset = build_labs_hamiltonian_terms(num_qubits)
 
         pauli_list = []
 
         for weight, nodes in terms:
-            # Create a base of all 'I's
             paulis = ["I"] * num_qubits
             for idx in nodes:
                 if idx >= num_qubits:
-                    # This should not happen with a correct get_terms_offset
                     raise IndexError(f"Node index {idx} out of bounds for N={num_qubits}")
-                # Place 'Z' at the specified indices
                 paulis[idx] = "Z"
 
-            # Reverse the string for Qiskit's little-endian convention
             pauli_string = "".join(paulis)[::-1]
-            # Negate weight so best LABS solution has highest eigenvalue
-            pauli_list.append((pauli_string, -weight))
+            pauli_list.append((pauli_string, weight))
 
-        # The return value is the SparsePauliOp (negated)
+        if offset > 0:
+            identity_string = "I" * num_qubits
+            pauli_list.append((identity_string, offset))
+
         return SparsePauliOp.from_list(pauli_list)
-
-    @staticmethod
-    def post_process_result(cost_op: SparsePauliOp, result) -> dict:
-        """Post-process training result to add LABS-specific metrics.
-
-        Computes labs_energy, p_opt, tts for the main result and any nested results
-        (e.g., from RecursionTrainer).
-
-        Note: Since the Hamiltonian is negated, the energy values need to be
-        negated back to get the true LABS energy.
-
-        Args:
-            cost_op: The LABS cost operator (negated)
-            result: Training result (ParamResult or dict)
-
-        Returns:
-            Updated result dict with LABS metrics
-        """
-        from qaoa_training_pipeline.utils.labs.labs_utils import (  # pylint: disable=import-outside-toplevel
-            process_labs_post_optimization,
-            true_optimal_energy,
-        )
-
-        # Process the main result (handles negated Hamiltonian internally)
-        result = process_labs_post_optimization(
-            cost_op=cost_op, param_result=result, hamiltonian_negated=True
-        )
-
-        # Add optimal energy for reference
-        if cost_op.num_qubits in true_optimal_energy:
-            result["optimal_energy"] = true_optimal_energy[cost_op.num_qubits]
-
-        # Process nested results (e.g., from RecursionTrainer with numeric keys 2, 3, etc.)
-        data = result.data if hasattr(result, "data") else result
-        for key in list(data.keys()):
-            is_numeric_key = isinstance(key, int) or (isinstance(key, str) and key.isdigit())
-            if is_numeric_key:
-                nested = data[key]
-                if isinstance(nested, dict) and "optimized_qaoa_angles" in nested:
-                    nested = process_labs_post_optimization(
-                        cost_op=cost_op, param_result=nested, hamiltonian_negated=True
-                    )
-                    if cost_op.num_qubits in true_optimal_energy:
-                        nested["optimal_energy"] = true_optimal_energy[cost_op.num_qubits]
-                    data[key] = nested
-
-        return result
 
 
 PROBLEM_CLASSES = {

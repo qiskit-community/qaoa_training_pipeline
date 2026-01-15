@@ -194,19 +194,15 @@ def train(args: argparse.Namespace):
                 f"Valid problem classes are {PROBLEM_CLASSES.keys()}"
             )
 
-        problem_class_instance = PROBLEM_CLASSES[class_name].from_str(class_init_str)
-        input_problem = problem_class_instance.cost_operator(input_data)
+        problem_class = PROBLEM_CLASSES[class_name].from_str(class_init_str)
+        input_problem = problem_class.cost_operator(input_data)
     else:
-        problem_class_instance = None
         pre_factor = pre_factor or 1.0
         input_problem = input_to_operator(input_data, pre_factor=pre_factor)
 
     # Load the training config and prepare the trainer.
     with open(args.config, "r") as fin:
         full_config = json.load(fin)
-
-    # Store problem class instance for post-processing hooks
-    full_config["_problem_class_instance"] = problem_class_instance
 
     trainer_chain_config = full_config["trainer_chain"]
 
@@ -275,37 +271,26 @@ def train(args: argparse.Namespace):
         # Perform the optimization.
         result = trainer.train(input_problem, **train_kwargs)
 
-        # Apply problem-specific post-processing if the hook exists
-        if full_config["_problem_class_instance"] is not None and hasattr(
-            full_config["_problem_class_instance"], "post_process_result"
-        ):
-            result = full_config["_problem_class_instance"].post_process_result(
-                input_problem, result
-            )
-
         all_results[train_idx] = result
 
-    # Save results only once at the end (after all trainers complete)
-    if args.save:
-        # Prepare the file where to save the result
-        date_tag = datetime.strftime(datetime.now(), "%Y%m%d_%H%M%S")
-        if save_file is None:
-            # Use the save_file from the last trainer config
-            last_conf = trainer_chain_config[-1]
-            save_file_local = date_tag + "_" + last_conf.get("save_file", "results.json")
-        else:
-            save_file_local = date_tag + "_" + save_file
+        if args.save:
+            # Prepare the file where to save the result
+            date_tag = datetime.strftime(datetime.now(), "%Y%m%d_%H%M%S")
+            if save_file is None:
+                save_file_local = date_tag + "_" + conf.pop("save_file")
+            else:
+                save_file_local = date_tag + "_" + save_file
 
-        # If the directory is not existent, creates it
-        if not os.path.exists(args.save_dir) and args.save_dir != "":
-            os.makedirs(args.save_dir)
+            # If the directory is not existent, creates it
+            if not os.path.exists(args.save_dir) and args.save_dir != "":
+                os.makedirs(args.save_dir)
 
-        with open(args.save_dir + save_file_local, "w") as fout:
-            save_data = dict()
-            for k, v in all_results.items():
-                save_data[k] = v.data if isinstance(v, ParamResult) else v
+            with open(args.save_dir + save_file_local, "w") as f_out:
+                save_data = dict()
+                for k, v in all_results.items():
+                    save_data[k] = v.data if isinstance(v, ParamResult) else v
 
-            json.dump(save_data, fout, indent=4)
+                json.dump(save_data, f_out, indent=4)
 
     return all_results
 
