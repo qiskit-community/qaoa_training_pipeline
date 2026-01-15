@@ -9,11 +9,10 @@
 """Tests of problem classes."""
 
 import numpy as np
-from test import TrainingPipelineTestCase
-
 from ddt import ddt, data, unpack
-
 from qiskit.quantum_info import SparsePauliOp
+
+from test import TrainingPipelineTestCase
 
 from qaoa_training_pipeline.utils.problem_classes import LABS, PROBLEM_CLASSES
 
@@ -61,7 +60,10 @@ class TestProblemClasses(TrainingPipelineTestCase):
         expected_terms = [("IIII", 6), ("IZIZ", 2), ("ZIZI", 2), ("ZZZZ", 4)]
         expected = SparsePauliOp.from_list(expected_terms)
 
-        self.assertEqual(cost_op, expected)
+        # Compare by converting to lists and sorting (order may vary)
+        actual_list = sorted(cost_op.to_list(), key=lambda x: (x[0], x[1]))
+        expected_list = sorted(expected.to_list(), key=lambda x: (x[0], x[1]))
+        self.assertEqual(actual_list, expected_list)
 
     def test_labs_from_str(self):
         """Test LABS.from_str method."""
@@ -83,9 +85,6 @@ class TestProblemClasses(TrainingPipelineTestCase):
 
     def test_labs_energy_consistency(self):
         """Test that energy computed from spins matches Hamiltonian expectation."""
-        labs = LABS(3)
-        cost_op = labs.cost_operator()
-
         # Test with spins = [1, -1, 1]
         spins = np.array([1, -1, 1])
         energy_direct = LABS.compute_energy(spins)
