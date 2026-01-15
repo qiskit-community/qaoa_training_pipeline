@@ -10,14 +10,13 @@
 
 from typing import Optional
 
+import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_optimization.applications import StableSet
 from qiskit_optimization.converters import QuadraticProgramToQubo
 
 from qaoa_training_pipeline.utils.data_utils import input_to_operator
 from qaoa_training_pipeline.utils.graph_utils import dict_to_graph
-
-from qaoa_training_pipeline.utils.labs_utils import build_labs_hamiltonian_terms
 
 
 class MaxCut:
@@ -79,7 +78,9 @@ class MaxIndependentSet:
         """
         graph = dict_to_graph(input_data)
         qp_ = StableSet(graph).to_quadratic_program()
-        cost_op, _ = QuadraticProgramToQubo(penalty=self._penalty).convert(qp_).to_ising()
+        cost_op, _ = (
+            QuadraticProgramToQubo(penalty=self._penalty).convert(qp_).to_ising()
+        )
 
         return cost_op
 
@@ -117,6 +118,41 @@ class LABS:
                 pass  # Will use DEFAULT_N
         return cls(num_qubits)
 
+    def _build_hamiltonian_terms(self, num_spins: int) -> tuple[list[tuple], int]:
+        """Build the LABS Hamiltonian terms and compute the constant offset.
+
+        The LABS energy is defined as E = Σₖ Cₖ² where Cₖ = Σᵢ sᵢ·sᵢ₊ₖ (autocorrelation).
+        Expanding the square gives ZZ (quadratic) and ZZZZ (quartic) Pauli terms.
+
+        Parameters
+        ----------
+        num_spins : int
+            Number of spins (problem size N)
+
+        Returns
+        -------
+        terms : list of tuples
+            Each tuple is (weight, indices) where indices are the qubit positions
+            for Z operators. E.g., (4, (0, 1, 2, 3)) means 4·Z₀Z₁Z₂Z₃
+        offset : int
+            Constant energy offset from identity terms (excluded from Hamiltonian)
+        """
+        all_terms = set()
+        offset = 0
+
+        for lag in range(1, num_spins):
+            offset += num_spins - lag
+            for i in range(num_spins - lag):
+                for j in range(i + 1, num_spins - lag):
+                    if j == i + lag:
+                        indices = (i, j + lag)
+                        all_terms.add((2, indices))
+                    else:
+                        indices = tuple(sorted((i, i + lag, j, j + lag)))
+                        all_terms.add((4, indices))
+
+        return list(all_terms), offset
+
     def cost_operator(
         self, input_data: Optional[dict] = None  # pylint: disable=unused-argument
     ) -> SparsePauliOp:
@@ -135,7 +171,7 @@ class LABS:
             A SparsePauliOp representing the LABS Hamiltonian H_C.
         """
         num_qubits = self._num_qubits
-        terms, offset = build_labs_hamiltonian_terms(num_qubits)
+        terms, offset = self._build_hamiltonian_terms(num_qubits)
 
         pauli_list = []
 
@@ -143,7 +179,9 @@ class LABS:
             paulis = ["I"] * num_qubits
             for idx in nodes:
                 if idx >= num_qubits:
-                    raise IndexError(f"Node index {idx} out of bounds for N={num_qubits}")
+                    raise IndexError(
+                        f"Node index {idx} out of bounds for N={num_qubits}"
+                    )
                 paulis[idx] = "Z"
 
             pauli_string = "".join(paulis)[::-1]
@@ -154,6 +192,97 @@ class LABS:
             pauli_list.append((identity_string, offset))
 
         return SparsePauliOp.from_list(pauli_list)
+
+    @staticmethod
+    def is_labs_problem(cost_op, tolerance: float = 1e-10) -> bool:
+        """Check if a SparsePauliOp represents a LABS problem.
+
+        This function verifies if the cost operator matches the structure of a LABS problem
+        by checking:
+        1. All terms are either quadratic (2 Z operators) or quartic (4 Z operators)
+        2. Quartic terms have weight 4.0 (LABS-specific)
+        3. The problem has at least some quartic terms (distinguishes from pure quadratic problems)
+
+        Note: This is a heuristic check. Other non-quadratic problems might also pass this test
+        if they have the same structure. For a definitive check, you would need to verify
+        the exact term structure matches what _build_hamiltonian_terms() would produce.
+
+        Parameters
+        ----------
+        cost_op : SparsePauliOp
+            The cost operator to check
+        tolerance : float
+            Numerical tolerance for weight comparison
+
+        Returns
+        -------
+        bool
+            True if the cost operator appears to be a LABS problem, False otherwise
+        """
+        has_quartic_terms = False
+        has_invalid_terms = False
+
+        for pauli, coeff in cost_op.to_list():
+            z_count = pauli.count("Z")
+
+            if z_count not in {2, 4}:
+                if z_count > 0:
+                    has_invalid_terms = True
+                    break
+
+            if z_count == 4:
+                has_quartic_terms = True
+                abs_coeff = abs(coeff)
+                if abs(abs_coeff - 4.0) > tolerance:
+                    has_invalid_terms = True
+                    break
+
+        return has_quartic_terms and not has_invalid_terms
+
+    @staticmethod
+    def compute_energy(spins: np.ndarray) -> float:
+        """Compute the LABS energy for a spin configuration.
+
+        The LABS energy is E = Σₖ Cₖ² where Cₖ is the autocorrelation at lag k:
+        Cₖ = Σᵢ sᵢ·sᵢ₊ₖ
+
+        Parameters
+        ----------
+        spins : np.ndarray
+            Array of spins with values in {-1, +1}
+
+        Returns
+        -------
+        float
+            The LABS energy value
+        """
+        num_spins = len(spins)
+        total_energy = 0.0
+
+        for lag in range(1, num_spins):
+            autocorr = np.dot(spins[:-lag], spins[lag:])
+            total_energy += autocorr * autocorr
+
+        return total_energy
+
+    @staticmethod
+    def compute_energy_from_bits(bits: np.ndarray) -> float:
+        """Compute LABS energy from a bitstring (0/1 encoding).
+
+        Converts {0, 1} bits to {+1, -1} spins and computes energy.
+
+        Parameters
+        ----------
+        bits : np.ndarray
+            Array of bits with values in {0, 1}
+
+        Returns
+        -------
+        float
+            The LABS energy value
+        """
+        spins = 1 - 2 * bits
+        return LABS.compute_energy(spins)
 
 
 PROBLEM_CLASSES = {
