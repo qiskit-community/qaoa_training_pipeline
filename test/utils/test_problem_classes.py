@@ -8,11 +8,11 @@
 
 """Tests of problem classes."""
 
+from test import TrainingPipelineTestCase
+
 import numpy as np
 from ddt import ddt, data, unpack
 from qiskit.quantum_info import SparsePauliOp
-
-from test import TrainingPipelineTestCase
 
 from qaoa_training_pipeline.utils.problem_classes import LABS, PROBLEM_CLASSES
 
