@@ -78,9 +78,7 @@ class MaxIndependentSet:
         """
         graph = dict_to_graph(input_data)
         qp_ = StableSet(graph).to_quadratic_program()
-        cost_op, _ = (
-            QuadraticProgramToQubo(penalty=self._penalty).convert(qp_).to_ising()
-        )
+        cost_op, _ = QuadraticProgramToQubo(penalty=self._penalty).convert(qp_).to_ising()
 
         return cost_op
 
@@ -179,9 +177,7 @@ class LABS:
             paulis = ["I"] * num_qubits
             for idx in nodes:
                 if idx >= num_qubits:
-                    raise IndexError(
-                        f"Node index {idx} out of bounds for N={num_qubits}"
-                    )
+                    raise IndexError(f"Node index {idx} out of bounds for N={num_qubits}")
                 paulis[idx] = "Z"
 
             pauli_string = "".join(paulis)[::-1]
