@@ -32,7 +32,7 @@ def interpolate(optimized_params: Iterable[float]) -> list[float]:
     gammas_vals = optimized_params[reps:]  # length reps
 
     # Interior knots and values
-    xp = np.arange(1, len(betas_vals))  # 1, 2, ..., reps
+    xp = np.arange(1, len(betas_vals) + 1)  # 1, 2, ..., reps
     # Query points: 1 .. reps with reps+1 evenly spaced points
     xq = np.linspace(1.0, float(reps), reps + 1)
 
