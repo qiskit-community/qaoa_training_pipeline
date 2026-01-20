@@ -8,30 +8,36 @@
 
 """This file is a collection of callables that extend QAOA parameters."""
 
-from typing import List
+from typing import Iterable, List
+
 import numpy as np
 
 
-def interpolate(optimized_params: List[float]) -> List[float]:
-    """Update parameters from p to p+1 by interpolation.
+def interpolate(optimized_params: Iterable[float]) -> list[float]:
+    """Update parameters from depth p to p+1 via linear interpolation.
 
-    This function implements the linear interpolation as presented by Zhou et al.
-    in PRX 10, 021067 (2020).
+    This function implements the parameter interpolation scheme introduced by
+    Zhou et al., PRX 10, 021067 (2020).
+
+    Given a parameter vector (gamma or beta) of length `reps`, assumed to be
+    defined at integer positions 1..reps, the method constructs a new vector
+    of length `reps + 1` whose entries are evenly spaced over the same interval
+    [1, reps]. Each new entry is obtained by linear interpolation between
+    adjacent parameters of the original vector.
     """
-    reps = len(optimized_params) // 2
-    betas = [0] + optimized_params[0:reps] + [0]
-    gammas = [0] + optimized_params[reps:] + [0]
+    optimized_params = np.asarray(optimized_params, dtype=float)
+    reps = optimized_params.size // 2
 
-    new_gammas = []
-    for idx in range(1, reps + 2):
-        new_gamma = (idx - 1) / reps * gammas[idx - 1] + (reps - idx + 1) / reps * gammas[idx]
-        new_gammas.append(new_gamma)
+    betas_vals = optimized_params[:reps]  # length reps
+    gammas_vals = optimized_params[reps:]  # length reps
 
-    new_betas = []
-    for idx in range(1, reps + 2):
-        new_beta = (idx - 1) / reps * betas[idx - 1] + (reps - idx + 1) / reps * betas[idx]
-        new_betas.append(new_beta)
+    # Interior knots and values
+    xp = np.arange(1, len(betas_vals))  # 1, 2, ..., reps
+    # Query points: 1 .. reps with reps+1 evenly spaced points
+    xq = np.linspace(1.0, float(reps), reps + 1)
 
+    new_betas = np.interp(xq, xp, betas_vals).tolist()
+    new_gammas = np.interp(xq, xp, gammas_vals).tolist()
     return new_betas + new_gammas
 
 
