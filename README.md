@@ -184,7 +184,7 @@ This repository is still in development: new functionality is being added and th
 |      24 | Adding linear ramp parameter support in train.py             |          #46 |
 |      25 | Enable GPU on SV simulation via init_kwargs "GPU"            |          #47 |
 |      26 | Clean up pylance warning (type hinting, not None, etc.)      |          #48 |
-|      27 | Add a trainer that computes optimal beta per gamma           |          #49 |
+|      28 | Add a trainer that computes optimal beta per gamma           |          #49 |
 
 ## IBM Public Repository Disclosure
 
