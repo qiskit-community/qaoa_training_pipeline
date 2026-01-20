@@ -99,8 +99,6 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
             "evaluator": "EfficientDepthOneEvaluator",
             "evaluator_init": {},
             "energy_minimization": True,
-            "qaoa_angles_function": "IdentityFunction",
-            "qaoa_angles_function_init": {},
         }
 
         trainer = DepthOneGammaScanTrainer.from_config(config)

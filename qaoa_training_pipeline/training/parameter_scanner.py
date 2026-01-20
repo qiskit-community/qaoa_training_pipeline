@@ -234,7 +234,6 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         self,
         evaluator: BaseEvaluator,
         energy_minimization: bool = False,
-        qaoa_angles_function: Optional[BaseAnglesFunction] = None,
     ):
         """Initialize the class instance.
 
@@ -243,26 +242,20 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
                 maximize the energy.
-            qaoa_angles_function: A function to convert optimization parameters into QAOA
-                angles. By default, this is the identity function. Ideally, this argument is
-                an instance of `BaseAnglesFunction` but we allow any callable here that maps
-                optimization parameters to QAOA angles.
         """
         super().__init__(
             evaluator=evaluator,
             energy_minimization=energy_minimization,
-            qaoa_angles_function=qaoa_angles_function,
         )
 
         # Override parent initialization sice we are only scanning values for gamma and not beta,
-        # and put it in a list for consistency with parent API
+        # and put it in a tuple for consistency with parent API
         self._default_range = ((0, 2 * np.pi),)
 
     # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
         parameter_ranges: Optional[List[Tuple[float, float]]] = None,
@@ -273,9 +266,6 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         Args:
             cost_op: The cost operator :math:`H_C` of the problem we want to solve.
-            mixer: A quantum circuit representing the mixer of QAOA. This allows us to
-                accommodate, e.g., warm-start QAOA. If this is None, then we assume the
-                standard QAOA mixer.
             initial_state: A quantum circuit the represents the initial state. If None is
                 given then we default to the equal superposition state |+>.
             ansatz_circuit: The ansatz circuit in case it differs from the standard QAOA
@@ -304,11 +294,10 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             param1 = self._beta_star_for_gamma(graph, param2)
             self._params1[idx] = param1
 
-            qaoa_angles = self._qaoa_angles_function([param1, param2])
+            qaoa_angles = [param1, param2]
             energy = self._evaluator.evaluate(
                 cost_op,
                 qaoa_angles,
-                mixer,
                 initial_state,
                 ansatz_circuit,
             )
@@ -496,3 +485,14 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         plt.tight_layout()
 
         return fig, axis
+
+    @classmethod
+    def from_config(cls, config: dict) -> "DepthOneScanTrainer":
+        """Create an intance from a config."""
+
+        evaluator_cls = EVALUATORS[config["evaluator"]]
+
+        return cls(
+            evaluator_cls.from_config(config["evaluator_init"]),
+            config.get("energy_minimization", None),
+        )
