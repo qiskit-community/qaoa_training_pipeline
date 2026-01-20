@@ -17,24 +17,25 @@ class BaseExtremaLocator(ABC):
     """A base class to define an extrema locator."""
 
     @abstractmethod
-    def __call__(self, array: np.array) -> Tuple[int, float]:
+    def __call__(self, array: np.ndarray) -> Tuple[int, float]:
         """The method to return the index and the energy."""
 
 
 class Argmax(BaseExtremaLocator):
     """Wrapper of the numpy argmax."""
 
-    def __call__(self, array: np.array) -> Tuple[int, float]:
+    def __call__(self, array: np.ndarray) -> Tuple[int, float]:
         """Get the maximum energy and where it is."""
         idx = int(np.argmax(array))
 
         return idx, np.ravel(array)[idx]
 
 
+# cspell: ignore argmin
 class Argmin(BaseExtremaLocator):
     """Wrapper of the numpy argmin."""
 
-    def __call__(self, array: np.array) -> Tuple[int, float]:
+    def __call__(self, array: np.ndarray) -> Tuple[int, float]:
         """Get the minimum energy and where it is."""
         idx = int(np.argmin(array))
 

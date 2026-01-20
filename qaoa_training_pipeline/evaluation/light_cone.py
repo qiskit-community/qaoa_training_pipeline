@@ -8,20 +8,22 @@
 
 """Perform a naive light-cone simulation of QAOA."""
 
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 import networkx as nx
 import numpy as np
 from qiskit import transpile
-
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
-from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import StatevectorEstimator
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
+# cspell: words correlator correlators
 class LightConeEvaluator(BaseEvaluator):
     r"""Light-cone computation of QAOA.
 
@@ -119,10 +121,14 @@ class LightConeEvaluator(BaseEvaluator):
             tasks.append((circ, obs))
             weights.append(data["weight"] if "weight" in data else 1.0)
 
-        results = list(res for res in self.primitive.run(tasks).result())
+        primitive_result = self.primitive.run(tasks).result()
+        results = [primitive_result[i] for i in range(len(primitive_result))]
 
         # Compute and return the observable.
-        energy = sum(w * float(res.data.evs) for res, w in zip(results, weights))
+        energy = sum(
+            w * float(res.data.evs)  # pyright: ignore[reportAttributeAccessIssue]
+            for res, w in zip(results, weights)
+        )
 
         return np.real(energy)
 
@@ -131,7 +137,7 @@ class LightConeEvaluator(BaseEvaluator):
         edge: Tuple[int, int],
         params: List[float],
         initial_state: Optional[QuantumCircuit] = None,
-        mixer_operator: Optional[QuantumCircuit] = None,
+        mixer_operator: Optional[BaseOperator] = None,
     ) -> Tuple[QuantumCircuit, str]:
         r"""Create the circuit for the given edge.
 
@@ -148,6 +154,7 @@ class LightConeEvaluator(BaseEvaluator):
         """
         edges = self.make_radius_edges(edge, radius=len(params) // 2)
 
+        assert self.graph, "graph must be defined before calling make_radius_circuit()"
         paulis, src_edge = self.make_sub_correlators(edges, edge, len(self.graph))
 
         ansatz = qaoa_ansatz(
@@ -178,6 +185,7 @@ class LightConeEvaluator(BaseEvaluator):
             A dict where the keys are the edges in the graph to include and the values
             are the weights of the edges.
         """
+        assert self.graph, "graph must be defined before calling make_radius_circuit()"
         ego1 = nx.generators.ego_graph(self.graph, edge[0], radius=radius)
         ego2 = nx.generators.ego_graph(self.graph, edge[1], radius=radius)
 

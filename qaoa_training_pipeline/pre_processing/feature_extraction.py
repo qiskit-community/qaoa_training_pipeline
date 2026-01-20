@@ -13,6 +13,8 @@ from typing import Dict, List, Optional, Tuple
 import networkx as nx
 import numpy as np
 
+# cspell: ignore reportviews
+from networkx.classes.reportviews import DegreeView
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
@@ -133,7 +135,7 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         """
         graph = operator_to_graph(cost_op)
 
-        features = [qaoa_depth]
+        features: list[int | float] = [qaoa_depth]
 
         if self.extract_num_nodes:
             features.append(graph.order())
@@ -141,8 +143,9 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         if self.extract_num_edges:
             features.append(len(graph.edges()))
 
-        # Compute average node degeree for the graph + std
+        # Compute average node degree for the graph + std
         if self.extract_avg_node_degree:
+            assert isinstance(graph.degree, DegreeView)
             degree_list = list(deg[1] for deg in graph.degree())
             features.append(float(np.average(degree_list)))
 
