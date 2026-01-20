@@ -10,11 +10,12 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
-
-from sklearn.preprocessing import StandardScaler
+from matplotlib.axes import Axes
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 
 class BaseAnglesFunction(ABC):
@@ -25,7 +26,7 @@ class BaseAnglesFunction(ABC):
         """Compute the QAOA angles from the optimization variables x."""
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary of the class."""
+        """Creates a serializable dictionary of the class."""
         return {"function_name": self.__class__.__name__}
 
     @classmethod
@@ -43,11 +44,12 @@ class IdentityFunction(BaseAnglesFunction):
 
     # pylint: disable=unused-argument
     @classmethod
-    def from_config(cls, config: dict) -> None:
+    def from_config(cls, config: dict):
         """Initialize the Identity function."""
         return cls()
 
 
+# cspell:ignore Zhou
 class FourierFunction(BaseAnglesFunction):
     r"""Computes the QAOA angles from the optimization variables x using a Fourier series.
 
@@ -59,7 +61,7 @@ class FourierFunction(BaseAnglesFunction):
         \gamma_i = \sum_{k=1}^{q} v_k \cos[(k-1/2)(i-1/2)\pi/p]
     """
 
-    def __init__(self, depth: int = None) -> None:
+    def __init__(self, depth: int | None = None) -> None:
         """Initialize the Fourier function.
 
         Args:
@@ -78,20 +80,20 @@ class FourierFunction(BaseAnglesFunction):
         the QAOA depth is given either by its internal variable `self._depth` or by `x` if
         `self._depth` is None.
         """
-        n_coeffs = len(x) // 2
+        n_coef = len(x) // 2
 
-        qaoa_reps = n_coeffs if self._depth is None else self._depth
+        qaoa_reps = n_coef if self._depth is None else self._depth
 
         betas, gammas = [], []
         for i_idx in range(qaoa_reps):
             beta_i = 0
 
             # Note the +0.5 which accounts for the indices starting at 0.
-            for k_idx, val in enumerate(x[:n_coeffs]):
+            for k_idx, val in enumerate(x[:n_coef]):
                 beta_i += val * np.cos((k_idx + 0.5) * (i_idx + 0.5) * np.pi / qaoa_reps)
 
             gamma_i = 0
-            for k_idx, val in enumerate(x[n_coeffs:]):
+            for k_idx, val in enumerate(x[n_coef:]):
                 gamma_i += val * np.sin((k_idx + 0.5) * (i_idx + 0.5) * np.pi / qaoa_reps)
 
             betas.append(beta_i)
@@ -100,19 +102,19 @@ class FourierFunction(BaseAnglesFunction):
         return betas + gammas
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary of the class."""
+        """Creates a serializable dictionary of the class."""
         config = super().to_config()
         config["depth"] = self._depth
         return config
 
     @classmethod
-    def from_config(cls, config: dict) -> None:
+    def from_config(cls, config: dict) -> "FourierFunction":
         """Initialize the Fourier function."""
         return cls(config.get("depth", None))
 
     def plot_angles(
-        self, x: list, axis: Optional[plt.Axes] = None, plot_args: Optional[Dict] = None
-    ) -> plt.Axes:
+        self, x: list, axis: Optional[Axes] = None, plot_args: Optional[Dict] = None
+    ) -> Axes:
         """Plot the QAOA angles.
 
         Args:
@@ -132,6 +134,7 @@ class FourierFunction(BaseAnglesFunction):
 
         qaoa_angles = self(x)
         reps = len(qaoa_angles) // 2
+        assert isinstance(self._depth, int)
         xvals = list(range(1, self._depth + 1))
         axis.plot(xvals, qaoa_angles[:reps], label=r"$\beta$", **plot_args["beta"])
         axis.plot(xvals, qaoa_angles[reps:], label=r"$\gamma$", **plot_args["gamma"])
@@ -140,8 +143,8 @@ class FourierFunction(BaseAnglesFunction):
         return axis
 
     def plot_basis(
-        self, x: list, axis: Optional[plt.Axes] = None, plot_args: Optional[Dict] = None
-    ) -> plt.Axes:
+        self, x: list, axis: Optional[Axes] = None, plot_args: Optional[Dict] = None
+    ) -> Axes:
         """Plot the Fourier basis functions.
 
         Args:
@@ -153,9 +156,10 @@ class FourierFunction(BaseAnglesFunction):
         """
         axis = axis or plt.gca()
 
-        n_coeffs = len(x) // 2
-        qaoa_reps = n_coeffs if self._depth is None else self._depth
+        n_coef = len(x) // 2
+        qaoa_reps = n_coef if self._depth is None else self._depth
 
+        assert isinstance(self._depth, int)
         ivals = np.linspace(0, self._depth, 50)
 
         if plot_args is None:
@@ -164,14 +168,14 @@ class FourierFunction(BaseAnglesFunction):
         if "ls" not in plot_args["beta"]:
             plot_args["beta"]["ls"] = "--"
 
-        for k_idx in range(n_coeffs):
-            coeff = (k_idx + 0.5) * np.pi / qaoa_reps
+        for k_idx in range(n_coef):
+            coef = (k_idx + 0.5) * np.pi / qaoa_reps
 
             lbl = r"$\beta$ basis" if k_idx == 0 else None
 
             axis.plot(
                 ivals,
-                [x[k_idx] * np.cos(coeff * (ival + 0.5)) for ival in ivals],
+                [x[k_idx] * np.cos(coef * (ival + 0.5)) for ival in ivals],
                 label=lbl,
                 **plot_args["beta"],
             )
@@ -180,7 +184,7 @@ class FourierFunction(BaseAnglesFunction):
 
             axis.plot(
                 ivals,
-                [x[k_idx + n_coeffs] * np.sin(coeff * (ival + 0.5)) for ival in ivals],
+                [x[k_idx + n_coef] * np.sin(coef * (ival + 0.5)) for ival in ivals],
                 label=lbl,
                 **plot_args["gamma"],
             )
@@ -230,7 +234,7 @@ class PCAFunction(BaseAnglesFunction):
             raise ValueError(f"Fit {self.__class__.__name__} to compute the QAOA angles.")
 
         # Reconstruct standardized data from PCA
-        angles_scaled = self._pca.inverse_transform([x])
+        angles_scaled = self._pca.inverse_transform(np.array([x]))
 
         # Convert back to original scale
         qaoa_angles = self._scaler.inverse_transform(angles_scaled)
@@ -246,15 +250,15 @@ class PCAFunction(BaseAnglesFunction):
         return self._pca.transform(x_scaled)[0]
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary of the class."""
+        """Creates a serializable dictionary of the class."""
         config = super().to_config()
         config["num_components"] = self._num_components
 
         if self._is_fitted:
             config["scaler"] = {
-                "mean": self._scaler.mean_.tolist(),
-                "scale": self._scaler.scale_.tolist(),
-                "var": self._scaler.var_.tolist(),
+                "mean": self._scaler.mean_.tolist() if self._scaler.mean_ else None,
+                "scale": self._scaler.scale_.tolist() if self._scaler.scale_ else None,
+                "var": self._scaler.var_.tolist() if self._scaler.var_ else None,
             }
 
             config["pca"] = {
@@ -267,7 +271,7 @@ class PCAFunction(BaseAnglesFunction):
         return config
 
     @classmethod
-    def from_config(cls, config: dict) -> None:
+    def from_config(cls, config: dict) -> "PCAFunction":
         """Initialize the Fourier function."""
 
         pca_func = cls(config["num_components"])

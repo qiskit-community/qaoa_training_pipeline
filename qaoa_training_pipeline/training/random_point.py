@@ -95,7 +95,7 @@ class RandomPoint(BaseTrainer):
 
         params = [float(val) for val in rng.uniform(lb_, ub_, 2 * reps)]
 
-        param_result = ParamResult(params, time() - start, self, "NA")
+        param_result = ParamResult(params, time() - start, self, None)
         param_result["note"] = f"The parameters are uniformly generated with seed {self._seed}."
 
         return param_result
@@ -124,9 +124,9 @@ class RandomPoint(BaseTrainer):
         return train_kwargs
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary to keep track of how results are created.
+        """Creates a serializable dictionary to keep track of how results are created.
 
-        Note: This datastructure is not intended for us to recreate the class instance.
+        Note: This data structure is not intended for us to recreate the class instance.
         """
         return {
             "trainer_name": self.__class__.__name__,
