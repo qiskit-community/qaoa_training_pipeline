@@ -11,6 +11,7 @@
 import glob
 import json
 from typing import Optional
+import numpy as np
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -24,7 +25,7 @@ class OptimizedParametersLoader(BaseTrainer):
     """Class to load parameters from a file.
 
     In a slight abuse of notation, this class is not really a trainer. However,
-    having it inherite from the BaseTrainer ensures that it is usable in the
+    having it inherit from the BaseTrainer ensures that it is usable in the
     train pipeline.
     """
 
@@ -87,20 +88,20 @@ class OptimizedParametersLoader(BaseTrainer):
 
         max_key = str(max(keys))
 
-        param_result = ParamResult(data[max_key]["optimized_params"], None, self, None)
+        param_result = ParamResult(data[max_key]["optimized_params"], np.nan, self, None)
         param_result["from_file"] = loaded_file_name
 
         return param_result
 
     @classmethod
     def from_config(cls, config: dict) -> "OptimizedParametersLoader":
-        """Create an intance from a config."""
+        """Create an instance from a config."""
         return cls()
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary to keep track of how results are created.
+        """Creates a serializable dictionary to keep track of how results are created.
 
-        Note: This datastructure is not intended for us to recreate the class instance.
+        Note: This data structure is not intended for us to recreate the class instance.
         """
         return {"trainer_name": self.__class__.__name__}
 
