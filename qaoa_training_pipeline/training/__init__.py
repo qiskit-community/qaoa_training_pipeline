@@ -15,7 +15,7 @@ from .functions import FUNCTIONS
 from .fixed_angle_conjecture import FixedAngleConjecture
 from .models.random_regular_fit import RandomRegularDepthOneFit
 from .optimized_parameter_loader import OptimizedParametersLoader
-from .parameter_scanner import DepthOneScanTrainer
+from .parameter_scanner import DepthOneScanTrainer, DepthOneGammaScanTrainer
 from .qaoa_pca import QAOAPCA
 from .random_point import RandomPoint
 from .recursion import RecursionTrainer
@@ -41,4 +41,5 @@ TRAINERS = {
     "TQATrainer": TQATrainer,
     "TransferTrainer": TransferTrainer,
     "TransitionStatesTrainer": TransitionStatesTrainer,
+    "DepthOneGammaScanTrainer": DepthOneGammaScanTrainer,
 }
