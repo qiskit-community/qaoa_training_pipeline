@@ -10,6 +10,8 @@
 
 
 from typing import Dict, Optional
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -17,8 +19,8 @@ import matplotlib.pyplot as plt
 
 def plot_cdf(
     func_counts: Dict[float, float],
-    axis: Optional[plt.Axes] = None,
-    fig: Optional[plt.Figure] = None,
+    axis: Optional[Axes] = None,
+    fig: Optional[Figure] = None,
     **plot_args,
 ):
     """Plot the CDF of the given counts.
