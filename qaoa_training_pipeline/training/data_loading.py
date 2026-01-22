@@ -16,11 +16,11 @@ class BaseDataLoader(ABC):
     """A base class to define the interface of QAOA angle functions."""
 
     @abstractmethod
-    def __call__(self):
+    def __call__(self) -> dict:
         """Extract data from a database."""
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary of the class."""
+        """Creates a serializable dictionary of the class."""
         return {"function_name": self.__class__.__name__}
 
     @classmethod
@@ -41,14 +41,14 @@ class TrivialDataLoader(BaseDataLoader):
         return self._data
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary of the class."""
+        """Creates a serializable dictionary of the class."""
         config = super().to_config()
         config["data"] = self._data
 
         return config
 
     @classmethod
-    def from_config(cls, config: dict) -> None:
+    def from_config(cls, config: dict) -> BaseDataLoader:
         """Initialize the loader from a config."""
         return cls(config["data"])
 

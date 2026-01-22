@@ -9,13 +9,13 @@
 """Trainer that leverages PCA to reduce the dimensionality of QAOA parameter optimization."""
 
 from typing import Any, Dict, Optional
+
 import numpy as np
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.data_loading import BaseDataLoader
+from qaoa_training_pipeline.training.data_loading import DATA_LOADERS, BaseDataLoader
 from qaoa_training_pipeline.training.functions import PCAFunction
-from qaoa_training_pipeline.training.data_loading import DATA_LOADERS
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 
@@ -51,7 +51,7 @@ class QAOAPCA(ScipyTrainer):
             data_loader: A callable method that will populate the data that the trainer
                 relies on to set the QAOA parameters.
             num_components: The number of principal components to use.
-            evaluator: An instance of `BaseEvaluator` which will evaluate the enrgy
+            evaluator: An instance of `BaseEvaluator` which will evaluate the energy
                 of the QAOA circuit.
             minimize_args: Arguments that will be passed to SciPy's `minimize`.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
@@ -85,7 +85,7 @@ class QAOAPCA(ScipyTrainer):
             raise ValueError("Data for {self.__class__.__name__} must be a 2D numpy array.")
 
     def to_config(self):
-        """Create a config file from a traininer instance."""
+        """Create a config file from a trainer instance."""
         config = super().to_config()
         if "name" in config["evaluator_init"]:
             del config["evaluator_init"]["name"]
@@ -108,5 +108,5 @@ class QAOAPCA(ScipyTrainer):
             num_components=config["num_components"],
             evaluator=evaluator_cls.from_config(config["evaluator_init"]),
             minimize_args=config.get("minimize_args", None),
-            energy_minimization=config.get("energy_minimization", None),
+            energy_minimization=config.get("minimize_energy", False),
         )
