@@ -141,22 +141,22 @@ def graph_to_operator_with_partial_assignment(
     const = 0.0
 
     def get_fixed_spin(node):
-        s = assignment.get(node, 0)
-        if s not in (-1, 0, +1):
-            raise ValueError(f"Assignment for node {node} must be in {{-1, 0, +1}}, got {s}.")
-        return s
+        spin = assignment.get(node, 0)
+        if spin not in (-1, 0, +1):
+            raise ValueError(f"Assignment for node {node} must be in {{-1, 0, +1}}, got {spin}.")
+        return spin
 
     paulis_coeffs_dict = defaultdict(float)
-    for u, v, data in graph.edges(data=True):
+    for node_u, node_v, data in graph.edges(data=True):
         weight = data["weight"] if "weight" in data else 1.0
-        spin_u = get_fixed_spin(u)
-        spin_v = get_fixed_spin(v)
+        spin_u = get_fixed_spin(node_u)
+        spin_v = get_fixed_spin(node_v)
 
         if spin_u == 0 and spin_v == 0:
             # Free-free edge -> ZZ term
             paulis = ["I"] * num_free_nodes
-            paulis[free_idx[u]] = "Z"
-            paulis[free_idx[v]] = "Z"
+            paulis[free_idx[node_u]] = "Z"
+            paulis[free_idx[node_v]] = "Z"
             # Reverse for qiskit ordering convention
             pauli_str = "".join(paulis)[::-1]
             paulis_coeffs_dict[pauli_str] += pre_factor * weight
@@ -164,14 +164,14 @@ def graph_to_operator_with_partial_assignment(
         elif spin_u != 0 and spin_v == 0:
             # u fixed, v free -> linear Z_v term with coefficient w * s_u
             paulis = ["I"] * num_free_nodes
-            paulis[free_idx[v]] = "Z"
+            paulis[free_idx[node_v]] = "Z"
             pauli_str = "".join(paulis)[::-1]
             paulis_coeffs_dict[pauli_str] += pre_factor * weight * spin_u
 
         elif spin_u == 0 and spin_v != 0:
             # u free, v fixed -> linear Z_u term with coefficient w * s_v
             paulis = ["I"] * num_free_nodes
-            paulis[free_idx[u]] = "Z"
+            paulis[free_idx[node_u]] = "Z"
             pauli_str = "".join(paulis)[::-1]
             paulis_coeffs_dict[pauli_str] += pre_factor * weight * spin_v
 
@@ -182,8 +182,8 @@ def graph_to_operator_with_partial_assignment(
     pauli_list = [(p, c) for p, c in paulis_coeffs_dict.items() if c != 0.0]
     if include_constant and const != 0.0:
         pauli_list.append(("I" * num_free_nodes, const))  # identity term (no reverse needed)
-    H_reduced = SparsePauliOp.from_list(pauli_list)
-    return H_reduced, free_nodes, fixed_nodes
+    hamiltonian_reduced = SparsePauliOp.from_list(pauli_list)
+    return hamiltonian_reduced, free_nodes, fixed_nodes
 
 
 def graph_to_operator(graph: nx.Graph, pre_factor: float = 1.0) -> SparsePauliOp:
@@ -276,7 +276,9 @@ def circuit_to_graph(circuit: QuantumCircuit) -> nx.Graph:
             edge = (qreg.index(inst.qubits[0]), qreg.index(inst.qubits[1]))
 
         else:
-            raise ValueError("Instructions with more than 2 qubits cannot be converted to graph edges.")
+            raise ValueError(
+                "Instructions with more than 2 qubits cannot be converted to graph edges."
+            )
 
         if edge in seen_edges:
             raise ValueError(f"Circuit contains multiple times the edge {edge}.")
