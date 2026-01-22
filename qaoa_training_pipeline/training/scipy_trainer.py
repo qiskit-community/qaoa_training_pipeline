@@ -9,7 +9,9 @@
 """This module is an interface to SciPy's minimize function."""
 
 from time import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, Optional
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -42,7 +44,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         """Initialize the trainer.
 
         Args:
-            evaluator: An instance of `BaseEvaluator` which will evaluate the enrgy
+            evaluator: An instance of `BaseEvaluator` which will evaluate the energy
                 of the QAOA circuit.
             minimize_args: Arguments that will be passed to SciPy's `minimize`.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
@@ -74,7 +76,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
     def train(
         self,
         cost_op: SparsePauliOp,
-        params0: List[float],
+        params0: Iterable[float],
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
@@ -102,6 +104,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
             qaoa_angles = self._qaoa_angles_function(x)
 
+            assert self._evaluator, "_evaluator must be defined before calling _energy()"
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
                 params=qaoa_angles,
@@ -124,14 +127,15 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             result, params0, time() - start, self._sign, self
         )
 
+        assert self._evaluator, "_evaluator must be defined before calling train()"
         param_result.update(self._evaluator.get_results_from_last_iteration())
 
         return param_result
 
     def plot(
         self,
-        axis: Optional[plt.Axes] = None,
-        fig: Optional[plt.Figure] = None,
+        axis: Optional[Axes] = None,
+        fig: Optional[Figure] = None,
         **plot_args,
     ):
         """Plot the energy history.
@@ -180,7 +184,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
             config.get("minimize_args", None),
-            energy_minimization=config.get("energy_minimization", None),
+            energy_minimization=config.get("energy_minimization", False),
             qaoa_angles_function=function,
         )
 
@@ -201,14 +205,14 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         return train_kwargs
 
     def to_config(self) -> dict:
-        """Creates a serializeable dictionary to keep track of how results are created.
+        """Creates a serializable dictionary to keep track of how results are created.
 
-        Note: This datastructure is not intended for us to recreate the class instance.
+        Note: This data structure is not intended for us to recreate the class instance.
         """
         config = {
             "trainer_name": self.__class__.__name__,
             "evaluator": self._evaluator.__class__.__name__,
-            "evaluator_init": self._evaluator.to_config(),
+            "evaluator_init": self._evaluator.to_config() if self._evaluator else None,
         }
 
         config.update(self._minimize_args)
