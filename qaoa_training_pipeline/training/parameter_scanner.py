@@ -233,9 +233,11 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
 
 class DepthOneGammaScanTrainer(DepthOneScanTrainer):
-    """Scan Gamma values and compute the optimal beta value analytically for each gamma as per https://arxiv.org/pdf/2501.16419 -
+    """Scan Gamma values and compute the optimal beta value analytically for each
+    gamma as per https://arxiv.org/pdf/2501.16419 -
     "Near-Optimal Parameter Tuning of Level-1 QAOA for Ising Models".
-    The gurentee for optimality of the beta parameter here is dependant on using the standard mixer Hm = sum X_j.
+    The gurentee for optimality of the beta parameter here is dependant on using the
+    standard mixer Hm = sum X_j.
     For other mixer hamiltonian the value of the beta computed here might be non optimal.
     """
 
@@ -334,7 +336,9 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         return opt_result
 
-    def _beta_star_for_gamma(self, graph: nx.Graph, gamma: float, weight_attr: str = "weight") -> float:
+    def _beta_star_for_gamma(
+        self, graph: nx.Graph, gamma: float, weight_attr: str = "weight"
+    ) -> float:
         """
         Compute beta*(gamma) per Theorem 5 (https://arxiv.org/pdf/2501.16419)
         (field-free Ising, QAOA p=1) for a given gamma and graph G.
@@ -343,7 +347,9 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         Formula: beta* = (1/4) * (atan2(2A(gamma), B(gamma)) + pi).
         """
-        a_matrix, b_matrix = self._compute_a_b_matrices_for_gamma(graph, gamma, weight_attr=weight_attr)
+        a_matrix, b_matrix = self._compute_a_b_matrices_for_gamma(
+            graph, gamma, weight_attr=weight_attr
+        )
 
         # Handle the degenerate case: if both A and B are ~0, the landscape is flat in beta.
         if abs(a_matrix) < 1e-15 and abs(b_matrix) < 1e-15:
@@ -430,8 +436,12 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             )  # mutual neighbors of v and u, i.e. nodes that create a traingle with u and v in the graph
 
             # A(gamma) term
-            prod_v = self._prod_cos_edges_from_node(graph, v_vertex, nbrs_v_minus_u, gamma, weight_attr)
-            prod_u = self._prod_cos_edges_from_node(graph, u_vertex, nbrs_u_minus_v, gamma, weight_attr)
+            prod_v = self._prod_cos_edges_from_node(
+                graph, v_vertex, nbrs_v_minus_u, gamma, weight_attr
+            )
+            prod_u = self._prod_cos_edges_from_node(
+                graph, u_vertex, nbrs_u_minus_v, gamma, weight_attr
+            )
             a_matrix += (weight_uv / 2.0) * math.sin(g_uv) * (prod_v + prod_u)
 
             # B(gamma) term
