@@ -76,9 +76,7 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
     def setUp(self):
         """Setup variables."""
         self.trainer = DepthOneGammaScanTrainer(EfficientDepthOneEvaluator())
-        self.cost_op = SparsePauliOp.from_list(
-            [("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1), ("ZZII", -1)]
-        )
+        self.cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1), ("ZZII", -1)])
         self.graph = operator_to_graph(self.cost_op)
 
     def test_simple(self):
@@ -154,12 +152,13 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
         self.assertAlmostEqual(beta, expected_beta)
 
     def test_consistency_between_trainers(self):
+        """
+        Test that the optimal beta scanner acheives an energy >= the parameter scanner energy.
+        """
         depth_one_trainer = DepthOneScanTrainer(EfficientDepthOneEvaluator())
         result_depth_one_trainer = depth_one_trainer.train(self.cost_op, num_points=100)
         result_opt_beta = self.trainer.train(self.cost_op, num_points=100)
-        self.assertAlmostEqual(
-            result_opt_beta["energy"], result_depth_one_trainer["energy"], places=3
-        )
+        self.assertAlmostEqual(result_opt_beta["energy"], result_depth_one_trainer["energy"], places=3)
 
         # with less points being scanned, the optimal beta trainer should give better result
         result_depth_one_trainer = depth_one_trainer.train(self.cost_op, num_points=10)
