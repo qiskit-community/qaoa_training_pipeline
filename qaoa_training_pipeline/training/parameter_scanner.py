@@ -11,14 +11,10 @@
 from time import time
 import math
 from typing import List, Optional, Tuple, Hashable
-import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
 
-from typing import List, Optional, Tuple
-
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from qiskit import QuantumCircuit
@@ -37,7 +33,6 @@ from qaoa_training_pipeline.training.functions import (
 )
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -339,9 +334,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         return opt_result
 
-    def _beta_star_for_gamma(
-        self, graph: nx.Graph, gamma: float, weight_attr: str = "weight"
-    ) -> float:
+    def _beta_star_for_gamma(self, graph: nx.Graph, gamma: float, weight_attr: str = "weight") -> float:
         """
         Compute beta*(gamma) per Theorem 5 (https://arxiv.org/pdf/2501.16419)
         (field-free Ising, QAOA p=1) for a given gamma and graph G.
@@ -350,9 +343,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         Formula: beta* = (1/4) * (atan2(2A(gamma), B(gamma)) + pi).
         """
-        a_matrix, b_matrix = self._compute_a_b_matrices_for_gamma(
-            graph, gamma, weight_attr=weight_attr
-        )
+        a_matrix, b_matrix = self._compute_a_b_matrices_for_gamma(graph, gamma, weight_attr=weight_attr)
 
         # Handle the degenerate case: if both A and B are ~0, the landscape is flat in beta.
         if abs(a_matrix) < 1e-15 and abs(b_matrix) < 1e-15:
@@ -439,12 +430,8 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             )  # mutual neighbors of v and u, i.e. nodes that create a traingle with u and v in the graph
 
             # A(gamma) term
-            prod_v = self._prod_cos_edges_from_node(
-                graph, v_vertex, nbrs_v_minus_u, gamma, weight_attr
-            )
-            prod_u = self._prod_cos_edges_from_node(
-                graph, u_vertex, nbrs_u_minus_v, gamma, weight_attr
-            )
+            prod_v = self._prod_cos_edges_from_node(graph, v_vertex, nbrs_v_minus_u, gamma, weight_attr)
+            prod_u = self._prod_cos_edges_from_node(graph, u_vertex, nbrs_u_minus_v, gamma, weight_attr)
             a_matrix += (weight_uv / 2.0) * math.sin(g_uv) * (prod_v + prod_u)
 
             # B(gamma) term
