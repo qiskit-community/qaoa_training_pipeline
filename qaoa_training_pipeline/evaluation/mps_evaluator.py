@@ -8,12 +8,10 @@
 
 """MPS-based QAOA evaluator."""
 
+from math import prod, sqrt
 from typing import Dict, List, Optional
 
-from math import sqrt, prod
-
 import numpy as np
-
 from qiskit.circuit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
@@ -21,7 +19,7 @@ from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.utils.graph_utils import (
     circuit_to_graph,
     make_swap_strategy,
-    operator_to_list_of_hyperedges,
+    operator_to_list_of_hyper_edges,
 )
 from qaoa_training_pipeline.utils.tns_utils.qaoa_circuit_mps import (
     QAOACircuitMPSRepresentation,
@@ -30,6 +28,8 @@ from qaoa_training_pipeline.utils.tns_utils.qaoa_circuit_mps import (
 from qaoa_training_pipeline.utils.tns_utils.qaoa_cost_function import QAOACostFunction
 
 
+# cspell: words Trotterized
+# cspell: ignore inds
 class MPSEvaluator(BaseEvaluator):
     r"""Matrix Product State-based evaluator of QAOA circuits
 
@@ -163,19 +163,22 @@ class MPSEvaluator(BaseEvaluator):
 
         # Must come before the cost_op is permuted by the swap strategy.
         if ansatz_circuit is None:
-            edges = operator_to_list_of_hyperedges(cost_op)
+            edges = operator_to_list_of_hyper_edges(cost_op)
         else:
             qc_graph = circuit_to_graph(ansatz_circuit)
-            edges = [[[u, v], w.get("weight", 1)] for u, v, w in qc_graph.edges(data=True)]
+            edges = [([u, v], w.get("weight", 1.0)) for u, v, w in qc_graph.edges(data=True)]
 
-        # If there are any hyperedges, then the swap strategy cannot be implemented.
+        # If there are any hyper edges, then the swap strategy cannot be implemented.
         if any(len(i_edge[0]) > 2 for i_edge in edges) and self._use_swap_strategy:
             raise NotImplementedError("Swap strategy not supported for HOBO problems")
 
         # Make the swap strategy.
+        assert (
+            cost_op.num_qubits
+        ), "num_qubits must be defined in cost operator before calling evaluate()"
         if self._use_swap_strategy:
             self._swap_strategy = make_swap_strategy(
-                [val[0] for val in edges],
+                [tuple(val[0]) for val in edges],
                 cost_op.num_qubits,
             )
 
@@ -305,7 +308,7 @@ class MPSEvaluator(BaseEvaluator):
         return prod(sum(i**2 for i in i_schmidt) for i_schmidt in self._intermediate_schmidt_values)
 
     @property
-    def schmidt_values(self) -> List[List[float]]:
+    def schmidt_values(self) -> List[List[float]] | None:
         """Get the Schmidt values for a given bond of the MPS.
 
         Returns:
@@ -352,7 +355,7 @@ class MPSEvaluator(BaseEvaluator):
         The input string should be formatted as the variables `use_vidal_form` (bool),
         `threshold_circuit` (float), `bond_dim_circuit` (int), `threshold_mpo` (float),
         `bond_dim_mpo` (int), `use_swap_strategy` (bool) and `store_schmidt_values` (bool),
-        all separated by an underscrore and in that order.
+        all separated by an underscore and in that order.
         """
         if init_kwargs is None:
             return dict()

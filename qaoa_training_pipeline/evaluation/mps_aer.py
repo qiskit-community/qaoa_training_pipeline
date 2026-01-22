@@ -28,7 +28,7 @@ class MPSAerEvaluator(AerEvaluator):
         Args:
             mps_init_args: The arguments to initialize the MPS with. If the needed
                 arguments are missing we assume a default bond dimension of 64 and
-                a MPS truncation threashold of 1e-5.
+                a MPS truncation threshold of 1e-5.
         """
 
         self._init_args = mps_init_args or {}

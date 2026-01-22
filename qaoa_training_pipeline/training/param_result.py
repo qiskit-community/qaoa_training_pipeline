@@ -8,10 +8,9 @@
 
 """Class to store result data."""
 
-from dataclasses import dataclass
 import platform
-from typing import Optional, TYPE_CHECKING
-import numpy as np
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional
 
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 
@@ -26,7 +25,7 @@ class ParamResult:
     This class ensures that we have elementary information such as information on the
     platform in addition to training duration and parameters. The class includes a
     `qaoa_training_pipeline_version` variable. This variable should be updated manually
-    in each new commit to the repository. The addeded functionality is tracked in
+    in each new commit to the repository. The added functionality is tracked in
     a table in the main README.md.
     """
 
@@ -47,7 +46,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 28,
+            "qaoa_training_pipeline_version": 29,
         }
 
         # Convert, e.g., np.float to float
@@ -56,7 +55,7 @@ class ParamResult:
             float(val) for val in trainer.qaoa_angles_function(optimized_params)
         ]
         self.data["train_duration"] = duration
-        self.data["energy"] = float(energy) if isinstance(energy, np.floating) else energy
+        self.data["energy"] = "NA" if energy is None else float(energy)
         self.data["trainer"] = trainer.to_config()
 
     def __contains__(self, item):
@@ -93,7 +92,7 @@ class ParamResult:
 
     # pylint: disable=(too-many-positional-arguments
     @classmethod
-    def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> dict:
+    def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> "ParamResult":
         """Standardizes results from SciPy such that it can be serialized."""
 
         param_result = cls(result.pop("x").tolist(), train_duration, trainer, sign * result.pop("fun"))
