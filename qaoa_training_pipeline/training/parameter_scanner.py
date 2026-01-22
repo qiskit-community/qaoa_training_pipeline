@@ -10,7 +10,7 @@
 
 from time import time
 import math
-from typing import List, Optional, Tuple, Hashable
+from typing import List, Optional, Tuple
 import numpy as np
 import networkx as nx
 
@@ -362,15 +362,13 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         return beta
 
-    def _edge_weight(
-        self, graph: nx.Graph, u: Hashable, v: Hashable, weight_attr: str = "weight"
-    ) -> float:
+    def _edge_weight(self, graph: nx.Graph, u: int, v: int, weight_attr: str = "weight") -> float:
         """Fetch edge weight (u,v) J_uv. default weight is 1.0."""
         data = graph.get_edge_data(u, v, default={})
         return float(data.get(weight_attr, 1.0))
 
     def _prod_cos_edges_from_node(
-        self, graph: nx.Graph, node: Hashable, nbrs: set, gamma: float, weight_attr: str
+        self, graph: nx.Graph, node: int, nbrs: set, gamma: float, weight_attr: str
     ) -> float:
         """
         Compute Prod_{w ∈ nbrs} cos( 2 * J_{node,w} * gamma ).
@@ -387,8 +385,8 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
     def _prod_cos_triangle_terms(
         self,
         graph: nx.Graph,
-        u: Hashable,
-        v: Hashable,
+        u: int,
+        v: int,
         mutual_nbrs: set,
         gamma: float,
         weight_attr: str,
