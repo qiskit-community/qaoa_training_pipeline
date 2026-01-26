@@ -8,7 +8,8 @@
 
 """Perform a naive light-cone simulation of QAOA."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from collections.abc import Sequence
+from typing import Any, Dict, Tuple
 
 import networkx as nx
 import numpy as np
@@ -41,7 +42,7 @@ class LightConeEvaluator(BaseEvaluator):
     This could be improved on in subsequent PRs.
     """
 
-    def __init__(self, shots: int = 4096, estimator: Optional[Any] = None):
+    def __init__(self, shots: int = 4096, estimator: Any | None = None):
         """Initialize the light-cone evaluator.
 
         Args:
@@ -60,14 +61,13 @@ class LightConeEvaluator(BaseEvaluator):
         # The graph from which we will take sub-graphs using the light-cone.
         self.graph = None
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: List[float],
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        params: Sequence[float],
+        mixer: BaseOperator | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
         r"""Evaluate the energy.
 
@@ -135,9 +135,9 @@ class LightConeEvaluator(BaseEvaluator):
     def make_radius_circuit(
         self,
         edge: Tuple[int, int],
-        params: List[float],
-        initial_state: Optional[QuantumCircuit] = None,
-        mixer_operator: Optional[BaseOperator] = None,
+        params: Sequence[float],
+        initial_state: QuantumCircuit | None = None,
+        mixer_operator: BaseOperator | None = None,
     ) -> Tuple[QuantumCircuit, str]:
         r"""Create the circuit for the given edge.
 
@@ -220,7 +220,7 @@ class LightConeEvaluator(BaseEvaluator):
         edges: Dict[Tuple[int, int], float],
         source_edge: Tuple[int, int],
         base_size: int,
-    ) -> Tuple[List[Tuple[str, float]], Tuple]:
+    ) -> Tuple[list[Tuple[str, float]], Tuple]:
         r"""Build Paulis from the edges to construct a cost_op for `qaoa_ansatz`.
 
         First construct an array where each row is a correlator.

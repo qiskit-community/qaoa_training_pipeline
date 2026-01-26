@@ -8,13 +8,13 @@
 
 """Class to scan param2 and param1 in depth-one QAOA to get the optimal point."""
 
-from time import time
 import math
+from time import time
 from typing import List, Optional, Tuple
-import numpy as np
-import networkx as nx
 
 import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from qiskit import QuantumCircuit
@@ -128,11 +128,11 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
                 assert self._evaluator, "_evaluator must be defined before calling train()"
                 energy = self._evaluator.evaluate(
-                    cost_op,
-                    qaoa_angles,
-                    mixer,
-                    initial_state,
-                    ansatz_circuit,
+                    cost_op=cost_op,
+                    params=qaoa_angles,
+                    mixer=mixer,  # type: ignore
+                    initial_state=initial_state,
+                    ansatz_circuit=ansatz_circuit,
                 )
                 self._energies[idx1, idx2] = float(np.real(energy))
 
@@ -307,10 +307,11 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
             qaoa_angles = [param1, param2]
             energy = self._evaluator.evaluate(
-                cost_op,
-                qaoa_angles,
-                initial_state,
-                ansatz_circuit,
+                cost_op=cost_op,
+                params=qaoa_angles,
+                mixer=None,
+                initial_state=initial_state,
+                ansatz_circuit=ansatz_circuit,
             )
             self._energies[idx] = float(np.real(energy))
 

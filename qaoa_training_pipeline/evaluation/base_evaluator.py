@@ -9,8 +9,12 @@
 """Defines the methods that an evaluator should have."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
+from typing import Dict
 
-from typing import Dict, Optional
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 
 class BaseEvaluator(ABC):
@@ -22,11 +26,26 @@ class BaseEvaluator(ABC):
     """
 
     @abstractmethod
-    def evaluate(self, *args, **kwargs) -> float:
+    def evaluate(
+        self,
+        cost_op: SparsePauliOp,
+        params: Sequence[float],
+        mixer: BaseOperator | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
+    ) -> float:
         """Evaluate the energy for the given arguments.
 
+        Args:
+            cost_op: The cost operator that defines the cost Hamiltonian.
+            params: The parameters for QAOA. The length of this sequence will
+                determine the depth of the QAOA.
+            mixer: The mixer operator. Defaults to None.
+            initial_state: The initial state circuit. Defaults to None.
+            ansatz_circuit: The ansatz circuit for the cost operator. Defaults to None.
+
         Returns:
-            This function returns the energy as a real value.
+            The energy as a real value.
         """
 
     def get_results_from_last_iteration(self) -> Dict:
@@ -53,6 +72,6 @@ class BaseEvaluator(ABC):
 
     @classmethod
     # pylint: disable=unused-argument
-    def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
+    def parse_init_kwargs(cls, init_kwargs: str | None = None) -> dict:
         """A hook that sub-classes can implement to parse initialization kwargs."""
         return dict()

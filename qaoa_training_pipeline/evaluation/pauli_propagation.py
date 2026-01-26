@@ -7,18 +7,18 @@
 """Pauli propagation-based QAOA evaluator."""
 
 import importlib.util
-from typing import Optional, Union
 import warnings
+from collections.abc import Sequence
+
 import numpy as np
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.converters import circuit_to_dag
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-
 
 # cspell: ignore juliacall seval qarg qargs overlapwithzero
 # Safely import Julia if is is installed.
@@ -89,7 +89,7 @@ class PPEvaluator(BaseEvaluator):
     PauliPropagation and Julia themselves.
     """
 
-    def __init__(self, pp_kwargs: Optional[dict] = None):
+    def __init__(self, pp_kwargs: dict | None = None):
         """Initialize the Pauli propagation evaluator.
 
         Args:
@@ -129,14 +129,13 @@ class PPEvaluator(BaseEvaluator):
         if pp_kwargs is not None:
             self.pp_kwargs.update(pp_kwargs)
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: list[float],
-        mixer: Optional[BaseOperator] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        params: Sequence[float],
+        mixer: BaseOperator | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
         """Evaluate the QAOA circuit parameters."""
 
@@ -181,7 +180,7 @@ class PPEvaluator(BaseEvaluator):
 
     def qc_to_pp(
         self, circuit: QuantumCircuit
-    ) -> tuple[list[tuple[str, list[int]]], list[Union[int, float]]]:
+    ) -> tuple[list[tuple[str, list[int]]], list[int | float]]:
         """
         Args:
             circuit: The Qiskit circuit with no free parameters.
@@ -238,7 +237,7 @@ class PPEvaluator(BaseEvaluator):
 
     @classmethod
     # pylint: disable=unused-argument
-    def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
+    def parse_init_kwargs(cls, init_kwargs: str | None = None) -> dict:
         """A hook that sub-classes can implement to parse initialization kwargs."""
 
         if init_kwargs is None:
