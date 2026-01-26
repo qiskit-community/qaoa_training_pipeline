@@ -129,6 +129,7 @@ class PPEvaluator(BaseEvaluator):
         if pp_kwargs is not None:
             self.pp_kwargs.update(pp_kwargs)
 
+    # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,

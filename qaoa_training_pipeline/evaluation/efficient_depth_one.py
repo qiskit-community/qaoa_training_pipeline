@@ -45,6 +45,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         self._mixers = None
         self._initial_states = None
 
+    # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
