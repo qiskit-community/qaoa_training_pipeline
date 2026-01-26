@@ -25,6 +25,7 @@ class BaseEvaluator(ABC):
     and (ii) base classes are notoriously hard to remove from code.
     """
 
+    # pylint: disable=too-many-positional-arguments
     @abstractmethod
     def evaluate(
         self,

@@ -51,6 +51,7 @@ class MPSEvaluator(BaseEvaluator):
     the number of qubits of the circuit.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         use_vidal_form: bool = False,
@@ -118,6 +119,7 @@ class MPSEvaluator(BaseEvaluator):
 
         self._results_last_iteration = {}
 
+    # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,

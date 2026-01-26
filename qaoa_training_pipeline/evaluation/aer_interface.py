@@ -30,6 +30,7 @@ class AerEvaluator(BaseEvaluator):
 
         self.primitive = estimator
 
+    # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
