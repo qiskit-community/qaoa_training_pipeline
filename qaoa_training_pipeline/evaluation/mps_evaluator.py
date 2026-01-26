@@ -8,12 +8,14 @@
 
 """MPS-based QAOA evaluator."""
 
+from collections.abc import Sequence
 from math import prod, sqrt
-from typing import Dict, List, Optional
+from typing import Dict
 
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
+from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.utils.graph_utils import (
@@ -49,14 +51,13 @@ class MPSEvaluator(BaseEvaluator):
     the number of qubits of the circuit.
     """
 
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         use_vidal_form: bool = False,
-        threshold_circuit: Optional[float] = None,
-        bond_dim_circuit: Optional[int] = None,
-        threshold_mpo: Optional[float] = None,
-        bond_dim_mpo: Optional[int] = None,
+        threshold_circuit: float | None = None,
+        bond_dim_circuit: int | None = None,
+        threshold_mpo: float | None = None,
+        bond_dim_mpo: int | None = None,
         use_swap_strategy: bool = False,
         store_schmidt_values: bool = False,
         store_intermediate_schmidt_values: bool = False,
@@ -117,14 +118,13 @@ class MPSEvaluator(BaseEvaluator):
 
         self._results_last_iteration = {}
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: List[float],
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        params: Sequence[float],
+        mixer: BaseOperator | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
         r"""Evaluates the energy.
 
@@ -164,9 +164,14 @@ class MPSEvaluator(BaseEvaluator):
         # Must come before the cost_op is permuted by the swap strategy.
         if ansatz_circuit is None:
             edges = operator_to_list_of_hyper_edges(cost_op)
-        else:
+        elif isinstance(ansatz_circuit, QuantumCircuit):
             qc_graph = circuit_to_graph(ansatz_circuit)
             edges = [([u, v], w.get("weight", 1.0)) for u, v, w in qc_graph.edges(data=True)]
+        else:
+            raise NotImplementedError(
+                f"ansatz_circuit of type {type(ansatz_circuit).__name__} is not supported. "
+                "Only QuantumCircuit is supported."
+            )
 
         # If there are any hyper edges, then the swap strategy cannot be implemented.
         if any(len(i_edge[0]) > 2 for i_edge in edges) and self._use_swap_strategy:
@@ -194,15 +199,22 @@ class MPSEvaluator(BaseEvaluator):
             self._cost_op = QAOACostFunction(cost_op, self._threshold_cost, self._max_bond_cost)
 
         # Construct the circuit
-        beta_parameters = params[: len(params) // 2]
-        gamma_parameters = params[len(params) // 2 :]
+        beta_parameters = list(params[: len(params) // 2])
+        gamma_parameters = list(params[len(params) // 2 :])
+
+        # Type narrowing: mixer must be QuantumCircuit or None for construct_from_list_of_edges
+        if mixer is not None and not isinstance(mixer, QuantumCircuit):
+            raise NotImplementedError(
+                f"Mixer of type {type(mixer).__name__} is not supported. "
+                "Only QuantumCircuit mixers are supported."
+            )
 
         circuit = self._circuit_type.construct_from_list_of_edges(
             edges,
             truncation_threshold=self._threshold_circuit,
             max_bond_dim=self._max_bond_circuit,
             swap_strategy=self._swap_strategy,
-            mixer=mixer,
+            mixer=mixer,  # type: ignore[arg-type]
             initial_state=initial_state,
             store_intermediate_schmidt_values=self._store_intermediate_schmidt_values,
         )
@@ -308,7 +320,7 @@ class MPSEvaluator(BaseEvaluator):
         return prod(sum(i**2 for i in i_schmidt) for i_schmidt in self._intermediate_schmidt_values)
 
     @property
-    def schmidt_values(self) -> List[List[float]] | None:
+    def schmidt_values(self) -> list[list[float]] | None:
         """Get the Schmidt values for a given bond of the MPS.
 
         Returns:
@@ -348,7 +360,7 @@ class MPSEvaluator(BaseEvaluator):
         return config
 
     @classmethod
-    def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
+    def parse_init_kwargs(cls, init_kwargs: str | None = None) -> dict:
         """Parse initialization kwargs.
 
         This allows us to override any defaults set in the methods files.

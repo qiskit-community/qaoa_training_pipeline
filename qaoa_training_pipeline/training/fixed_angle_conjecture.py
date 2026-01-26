@@ -137,7 +137,10 @@ class FixedAngleConjecture(BaseTrainer):
 
         energy = None
         if self._evaluator is not None:
-            energy = self._evaluator.evaluate(cost_op, angles_data["beta"] + angles_data["gamma"])
+            energy = self._evaluator.evaluate(
+                cost_op=cost_op,
+                params=angles_data["beta"] + angles_data["gamma"],
+            )
 
         param_result = ParamResult(
             angles_data["beta"] + angles_data["gamma"],

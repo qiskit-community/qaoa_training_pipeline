@@ -8,12 +8,13 @@
 
 """Evaluator based on the estimator primitive."""
 
-from typing import List, Optional, Union
+from collections.abc import Sequence
 
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.quantum_info.operators.base_operator import BaseOperator
+
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
 
@@ -29,14 +30,13 @@ class AerEvaluator(BaseEvaluator):
 
         self.primitive = estimator
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: List[float],
-        mixer: Optional[BaseOperator] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[Union[QuantumCircuit, SparsePauliOp]] = None,
+        params: Sequence[float],
+        mixer: BaseOperator | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
         """Evaluate the expectation value of a cost operator given a set of parameters.
 
