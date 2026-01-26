@@ -24,9 +24,9 @@ from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 # Safely import Julia if is is installed.
 
 # Ensure names exist at module import time
-jl = None  # set to juliacall.Main if available
-convert = None  # set to juliacall.convert if available
-pp = None
+jl = None  # pylint: disable=invalid-name # set to juliacall.Main if available
+convert = None  # pylint: disable=invalid-name # set to juliacall.convert if available
+pp = None  # pylint: disable=invalid-name
 
 jl_loader = importlib.util.find_spec("juliacall")
 HAS_JL = jl_loader is not None
