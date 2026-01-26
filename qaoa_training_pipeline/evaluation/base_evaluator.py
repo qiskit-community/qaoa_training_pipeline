@@ -9,8 +9,7 @@
 """Defines the methods that an evaluator should have."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Dict
+from typing import Dict, Sequence
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
