@@ -22,6 +22,12 @@ from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
 # cspell: ignore juliacall seval qarg qargs overlapwithzero
 # Safely import Julia if is is installed.
+
+# Ensure names exist at module import time
+jl = None  # set to juliacall.Main if available
+convert = None  # set to juliacall.convert if available
+pp = None
+
 jl_loader = importlib.util.find_spec("juliacall")
 HAS_JL = jl_loader is not None
 if HAS_JL:
@@ -165,6 +171,11 @@ class PPEvaluator(BaseEvaluator):
 
     def sparse_pauli_op_to_pp(self, op: SparsePauliOp):
         """Returns the PP PauliSum representation of the SparsePauliOp."""
+        if not HAS_JL or jl is None or pp is None or convert is None:
+            raise RuntimeError(
+                "Julia/PauliPropagation is not available. Install `juliacall` and the "
+                "PauliPropagation.jl package to use this function."
+            )
         n_qubits = op.num_qubits
         assert pp, "pp must be defined before calling sparse_pauli_op_to_pp()"
         pp_pauli_sum = pp.PauliSum(n_qubits)
