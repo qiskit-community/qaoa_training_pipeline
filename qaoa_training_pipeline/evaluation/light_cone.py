@@ -8,8 +8,7 @@
 
 """Perform a naive light-cone simulation of QAOA."""
 
-from collections.abc import Sequence
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Sequence, Tuple
 
 import networkx as nx
 import numpy as np

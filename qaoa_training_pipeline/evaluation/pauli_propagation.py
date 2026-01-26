@@ -8,7 +8,7 @@
 
 import importlib.util
 import warnings
-from collections.abc import Sequence
+from typing import Sequence
 
 import numpy as np
 from qiskit import transpile

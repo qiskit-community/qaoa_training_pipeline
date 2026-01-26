@@ -8,9 +8,8 @@
 
 """MPS-based QAOA evaluator."""
 
-from collections.abc import Sequence
 from math import prod, sqrt
-from typing import Dict
+from typing import Dict, Sequence
 
 import numpy as np
 from qiskit.circuit import QuantumCircuit

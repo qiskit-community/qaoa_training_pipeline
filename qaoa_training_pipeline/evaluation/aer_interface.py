@@ -8,7 +8,7 @@
 
 """Evaluator based on the estimator primitive."""
 
-from collections.abc import Sequence
+from typing import Sequence
 
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz

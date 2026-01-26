@@ -8,7 +8,7 @@
 
 """Class to efficiently evaluate depth-one circuits."""
 
-from collections.abc import Sequence
+from typing import Sequence
 
 import networkx as nx
 import numpy as np
