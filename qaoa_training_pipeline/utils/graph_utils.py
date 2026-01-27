@@ -112,7 +112,7 @@ def graph_to_operator_with_partial_assignment(
       - a constant shift (identity term) if both i and j are fixed.
 
     Vertices that are assigned are removed from the hamiltonian, so that the number of qubits
-    in the returning pauli strings is the number of unassigned nodes.
+    in the returning Pauli strings is the number of unassigned nodes.
     Args:
         graph: A networkx undirected graph (optionally weighted via edge attr 'weight').
         assignment: Mapping {node: -1, 0, +1} for partial assignment. Missing nodes default to 0.
