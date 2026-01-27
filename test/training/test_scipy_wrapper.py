@@ -12,6 +12,7 @@ import numpy as np
 from ddt import data, ddt
 from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp, Statevector
+from training_pipeline_test_case import TrainingPipelineTestCase
 
 from qaoa_training_pipeline.evaluation import (
     EfficientDepthOneEvaluator,
@@ -20,7 +21,6 @@ from qaoa_training_pipeline.evaluation import (
 )
 from qaoa_training_pipeline.training import ScipyTrainer
 from qaoa_training_pipeline.training.functions import FourierFunction
-from test import TrainingPipelineTestCase
 
 
 @ddt

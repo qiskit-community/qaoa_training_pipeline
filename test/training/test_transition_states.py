@@ -9,16 +9,17 @@
 """Tests of the Transition States trainer."""
 
 from qiskit.quantum_info import SparsePauliOp
+from training_pipeline_test_case import TrainingPipelineTestCase
 
 from qaoa_training_pipeline import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.evaluation import LightConeEvaluator, MPSEvaluator
 from qaoa_training_pipeline.training import ScipyTrainer, TransitionStatesTrainer
-from test import TrainingPipelineTestCase
 
 
 class TestTransitionStates(TrainingPipelineTestCase):
     """Class to test the transition states."""
 
+    # pylint: disable=invalid-name
     def setUp(self):
         """Setup some useful variables."""
         self.dummy_trainer = ScipyTrainer(EfficientDepthOneEvaluator())
