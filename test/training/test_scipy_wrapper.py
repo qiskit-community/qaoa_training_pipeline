@@ -8,21 +8,19 @@
 
 """Tests of the SciPy trainer."""
 
-from test import TrainingPipelineTestCase
-
-from ddt import ddt, data
 import numpy as np
-
+from ddt import data, ddt
 from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp, Statevector
 
 from qaoa_training_pipeline.evaluation import (
-    LightConeEvaluator,
     EfficientDepthOneEvaluator,
+    LightConeEvaluator,
     MPSEvaluator,
 )
-from qaoa_training_pipeline.training.functions import FourierFunction
 from qaoa_training_pipeline.training import ScipyTrainer
+from qaoa_training_pipeline.training.functions import FourierFunction
+from test import TrainingPipelineTestCase
 
 
 @ddt
@@ -34,7 +32,7 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
 
         trainer1 = ScipyTrainer(LightConeEvaluator())
-        result = trainer1.train(cost_op, [0.5, 0.2])
+        result = trainer1.train(cost_op, params0=[0.5, 0.2])
 
         self.assertTrue(result["success"])
 
@@ -43,7 +41,7 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
 
         trainer1 = ScipyTrainer(EfficientDepthOneEvaluator())
-        result = trainer1.train(cost_op, [0.5, 0.2])
+        result = trainer1.train(cost_op, params0=[0.5, 0.2])
 
         self.assertTrue(result["success"])
 
@@ -58,8 +56,8 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
 
         trainer1 = ScipyTrainer(EfficientDepthOneEvaluator())
         trainer2 = ScipyTrainer(EfficientDepthOneEvaluator(), energy_minimization=True)
-        result1 = trainer1.train(cost_op, [0.5, 0.2])
-        result2 = trainer2.train(cost_op, [0.5, 0.2])
+        result1 = trainer1.train(cost_op, params0=[0.5, 0.2])
+        result2 = trainer2.train(cost_op, params0=[0.5, 0.2])
 
         self.assertTrue(result1["energy"] > result2["energy"])
         self.assertTrue(result1["energy"] > 0)
@@ -76,10 +74,12 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         trainer_efficient_depth_one = ScipyTrainer(EfficientDepthOneEvaluator(), optimize_args)
         trainer_mps = ScipyTrainer(MPSEvaluator(use_vidal_form=is_vidal_form), optimize_args)
 
-        result_efficient_depth_one = trainer_efficient_depth_one.train(cost_op, initial_guess)
+        result_efficient_depth_one = trainer_efficient_depth_one.train(
+            cost_op, params0=initial_guess
+        )
         self.assertTrue(result_efficient_depth_one["success"])
 
-        result_mps = trainer_mps.train(cost_op, initial_guess)
+        result_mps = trainer_mps.train(cost_op, params0=initial_guess)
         self.assertTrue(result_mps["success"])
 
         self.assertAlmostEqual(
@@ -102,10 +102,10 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         trainer_light_cone = ScipyTrainer(LightConeEvaluator(n_shots))
         trainer_mps = ScipyTrainer(MPSEvaluator(use_vidal_form=is_vidal_form))
 
-        result_light_cone = trainer_light_cone.train(cost_op, initial_guess)
+        result_light_cone = trainer_light_cone.train(cost_op, params0=initial_guess)
         self.assertTrue(result_light_cone["success"])
 
-        result_mps = trainer_mps.train(cost_op, initial_guess)
+        result_mps = trainer_mps.train(cost_op, params0=initial_guess)
         self.assertTrue(result_mps["success"])
 
         # We do not expect perfect equality due to shot noise
@@ -127,7 +127,7 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         self.assertAlmostEqual(initial_energy_mps, initial_energy_state_vector)
 
         trainer_mps = ScipyTrainer(MPSEvaluator())
-        result_mps = trainer_mps.train(cost_op, initial_guess)
+        result_mps = trainer_mps.train(cost_op, params0=initial_guess)
         self.assertTrue(result_mps["success"])
 
         final_energy_state_vector = Statevector(

@@ -62,11 +62,9 @@ class BaseTrainer(ABC):
     def train(
         self,
         cost_op: SparsePauliOp,
-        *args,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-        **kwargs,
     ) -> ParamResult:
         """Performs the training."""
         raise NotImplementedError("Sub-classes must implement `train`.")

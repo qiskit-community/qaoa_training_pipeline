@@ -9,20 +9,20 @@
 """Transition states trainer."""
 
 from time import time
-from typing import Optional, List
-import matplotlib.pyplot as plt
+from typing import List, Optional
+
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
-from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
+from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 
 class TransitionStatesTrainer(BaseTrainer):
@@ -67,10 +67,10 @@ class TransitionStatesTrainer(BaseTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        previous_optimal_point: List[float],
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        previous_optimal_point: List[float] | None = None,
     ) -> ParamResult:
         r"""Train the parameters based on a previous optimal point.
 
@@ -90,12 +90,15 @@ class TransitionStatesTrainer(BaseTrainer):
         Returns:
             A dictionary with optimization results.
         """
+        if previous_optimal_point is None:
+            raise ValueError(f"class {self.__class__.__name__} requires a previous optimal point.")
         start = time()
 
         result, self._all_ts = dict(), dict()
 
         for idx, ts_state in enumerate(self.make_ts(previous_optimal_point)):
-            res = self._trainer.train(cost_op, ts_state, mixer, initial_state, ansatz_circuit)
+            assert isinstance(self._trainer, ScipyTrainer)
+            res = self._trainer.train(cost_op, mixer, initial_state, ansatz_circuit, ts_state)
             res.update({"ts": ts_state})
 
             self._all_ts[f"ts{idx}"] = res.data

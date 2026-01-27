@@ -104,13 +104,17 @@ class TransferTrainer(BaseTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        qaoa_depth: int,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-        **kwargs,
+        qaoa_depth: int | None = None,
     ) -> ParamResult:
         """Performs the training."""
+
+        if qaoa_depth is None:
+            raise ValueError(
+                f"class {self.__class__.__name__} requires parameter reps to be specified."
+            )
 
         if mixer is not None:
             raise NotImplementedError("Custom mixers are not yet supported.")

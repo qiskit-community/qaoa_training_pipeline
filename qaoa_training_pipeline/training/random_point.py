@@ -8,12 +8,13 @@
 
 """A class to generate random initial points."""
 
-from typing import Optional
 from time import time
-import numpy as np
+from typing import Optional
 
+import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
+
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
 
@@ -54,17 +55,17 @@ class RandomPoint(BaseTrainer):
         """Raises a warning as a random point neither minimizes nor maximizes."""
         raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        reps: int,
-        lower_bound: Optional[float] = None,
-        upper_bound: Optional[float] = None,
-        seed: Optional[int] = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        lower_bound: Optional[float] = None,
+        upper_bound: Optional[float] = None,
+        seed: Optional[int] = None,
+        reps: int | None = None,
     ) -> ParamResult:
         """Return a random initial point.
 
@@ -83,6 +84,8 @@ class RandomPoint(BaseTrainer):
             initial_state: Not used.
             ansatz_circuit: Not used.
         """
+        if reps is None:
+            raise ValueError(f"class {self.__class__.__name__} requires reps to be specified")
         start = time()
 
         lb_ = lower_bound or self._lower_bound
