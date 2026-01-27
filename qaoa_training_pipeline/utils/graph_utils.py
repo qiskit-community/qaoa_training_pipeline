@@ -104,6 +104,10 @@ def graph_to_operator_with_partial_assignment(
 ) -> tuple[SparsePauliOp, list[int], list[int]]:
     """
     Convert a graph into a SparsePauliOp with a partial spin assignment applied.
+    A partial spin assignment is an assignment of a subset of the vertices to a value of +1 or -1.
+    For example, in the Max-Cut problem, these spins values correspond to the two sets of vertices
+    in the cut. A value of 0 for a vertex assignment (or alternatively, vertices that are not in
+    the assignment dictionary) are unassigned vertices.
 
     Each edge (i, j) maps to:
       - Z_i Z_j term if both i and j are free (assignment 0),
@@ -112,7 +116,7 @@ def graph_to_operator_with_partial_assignment(
       - a constant shift (identity term) if both i and j are fixed.
 
     Vertices that are assigned are removed from the hamiltonian, so that the number of qubits
-    in the returning pauli strings is the number of unassigned nodes.
+    in the returning Pauli strings is the number of unassigned nodes.
     Args:
         graph: A networkx undirected graph (optionally weighted via edge attr 'weight').
         assignment: Mapping {node: -1, 0, +1} for partial assignment. Missing nodes default to 0.
