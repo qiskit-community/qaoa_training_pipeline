@@ -8,14 +8,14 @@
 
 """A model for depth-one QAOA parameters on random regular graphs."""
 
-from collections.abc import Callable
 import json
+from collections.abc import Callable
 from importlib import resources
 from time import time
 from typing import Dict, NoReturn, Optional
+
 import numpy as np
 from networkx.classes.reportviews import DegreeView
-
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
@@ -24,6 +24,7 @@ from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.models.power_function import PowerFunction
+from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -106,14 +107,13 @@ class RandomRegularDepthOneFit(BaseTrainer):
 
         return functions
 
-    # pylint: disable=arguments-differ
     def train(
         self,
         cost_op: SparsePauliOp,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-    ) -> Dict:
+    ) -> ParamResult:
         """Train based on a model.
 
         Args:
@@ -148,17 +148,17 @@ class RandomRegularDepthOneFit(BaseTrainer):
             energy = self.evaluator.evaluate(
                 cost_op,
                 params=optimized_params,
-                mixer=mixer,
+                mixer=mixer,  # type: ignore
                 initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
             )
 
-        return {
-            "optimized_params": optimized_params,
-            "trainer": self.to_config(),
-            "train_duration": time() - start,
-            "energy": energy,
-        }
+        return ParamResult(
+            optimized_params=optimized_params,
+            duration=time() - start,
+            trainer=self,
+            energy=energy,
+        )
 
     @classmethod
     def from_config(cls, config: dict) -> "RandomRegularDepthOneFit":
