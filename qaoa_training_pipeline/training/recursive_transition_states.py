@@ -40,7 +40,7 @@ class RecursiveTransitionStates(BaseTrainer):
         """Return True if the energy is minimized."""
         return self._trainer.minimization
 
-    # too-many-positional-arguments, too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
