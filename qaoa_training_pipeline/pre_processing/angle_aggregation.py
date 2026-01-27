@@ -72,7 +72,7 @@ class AverageAngleAggregator(BaseAngleAggregator):
 
         self._axis = axis
 
-    def __call__(self, qaoa_angles: Union[np.array, List]):
+    def __call__(self, qaoa_angles: Union[np.ndarray, List]):
         """Average over the qaoa_angles."""
         if isinstance(qaoa_angles, List):
             qaoa_angles = np.array(qaoa_angles)

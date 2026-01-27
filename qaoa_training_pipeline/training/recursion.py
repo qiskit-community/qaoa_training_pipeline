@@ -10,6 +10,8 @@
 
 from time import time
 from typing import Callable, Dict, Optional
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 from qiskit import QuantumCircuit
@@ -31,7 +33,7 @@ class RecursionTrainer(BaseTrainer):
     them.
     """
 
-    def __init__(self, trainer: ScipyTrainer, parameter_extender: Callable = None):
+    def __init__(self, trainer: ScipyTrainer, parameter_extender: Callable | None = None):
         """Initialize a recursion trainer.
 
         Args:
@@ -73,7 +75,7 @@ class RecursionTrainer(BaseTrainer):
             cost_op: The cost operator for which to train the parameters.
             params0: The initial point from which to train. This initial point should correspond
                 to a set of QAOA parameters that is smaller than the desired QAOA depth `reps`.
-            reps: The target QAOA depth. Must be greather than the reps implied by params0.
+            reps: The target QAOA depth. Must be greater than the reps implied by params0.
             mixer: The mixer operator is passed on to the Scipy trainer.
             initial_sate: The initial state is passed on to the Scipy trainer.
             ansatz_circuit: The ansatz circuit is passed on to the Scipy trainer.
@@ -136,7 +138,7 @@ class RecursionTrainer(BaseTrainer):
         """Return the configuration of the trainer."""
         return {
             "trainer_name": self.__class__.__name__,
-            "evaluator": self._evaluator.to_config(),
+            "evaluator": self._evaluator.to_config() if self._evaluator else None,
             "trainer": self._trainer.to_config(),
             "parameter_extender": self._parameter_extender.__name__,
         }
@@ -156,14 +158,15 @@ class RecursionTrainer(BaseTrainer):
 
     def plot(
         self,
-        axis: Optional[plt.Axes] = None,
-        fig: Optional[plt.Figure] = None,
+        axis: Optional[Axes] = None,
+        fig: Optional[Figure] = None,
         **plot_args,
     ):
         """Plot the energy progression throughout the recursion."""
         if axis is None or fig is None:
             fig, axis = plt.subplots(1, 1)
 
+        assert self._all_results, "_all_results must be defined before calling plot()"
         recursion_idx = sorted(self._all_results.keys())
         energies = [self._all_results[key]["energy"] for key in recursion_idx]
 

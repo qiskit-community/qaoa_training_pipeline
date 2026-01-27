@@ -11,18 +11,18 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from itertools import combinations
-from time import time
 from threading import Timer
+from time import time
 from typing import Optional
 
 import networkx as nx
 import numpy as np
-
+from networkx.classes.reportviews import DegreeView
 from pysat.formula import CNF, IDPool
 from pysat.solvers import Solver
-
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
 
 from qaoa_training_pipeline.pre_processing.base_processing import BasePreprocessor
@@ -34,7 +34,7 @@ class SATResult:
     """A data class to hold the result of a SAT solver."""
 
     satisfiable: bool  # Satisfiable is True if the SAT model could be solved in a given time.
-    solution: dict  # The solution to the SAT problem if it is satisfiable.
+    solution: list  # The solution to the SAT problem if it is satisfiable.
     mapping: list  # The mapping of nodes in the pattern graph to nodes in the target graph.
     elapsed_time: float  # The time it took to solve the SAT model.
 
@@ -135,14 +135,15 @@ class SATMapper(BasePreprocessor):
             dict[int, SATResult]: A dictionary containing the results of the SAT solver for
                 each number of swap layers.
         """
-        swap_strategy = SwapStrategy.from_line(range(program_graph.order()))
+        swap_strategy = SwapStrategy.from_line(list(range(program_graph.order())))
 
         num_nodes_g1 = len(program_graph.nodes)
         num_nodes_g2 = swap_strategy.distance_matrix.shape[0]
         if num_nodes_g1 > num_nodes_g2:
-            return SATResult(False, [], [], 0)
+            return {1: SATResult(False, [], [], 0)}
         if min_layers is None:
             # use the maximum degree of the program graph - 2 as the lower bound.
+            assert isinstance(program_graph.degree, DegreeView)
             min_layers = max((d for _, d in program_graph.degree)) - 2
         if max_layers is None:
             max_layers = num_nodes_g2 - 1
@@ -176,6 +177,7 @@ class SATMapper(BasePreprocessor):
 
         # Perform a binary search over the number of swap layers to find the minimum
         # number of swap layers that satisfies the subgraph isomorphism problem.
+        assert max_layers, "max_layers must be defined before calling find_initial_mappings()"
         while min_layers < max_layers:
             num_layers = (min_layers + max_layers) // 2
 
@@ -209,17 +211,24 @@ class SATMapper(BasePreprocessor):
                 timer.cancel()
                 # Get the solution and the elapsed time.
                 sol = solver.get_model()
+                # assert isinstance(sol, dict)
                 e_time = solver.time()
 
+                assert sol, "solver from get_model() was undefined"
+                # e_time is sometimes None on concurrency on windows machines so this assert was relaxed
+                if e_time is None:
+                    warnings.warn("solver ran without defining e_time", RuntimeWarning)
+                    e_time = 0.0
+                assert isinstance(status, bool), "solver status returned with non-boolean value"
+                mapping = []
                 if status:
                     # If the SAT problem is satisfiable, convert the solution to a mapping.
                     mapping = [vid2mapping[idx] for idx in sol if idx > 0]
-                    binary_search_results[num_layers] = SATResult(status, sol, mapping, e_time)
                     max_layers = num_layers
                 else:
                     # If the SAT problem is unsatisfiable, return the last satisfiable solution.
-                    binary_search_results[num_layers] = SATResult(status, sol, [], e_time)
                     min_layers = num_layers + 1
+                binary_search_results[num_layers] = SATResult(status, sol, mapping, e_time)
 
         return binary_search_results
 
