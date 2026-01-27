@@ -16,22 +16,22 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.pre_processing.angle_aggregation import (
+    ANGLE_AGGREGATORS,
+    BaseAngleAggregator,
+    TrivialAngleAggregator,
+)
 from qaoa_training_pipeline.pre_processing.feature_extraction import (
     FEATURE_EXTRACTORS,
     GraphFeatureExtractor,
 )
 from qaoa_training_pipeline.pre_processing.feature_matching import (
+    FEATURE_MATCHERS,
     BaseFeatureMatcher,
     TrivialFeatureMatcher,
-    FEATURE_MATCHERS,
-)
-from qaoa_training_pipeline.pre_processing.angle_aggregation import (
-    BaseAngleAggregator,
-    TrivialAngleAggregator,
-    ANGLE_AGGREGATORS,
 )
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.training.data_loading import BaseDataLoader, DATA_LOADERS
+from qaoa_training_pipeline.training.data_loading import DATA_LOADERS, BaseDataLoader
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
@@ -100,17 +100,21 @@ class TransferTrainer(BaseTrainer):
         """Raises a warning as a transfer neither minimizes nor maximizes."""
         raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        qaoa_depth: int,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-        **kwargs,
+        qaoa_depth: int | None = None,
     ) -> ParamResult:
         """Performs the training."""
+
+        if qaoa_depth is None:
+            raise ValueError(
+                f"class {self.__class__.__name__} requires parameter reps to be specified."
+            )
 
         if mixer is not None:
             raise NotImplementedError("Custom mixers are not yet supported.")
@@ -139,7 +143,10 @@ class TransferTrainer(BaseTrainer):
         qaoa_angles = self._angle_aggregator(self._data[data_key]["qaoa_angles"])
 
         if self._evaluator is not None:
-            energy = self._evaluator.evaluate(cost_op, qaoa_angles)
+            energy = self._evaluator.evaluate(
+                cost_op=cost_op,
+                params=qaoa_angles,
+            )
         else:
             energy = None
 

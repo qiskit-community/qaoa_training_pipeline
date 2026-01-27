@@ -11,14 +11,14 @@
 import glob
 import json
 from typing import Optional
-import numpy as np
 
+import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
+from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.exceptions import TrainingError
 
 
 class OptimizedParametersLoader(BaseTrainer):
@@ -38,15 +38,15 @@ class OptimizedParametersLoader(BaseTrainer):
         """Raises a warning as a loader neither minimizes nor maximizes."""
         raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        folder: str,
-        file_pattern: str,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        folder: str | None = None,
+        file_pattern: str | None = None,
     ) -> ParamResult:
         """Load from a file.
 
@@ -63,7 +63,14 @@ class OptimizedParametersLoader(BaseTrainer):
             initial_state: Not needed for now.
             ansatz_circuit: Not needed for now.
         """
-
+        if folder is None:
+            raise ValueError(
+                f"class {self.__class__.__name__} requires a folder name to load the parameters."
+            )
+        if file_pattern is None:
+            raise ValueError(
+                f"class {self.__class__.__name__} requires a file pattern to load the parameters."
+            )
         # 1. look for the file in the folder
         data, loaded_file_name = None, None
         for file_name in glob.glob(folder + "*.json"):

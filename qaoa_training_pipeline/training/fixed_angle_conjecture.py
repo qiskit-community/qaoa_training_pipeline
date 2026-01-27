@@ -69,15 +69,15 @@ class FixedAngleConjecture(BaseTrainer):
             f"Optimization is currently not implemented by {self.__class__.__name__}."
         )
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        reps: int = 1,
-        degree: int | None = None,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        reps: int = 1,
+        degree: int | None = None,
     ) -> ParamResult:
         """Load the fixed-angles based on the degree of the graph in the cost operator.
 
@@ -137,7 +137,10 @@ class FixedAngleConjecture(BaseTrainer):
 
         energy = None
         if self._evaluator is not None:
-            energy = self._evaluator.evaluate(cost_op, angles_data["beta"] + angles_data["gamma"])
+            energy = self._evaluator.evaluate(
+                cost_op=cost_op,
+                params=angles_data["beta"] + angles_data["gamma"],
+            )
 
         param_result = ParamResult(
             angles_data["beta"] + angles_data["gamma"],
