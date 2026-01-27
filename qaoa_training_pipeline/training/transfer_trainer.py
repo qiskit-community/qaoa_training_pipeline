@@ -100,7 +100,7 @@ class TransferTrainer(BaseTrainer):
         """Raises a warning as a transfer neither minimizes nor maximizes."""
         raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
