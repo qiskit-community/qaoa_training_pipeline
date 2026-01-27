@@ -47,6 +47,10 @@ def operator_to_graph(
         ValueError if the operator is not quadratic.
     """
     graph, edges = nx.Graph(), []
+
+    n_qubits = operator.num_qubits
+    graph.add_nodes_from(range(n_qubits))
+
     for pauli_str, weight in operator.to_list():
         edge = [idx for idx, char in enumerate(pauli_str[::-1]) if char == "Z"]
 
