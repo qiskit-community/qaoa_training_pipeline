@@ -59,7 +59,7 @@ class RecursionTrainer(BaseTrainer):
         """Return True if the energy is minimized."""
         return self._trainer.minimization
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,

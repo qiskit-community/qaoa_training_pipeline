@@ -63,7 +63,7 @@ class TransitionStatesTrainer(BaseTrainer):
         """Return the trainer with which each sub-point is trained."""
         return self._trainer
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,

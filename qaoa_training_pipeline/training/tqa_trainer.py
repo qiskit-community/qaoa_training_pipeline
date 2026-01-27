@@ -143,7 +143,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         """Return True if the energy is minimized."""
         return self._sign == 1
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
