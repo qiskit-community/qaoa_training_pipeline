@@ -81,7 +81,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         """Return True if the energy is minimized."""
         return isinstance(self._extrema_locator, Argmin)
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
@@ -236,7 +236,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
     """Scan Gamma values and compute the optimal beta value analytically for each
     gamma as per https://arxiv.org/pdf/2501.16419 -
     "Near-Optimal Parameter Tuning of Level-1 QAOA for Ising Models".
-    The gurentee for optimality of the beta parameter here is dependant on using the
+    The guarantee for optimality of the beta parameter here is dependant on using the
     standard mixer Hm = sum X_j.
     For other mixer hamiltonian the value of the beta computed here might be non optimal.
     """
@@ -259,18 +259,21 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             energy_minimization=energy_minimization,
         )
 
-        # Override parent initialization sice we are only scanning values for gamma and not beta,
+        # Override parent initialization since we are only scanning values for gamma and not beta,
         # and put it in a tuple for consistency with parent API
-        self._default_range = ((0, 2 * np.pi),)
+        self._default_range = [
+            (0.0, 2 * np.pi),
+        ]
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
+        mixer=None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
-        parameter_ranges: Optional[List[Tuple[float, float]]] = None,
-        num_points: Optional[int] = 15,
+        parameter_ranges: Optional[list[tuple[float, float]]] = None,
+        num_points: int = 15,
     ) -> ParamResult:
         r"""Train the parameters by doing a 1D scan and setting beta to the analytical
         optimal solution per gamma.
@@ -301,11 +304,14 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         graph = operator_to_graph(cost_op)
 
         for idx, param2 in enumerate(self._params2):
-            estart = time()
+            e_start = time()
             param1 = self._beta_star_for_gamma(graph, param2)
             self._params1[idx] = param1
 
             qaoa_angles = [param1, param2]
+            assert isinstance(
+                self._evaluator, BaseEvaluator
+            ), "evaluator must be an initialized BaseEvaluator"
             energy = self._evaluator.evaluate(
                 cost_op=cost_op,
                 params=qaoa_angles,
@@ -315,7 +321,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             )
             self._energies[idx] = float(np.real(energy))
 
-            self._energy_evaluation_time.append(time() - estart)
+            self._energy_evaluation_time.append(time() - e_start)
             self._energy_history.append(float(np.real(energy)))
             self._parameter_history.append([float(param1), float(param2)])
 
@@ -432,7 +438,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             nbrs_v_minus_u = set(graph.neighbors(v_vertex)) - {u_vertex}
             mutual_nbrs_uv = (
                 nbrs_u_minus_v & nbrs_v_minus_u
-            )  # mutual neighbors of v and u, i.e. nodes that create a traingle with u and v in the graph
+            )  # mutual neighbors of v and u, i.e. nodes that create a triangle with u and v in the graph
 
             # A(gamma) term
             prod_v = self._prod_cos_edges_from_node(
@@ -471,8 +477,8 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
     def plot(
         self,
-        axis: Optional[plt.Axes] = None,
-        fig: Optional[plt.Figure] = None,
+        axis: Optional[Axes] = None,
+        fig: Optional[Figure] = None,
         xlabel: str = r"$\gamma$",
         ylabel: str = r"$\beta$",
     ):
@@ -485,14 +491,17 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             axis: Axis on which to plot.
             fig: The figure object.
             xlabel: Label for the x-axis. This is needed if we are using a function to relate
-                the scanned parameters to QAOA anagles.
+                the scanned parameters to QAOA angles.
             ylabel: Label for the y-axis. This is needed if we are using a function to relate
-                the scanned parameters to QAOA anagles.
+                the scanned parameters to QAOA angles.
         """
 
         if axis is None or fig is None:
             fig, axis = plt.subplots(1, 1)
 
+        assert (
+            self._params1 is not None and self._params2 is not None
+        ), "No parameters provided to plot"
         sc = axis.scatter(
             self._params2, self._params1, c=self._energies, cmap="viridis", s=40, edgecolor="none"
         )
@@ -506,11 +515,11 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
     @classmethod
     def from_config(cls, config: dict) -> "DepthOneScanTrainer":
-        """Create an intance from a config."""
+        """Create an instance from a config."""
 
         evaluator_cls = EVALUATORS[config["evaluator"]]
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
-            config.get("energy_minimization", None),
+            config.get("energy_minimization", False),
         )

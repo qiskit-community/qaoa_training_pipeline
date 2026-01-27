@@ -2,19 +2,18 @@
 
 from time import time
 from typing import Dict, Optional
+
+import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-
-
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
-from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class RecursiveTransitionStates(BaseTrainer):
@@ -45,11 +44,11 @@ class RecursiveTransitionStates(BaseTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        previous_optimal_point: list[float],
-        reps: int,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        previous_optimal_point: list[float] | None = None,
+        reps: int | None = None,
     ) -> ParamResult:
         """
         Args:
@@ -68,6 +67,10 @@ class RecursiveTransitionStates(BaseTrainer):
         Returns:
             A `ParamResult` with optimization results.
         """
+        if previous_optimal_point is None:
+            raise ValueError(f"class {self.__class__.__name__} requires a previous_optimal_point.")
+        if reps is None:
+            raise ValueError(f"class {self.__class__.__name__} requires number of reps.")
         start = time()
         current_reps = len(previous_optimal_point) // 2
         ts_state = previous_optimal_point
@@ -80,7 +83,13 @@ class RecursiveTransitionStates(BaseTrainer):
 
         while current_reps < reps:
             ts_trainer = TransitionStatesTrainer(self._trainer)
-            result = ts_trainer.train(cost_op, ts_state, mixer, initial_state, ansatz_circuit)
+            result = ts_trainer.train(
+                cost_op,
+                mixer,
+                initial_state,
+                ansatz_circuit,
+                ts_state,
+            )
             ts_state = result["optimized_params"]
             energy = result["energy"]
             current_reps = len(ts_state) // 2

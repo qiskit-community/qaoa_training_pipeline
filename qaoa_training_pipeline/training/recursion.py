@@ -10,18 +10,18 @@
 
 from time import time
 from typing import Callable, Dict, Optional
+
+import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
-from qaoa_training_pipeline.training.parameter_extenders import PARAMETEREXTENDERS
 from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.training.parameter_extenders import PARAMETEREXTENDERS
+from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 
 class RecursionTrainer(BaseTrainer):
@@ -63,11 +63,11 @@ class RecursionTrainer(BaseTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        params0: list[float],
-        reps: int,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        params0: list[float] | None = None,
+        reps: int | None = None,
     ) -> ParamResult:
         """Perform the training.
 
@@ -80,6 +80,12 @@ class RecursionTrainer(BaseTrainer):
             initial_sate: The initial state is passed on to the Scipy trainer.
             ansatz_circuit: The ansatz circuit is passed on to the Scipy trainer.
         """
+
+        if params0 is None:
+            raise ValueError(f"params0 must be provided to train class {self.__class__.__name__}.")
+        if reps is None:
+            raise ValueError(f"reps must be provided to train class {self.__class__.__name__}.")
+        params0 = list(params0)
         start = time()
         current_reps = len(params0) // 2
 
@@ -107,7 +113,7 @@ class RecursionTrainer(BaseTrainer):
                 ansatz_circuit=ansatz_circuit,
             )
 
-            params0 = result["optimized_params"]
+            params0 = list(result["optimized_params"])
             energy = result["energy"]
             self._all_results[current_reps] = result.data
 
