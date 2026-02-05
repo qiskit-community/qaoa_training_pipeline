@@ -10,8 +10,9 @@
 
 import copy
 import json
-from typing import List, Optional, Tuple
-
+from typing import Optional, List, Tuple
+from collections.abc import Mapping
+from collections import defaultdict
 import networkx as nx
 import numpy as np
 from qiskit import QuantumCircuit
@@ -47,6 +48,10 @@ def operator_to_graph(
         ValueError if the operator is not quadratic.
     """
     graph, edges = nx.Graph(), []
+
+    n_qubits = operator.num_qubits
+    graph.add_nodes_from(range(n_qubits))
+
     for pauli_str, weight in operator.to_list():
         edge = [idx for idx, char in enumerate(pauli_str[::-1]) if char == "Z"]
 
@@ -88,6 +93,100 @@ def operator_to_list_of_hyper_edges(
         edge = [idx for idx, char in enumerate(pauli_str[::-1]) if char == "Z"]
         edges.append([edge, pre_factor * np.real(weight)])
     return edges
+
+
+def graph_to_operator_with_partial_assignment(
+    graph: nx.Graph,
+    assignment: Mapping,  # {node: -1, 0, +1}, missing nodes treated as 0
+    pre_factor: float = 1.0,
+    include_constant: bool = True,
+) -> tuple[SparsePauliOp, list[int], list[int]]:
+    """
+    Convert a graph into a SparsePauliOp with a partial spin assignment applied.
+    A partial spin assignment is an assignment of a subset of the vertices to a value of +1 or -1.
+    For example, in the Max-Cut problem, these spins values correspond to the two sets of vertices
+    in the cut. A value of 0 for a vertex assignment (or alternatively, vertices that are not in
+    the assignment dictionary) are unassigned vertices.
+
+    Each edge (i, j) maps to:
+      - Z_i Z_j term if both i and j are free (assignment 0),
+      - Z_i term scaled by the fixed spin of j if j is fixed and i is free,
+      - Z_j term scaled by the fixed spin of i if i is fixed and j is free,
+      - a constant shift (identity term) if both i and j are fixed.
+
+    Vertices that are assigned are removed from the hamiltonian, so that the number of qubits
+    in the returning Pauli strings is the number of unassigned nodes.
+    Args:
+        graph: A networkx undirected graph (optionally weighted via edge attr 'weight').
+        assignment: Mapping {node: -1, 0, +1} for partial assignment. Missing nodes default to 0.
+                    +1/-1 are fixed spins, 0 means free.
+        pre_factor: Multiplies the edge weights (default 1.0).
+                    For maximum cut conventions, set pre_factor to -0.5
+        include_constant: If True, include the constant energy offset arising from edges between
+                          two fixed vertices as an identity term. This does not affect optimization,
+                          but preserves the exact energy.
+
+    Returns:
+        A tuple of:
+            `SparsePauliOp` representing the reduced Hamiltonian on the current qubit register.
+            list of free nodes
+            list of fixed nodes
+    """
+    # Establish qubit ordering and index map
+    nodes = list(graph.nodes())
+
+    free_nodes = [v for v in nodes if assignment.get(v, 0) == 0]
+    fixed_nodes = [v for v in nodes if assignment.get(v, 0) != 0]
+
+    num_free_nodes = len(free_nodes)
+    free_idx = {v: k for k, v in enumerate(free_nodes)}
+
+    const = 0.0
+
+    def get_fixed_spin(node):
+        spin = assignment.get(node, 0)
+        if spin not in (-1, 0, +1):
+            raise ValueError(f"Assignment for node {node} must be in {{-1, 0, +1}}, got {spin}.")
+        return spin
+
+    paulis_coeffs_dict = defaultdict(float)
+    for node_u, node_v, data in graph.edges(data=True):
+        weight = data["weight"] if "weight" in data else 1.0
+        spin_u = get_fixed_spin(node_u)
+        spin_v = get_fixed_spin(node_v)
+
+        if spin_u == 0 and spin_v == 0:
+            # Free-free edge -> ZZ term
+            paulis = ["I"] * num_free_nodes
+            paulis[free_idx[node_u]] = "Z"
+            paulis[free_idx[node_v]] = "Z"
+            # Reverse for qiskit ordering convention
+            pauli_str = "".join(paulis)[::-1]
+            paulis_coeffs_dict[pauli_str] += pre_factor * weight
+
+        elif spin_u != 0 and spin_v == 0:
+            # u fixed, v free -> linear Z_v term with coefficient w * s_u
+            paulis = ["I"] * num_free_nodes
+            paulis[free_idx[node_v]] = "Z"
+            pauli_str = "".join(paulis)[::-1]
+            paulis_coeffs_dict[pauli_str] += pre_factor * weight * spin_u
+
+        elif spin_u == 0 and spin_v != 0:
+            # u free, v fixed -> linear Z_u term with coefficient w * s_v
+            paulis = ["I"] * num_free_nodes
+            paulis[free_idx[node_u]] = "Z"
+            pauli_str = "".join(paulis)[::-1]
+            paulis_coeffs_dict[pauli_str] += pre_factor * weight * spin_v
+
+        else:
+            # both fixed -> constant term: w * s_u * s_v
+            const += pre_factor * weight * spin_u * spin_v
+
+    pauli_list = [(p, c) for p, c in paulis_coeffs_dict.items() if c != 0.0]
+    if include_constant and const != 0.0:
+        pauli_list.append(("I" * num_free_nodes, const))  # identity term (no reverse needed)
+    hamiltonian_reduced = SparsePauliOp.from_list(pauli_list)
+    return hamiltonian_reduced, free_nodes, fixed_nodes
 
 
 def graph_to_operator(graph: nx.Graph, pre_factor: float = 1.0) -> SparsePauliOp:

@@ -28,6 +28,7 @@ from qaoa_training_pipeline.utils.graph_utils import (
     circuit_to_graph,
     graph_to_operator,
     solve_max_cut,
+    graph_to_operator_with_partial_assignment,
 )
 
 
@@ -45,6 +46,19 @@ class TestGraphUtils(TrainingPipelineTestCase):
         self.assertListEqual(
             nx.adjacency_matrix(graph, nodelist=[0, 1, 2, 3]).toarray().flatten().tolist(),
             [0, -1, 1, 2, -1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0],
+        )
+
+    def test_operator_to_graph_isolated_vertex(self):
+        """Test conversion between operator and graph."""
+
+        cost_op = SparsePauliOp.from_list([("IIZZI", -1), ("IZIZI", 1), ("ZIIZI", 2)])
+
+        graph = operator_to_graph(cost_op)
+
+        assert graph.number_of_nodes() == 5
+        self.assertListEqual(
+            nx.adjacency_matrix(graph, nodelist=[0, 1, 2, 3, 4]).toarray().flatten().tolist(),
+            [0, 0, 0, 0, 0, 0, 0, -1, 1, 2, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0],
         )
 
     def test_operator_to_graph_single_z(self):
@@ -173,6 +187,43 @@ class TestGraphUtils(TrainingPipelineTestCase):
         expected = SparsePauliOp.from_list([("IZZ", 1.0), ("ZIZ", 1.0), ("IIZ", 1.0)])
 
         self.assertEqual(paulis.paulis, expected.paulis)
+
+    def test_graph_to_operator_with_partial_assignment(self):
+        """Test the convertion to hamiltonian with a partial assignment"""
+        graph = nx.from_edgelist([(0, 1), (0, 2), (1, 2), (0, 3), (1, 4)])
+        assignment = {1: 1, 2: -1, 4: -1}
+        paulis, free_nodes, fixed_nodes = graph_to_operator_with_partial_assignment(
+            graph, assignment=assignment
+        )
+        expected = SparsePauliOp.from_list(
+            [
+                ("ZZ", 1.0),
+                ("II", -2.0),
+            ]
+        )
+        self.assertEqual(paulis.paulis, expected.paulis)
+        self.assertTrue(np.allclose(paulis.coeffs, expected.coeffs))
+        self.assertEqual(free_nodes, [0, 3])
+        self.assertEqual(fixed_nodes, [1, 2, 4])
+
+        graph = nx.from_edgelist([(0, 1), (0, 2), (1, 2), (0, 3), (1, 4)])
+        assignment = {0: 1, 3: -1}
+        paulis, free_nodes, fixed_nodes = graph_to_operator_with_partial_assignment(
+            graph, assignment=assignment
+        )
+        expected = SparsePauliOp.from_list(
+            [
+                ("IIZ", 1.0),
+                ("IZI", 1.0),
+                ("IZZ", 1.0),
+                ("ZIZ", 1.0),
+                ("III", -1.0),
+            ]
+        )
+        self.assertEqual(paulis.paulis, expected.paulis)
+        self.assertTrue(np.allclose(paulis.coeffs, expected.coeffs))
+        self.assertEqual(fixed_nodes, [0, 3])
+        self.assertEqual(free_nodes, [1, 2, 4])
 
     def test_weighted_graph_to_operator(self):
         """Test the conversion from a weighted graph to an operator."""
