@@ -129,7 +129,7 @@ class TestTQA(TrainingPipelineTestCase):
         config = {}
 
         trainer = TQATrainer.from_config(config)
-        self.assertIsNone(trainer.evaluator)
+        self.assertIsNone(trainer._evaluator)
 
         config = {
             "evaluator": "MPSEvaluator",

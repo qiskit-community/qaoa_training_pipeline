@@ -13,7 +13,6 @@ from typing import Dict, Sequence
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 
 class BaseEvaluator(ABC):
@@ -30,7 +29,7 @@ class BaseEvaluator(ABC):
         self,
         cost_op: SparsePauliOp,
         params: Sequence[float],
-        mixer: BaseOperator | None = None,
+        mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
