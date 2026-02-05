@@ -46,6 +46,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
+            "qaoa_training_pipeline_version": 29,
             "qaoa_training_pipeline_version": 31,
         }
 

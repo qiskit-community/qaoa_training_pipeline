@@ -143,17 +143,19 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         """Return True if the energy is minimized."""
         return self._sign == 1
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        reps: int,
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        reps: int | None = None,
         initial_dt: Tuple[float, float] | List[float] | None = None,
     ) -> ParamResult:
         """Train the QAOA parameters."""
+        if reps is None:
+            raise ValueError(f"class {self.__class__.__name__} requires reps to be set.")
         self.reset_history()
 
         initial_dt = initial_dt or self.initial_dt
@@ -189,7 +191,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             energy = self._sign * self._evaluator.evaluate(
                 cost_op=cost_op,
                 params=self.qaoa_angles_function(x),
-                mixer=mixer,
+                mixer=mixer,  # type: ignore
                 initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
             )
@@ -203,7 +205,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
 
         start = time()
 
-        if self.evaluator is None:
+        if self._evaluator is None:
             param_result = ParamResult(list(initial_dt), time() - start, self, None)
         else:
             result = minimize(_energy, initial_dt, **self._minimize_args)
