@@ -9,13 +9,14 @@
 """This module is an interface to SciPy's minimize function."""
 
 from time import time
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from qiskit import QuantumCircuit
+from qiskit.circuit.quantumcircuit import BaseOperator
 from qiskit.quantum_info import SparsePauliOp
 from scipy.optimize import minimize
 
@@ -106,13 +107,12 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
             qaoa_angles = self._qaoa_angles_function(x)
 
-            assert self._evaluator, "_evaluator must be defined before calling _energy()"
-            assert cost_op
-            energy = self._sign * self._evaluator.evaluate(
+            if cost_op is None:
+                raise ValueError("cost_op must be set.")
+            energy = self._sign * self.evaluator.evaluate(
                 cost_op=cost_op,
                 params=qaoa_angles,
-                mixer=mixer,  # type: ignore
-                initial_state=initial_state,
+                mixer=cast(BaseOperator, mixer),
                 ansatz_circuit=ansatz_circuit,
             )
 
