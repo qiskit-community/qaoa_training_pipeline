@@ -113,7 +113,7 @@ class TransferTrainer(BaseTrainer):
 
         if qaoa_depth is None:
             raise ValueError(
-                f"class {self.__class__.__name__} requires parameter reps to be specified."
+                f"class {self.__class__.__name__} requires parameter qaoa_depth to be specified."
             )
 
         if mixer is not None:

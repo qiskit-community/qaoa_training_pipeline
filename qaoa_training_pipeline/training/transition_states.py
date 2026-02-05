@@ -9,7 +9,7 @@
 """Transition states trainer."""
 
 from time import time
-from typing import List, Optional
+from typing import List, Optional, cast
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -61,7 +61,7 @@ class TransitionStatesTrainer(BaseTrainer):
     @property
     def trainer(self):
         """Return the trainer with which each sub-point is trained."""
-        return self._trainer
+        return cast(ScipyTrainer, self._trainer)
 
     # pylint: disable=too-many-positional-arguments
     def train(
@@ -97,8 +97,9 @@ class TransitionStatesTrainer(BaseTrainer):
         result, self._all_ts = dict(), dict()
 
         for idx, ts_state in enumerate(self.make_ts(previous_optimal_point)):
-            assert isinstance(self._trainer, ScipyTrainer)
-            res = self._trainer.train(cost_op, mixer, initial_state, ansatz_circuit, ts_state)
+            res = self.trainer.train(
+                cost_op, mixer, initial_state, ansatz_circuit, params0=ts_state
+            )
             res.update({"ts": ts_state})
 
             self._all_ts[f"ts{idx}"] = res.data
