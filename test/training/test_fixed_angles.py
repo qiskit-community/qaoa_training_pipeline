@@ -16,7 +16,8 @@ from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
 from qaoa_training_pipeline.evaluation.statevector_evaluator import StatevectorEvaluator
 from qaoa_training_pipeline.training.fixed_angle_conjecture import FixedAngleConjecture
 from qaoa_training_pipeline.utils.graph_utils import solve_max_cut
-from test import TrainingPipelineTestCase
+
+from ...test import TrainingPipelineTestCase
 
 
 class TestFixedAngleConjecture(TrainingPipelineTestCase):
