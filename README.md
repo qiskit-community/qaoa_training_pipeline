@@ -186,6 +186,7 @@ This repository is still in development: new functionality is being added and th
 |      26 | Clean up pylance warning (type hinting, not None, etc.)      |          #48 |
 |      27 | Add LABS with GPU support                                    |          #50 |
 |      28 | Add a trainer that computes optimal beta per gamma           |          #49 |
+|      29 | Standardize the inheritance of evaluators and trainers       |          #57 |
 
 
 ## IBM Public Repository Disclosure
