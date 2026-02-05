@@ -9,7 +9,6 @@
 """Classes to test the fixed-angles trainer."""
 
 from importlib import import_module
-from test import TrainingPipelineTestCase
 
 from qiskit.quantum_info import SparsePauliOp
 
@@ -17,6 +16,7 @@ from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
 from qaoa_training_pipeline.evaluation.statevector_evaluator import StatevectorEvaluator
 from qaoa_training_pipeline.training.fixed_angle_conjecture import FixedAngleConjecture
 from qaoa_training_pipeline.utils.graph_utils import solve_max_cut
+from test import TrainingPipelineTestCase
 
 
 class TestFixedAngleConjecture(TrainingPipelineTestCase):
@@ -92,7 +92,7 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
         config = {}
 
         trainer = FixedAngleConjecture.from_config(config)
-        self.assertIsNone(trainer.evaluator)
+        self.assertIsNone(trainer._evaluator)
 
         config = {"evaluator": "MPSEvaluator", "evaluator_init": {"bond_dim_circuit": 2}}
 

@@ -144,7 +144,7 @@ class RandomRegularDepthOneFit(BaseTrainer):
         energy = None
 
         # Optionally, evaluate the energy if an evaluator is provided.
-        if self.evaluator is not None:
+        if self._evaluator is not None:
             energy = self.evaluator.evaluate(
                 cost_op,
                 params=optimized_params,
