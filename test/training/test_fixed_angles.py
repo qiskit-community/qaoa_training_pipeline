@@ -23,7 +23,7 @@ from ..training_pipeline_test_case import TrainingPipelineTestCase
 class TestFixedAngleConjecture(TrainingPipelineTestCase):
     """Class to test the FixedAngleConjecture trainer."""
 
-    def setUp(self):
+    def setUp(self):  # pylint: disable=invalid-name
         """Setup the class."""
         self.cost_op = SparsePauliOp.from_list(
             [
