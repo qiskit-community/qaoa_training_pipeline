@@ -16,7 +16,6 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from qiskit import QuantumCircuit
-from qiskit.circuit.quantumcircuit import BaseOperator
 from qiskit.quantum_info import SparsePauliOp
 from scipy.optimize import minimize
 
@@ -112,7 +111,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             energy = self._sign * self.evaluator.evaluate(
                 cost_op=cost_op,
                 params=qaoa_angles,
-                mixer=cast(BaseOperator, mixer),
+                mixer=cast(QuantumCircuit, mixer),
                 ansatz_circuit=ansatz_circuit,
             )
 

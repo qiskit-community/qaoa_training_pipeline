@@ -205,7 +205,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
 
         start = time()
 
-        if self.evaluator is None:
+        if self._evaluator is None:
             param_result = ParamResult(list(initial_dt), time() - start, self, None)
         else:
             result = minimize(_energy, initial_dt, **self._minimize_args)
