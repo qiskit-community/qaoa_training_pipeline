@@ -12,6 +12,7 @@ from typing import Sequence
 
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
+from qiskit.primitives import BaseEstimatorV2
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.quantum_info.operators.base_operator import BaseOperator
 
@@ -24,7 +25,7 @@ class AerEvaluator(BaseEvaluator):
     This is an abstract class that implements an interface to Qiskit Aer.
     """
 
-    def __init__(self, estimator):
+    def __init__(self, estimator: BaseEstimatorV2):
         """Initialize the primitive based on the given input."""
         super().__init__()
 
@@ -75,6 +76,7 @@ class AerEvaluator(BaseEvaluator):
         if len(circuit.parameters) != len(params):
             raise ValueError("The QAOA Circuit does not have the correct number of parameters. ")
 
-        result = self.primitive.run([(circuit, cost_op, params)]).result()
+        param_dict = {p: v for p, v in zip(circuit.parameters, params)}
+        result = self.primitive.run([(circuit, cost_op, param_dict)]).result()
 
-        return float(result[0].data.evs)
+        return float(result[0].data.evs)  # pyright: ignore[reportAttributeAccessIssue]
