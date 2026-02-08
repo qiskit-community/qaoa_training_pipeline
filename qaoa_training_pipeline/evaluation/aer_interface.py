@@ -76,7 +76,7 @@ class AerEvaluator(BaseEvaluator):
         if len(circuit.parameters) != len(params):
             raise ValueError("The QAOA Circuit does not have the correct number of parameters. ")
 
-        param_dict = {p: v for p, v in zip(circuit.parameters, params)}
+        param_dict = dict(zip(circuit.parameters, params))
         result = self.primitive.run([(circuit, cost_op, param_dict)]).result()
 
         return float(result[0].data.evs)  # pyright: ignore[reportAttributeAccessIssue]
