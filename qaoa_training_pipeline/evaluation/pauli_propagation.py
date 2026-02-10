@@ -148,7 +148,7 @@ class PPEvaluator(BaseEvaluator):
             cost_op,
             reps=len(params) // 2,
             initial_state=initial_state,
-            mixer_operator=mixer,
+            mixer_operator=mixer,  # type: ignore
         )
         bound_circuit = circuit.assign_parameters(params, inplace=False)
         # Transpile the circuit to the set of supported gates

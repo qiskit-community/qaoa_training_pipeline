@@ -8,8 +8,6 @@
 
 """Statevector-based QAOA evaluator."""
 
-from typing import Dict, Optional
-
 from qiskit_aer.primitives import EstimatorV2 as AerEstimator
 
 from qaoa_training_pipeline.evaluation.aer_interface import AerEvaluator
@@ -23,15 +21,15 @@ class StatevectorEvaluator(AerEvaluator):
     """
 
     def __init__(
-        self, statevector_init_args: Optional[Dict] = None, device: Optional[str] = None
+        self, statevector_init_args: dict | None = None, device: str | None = None
     ) -> None:
         """Initialize the statevector evaluator.
 
         Args:
             statevector_init_args: The arguments to initialize the StatevectorSimulator with.
-                                   Can include "device": "GPU" for GPU acceleration.
+                Can include "device": "GPU" for GPU acceleration.
             device: The device to use for the simulation. If provided, it overrides the device
-                    in statevector_init_args.
+                in statevector_init_args.
         """
         self._init_args = statevector_init_args or {}
         if device:
@@ -57,7 +55,7 @@ class StatevectorEvaluator(AerEvaluator):
         super().__init__(estimator=estimator)
 
     @classmethod
-    def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
+    def parse_init_kwargs(cls, init_kwargs: str | None = None) -> dict:
         """Parse initialization kwargs.
 
         If you are using the GPU, the input string should be "GPU".
@@ -67,7 +65,7 @@ class StatevectorEvaluator(AerEvaluator):
             init_kwargs: The initialization arguments as a string.
 
         Returns:
-            dict: The parsed initialization arguments.
+            The parsed initialization arguments.
         """
         if init_kwargs is None:
             return dict()

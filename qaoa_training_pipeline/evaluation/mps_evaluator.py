@@ -67,26 +67,25 @@ class MPSEvaluator(BaseEvaluator):
         (at least for sparse quadratic operators) that the MPO compression is negligible.
 
         Args:
-            use_vidal_form (bool): Whether to express the Matrix Product State in the Vidal
+            use_vidal_form: Whether to express the Matrix Product State in the Vidal
                 form (see doc of `circuit_mps_vidal.py` for more detail). If true, uses
                 the vidal form and, otherwise, uses the canonical gauge form. Note that
                 the choice of the gauge affects only the efficiency of the simulator, but
                 not the accuracy. This means that, for a given truncation threshold and maximum
                 bond dimension, both simulators yield the same accuracy.
-            threshold_circuit (Optional[float], optional): Truncation threshold for the circuit
-                simulation. Defaults to None. If None is given the MPS is equivalent to a
-                 very slow statevector simulator. The threshold should correlate with the fidelity.
-            bond_dim_circuit (Optional[int], optional): Maximum bond dimension for the circuit
-                simulation. Defaults to None.
-            threshold_mpo (Optional[float], optional): Truncation threshold for constructing the
-                MPO representation of the cost function. Defaults to None.
-            bond_dim_mpo (Optional[int], optional): Maximum bond dimension for the MPO representation
-                of the cost function. Defaults to None.
-            use_swap_strategy (bool): Use a line swap strategy to apply the gates on the tensor
+            threshold_circuit: Truncation threshold for the circuit simulation. Defaults to None.
+                If None is given the MPS is equivalent to a very slow statevector simulator.
+                The threshold should correlate with the fidelity.
+            bond_dim_circuit: Maximum bond dimension for the circuit simulation. Defaults to None.
+            threshold_mpo: Truncation threshold for constructing the MPO representation of the
+                cost function. Defaults to None.
+            bond_dim_mpo: Maximum bond dimension for the MPO representation of the cost function.
+                Defaults to None.
+            use_swap_strategy: Use a line swap strategy to apply the gates on the tensor
                 network. Defaults to False.
-            store_schmidt_values (bool): If true then the Schmidt values are stored in a JSON
+            store_schmidt_values: If true then the Schmidt values are stored in a JSON
                 serializable format.
-            store_intermediate_schmidt_values (bool): If `True`, stores the intermediate Schmidt
+            store_intermediate_schmidt_values: If `True`, stores the intermediate Schmidt
                 values obtained at each application of a two-qubit gate.
                 Note that setting this variable to `True` generates N vectors of integers of size
                 m, N being the number of two-qubit gates of the circuit and m being the maximum
@@ -128,25 +127,20 @@ class MPSEvaluator(BaseEvaluator):
         r"""Evaluates the energy.
 
         Args:
-            cost_op (SparsePauliOp): The cost operator that defines :math:`H_C`.
+            cost_op: The cost operator that defines :math:`H_C`.
                 Only quadratic cost functions are currently supported.
-            params (List[float]): The parameters for QAOA. The length of this list will
+            params: The parameters for QAOA. The length of this list will
                 determine the depth of the QAOA.
                 The params are given in the order
                 :math:`[\beta_0, \beta_1, \ldots, \gamma_0, \gamma_1, \ldots]`.
-            mixer (Optional[QuantumCircuit], optional):
-                Circuit to be used as the mixer part of the QAOA circuit. Defaults to None.
+            mixer: Circuit to be used as the mixer part of the QAOA circuit. Defaults to None.
                 If equal to None, just uses a layer of Rx gates.
-            initial_state (Optional[QuantumCircuit], optional): Circuit used for the state
-                initialization. Defaults to None.
-            ansatz_circuit (Optional[QuantumCircuit], optional):
-                Ansatz circuit for the QAOA. Defaults to None. If equal to None, just uses
+            initial_state: Circuit used for the state initialization. Defaults to None.
+            ansatz_circuit: Ansatz circuit for the QAOA. Defaults to None. If equal to None, just uses
                 the Trotterized propagator associated with the underlying Hamiltonian. When
                 specified, this ansatz is given as a network of Rzz gates only with a single
                 parameter which is gamma. This will then be used to construct a cost operator
                 layer in the evaluator.
-            use_vidal_form (bool): if true, uses the Vidal canonization for representing
-                the MPS.
 
         Raises:
             NotImplementedError: if a user-defined mixer is provided as input.
@@ -155,7 +149,7 @@ class MPSEvaluator(BaseEvaluator):
             KeyError: if the size of the `params` vector is an odd number.
 
         Returns:
-            float: Energy calculated for the `params` parameters.
+            Energy calculated for the `params` parameters.
         """
         if len(params) % 2 != 0:
             raise KeyError("Number of parameters must be an even integer")

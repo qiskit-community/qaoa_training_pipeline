@@ -10,7 +10,6 @@
 
 import math
 from time import time
-from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -43,7 +42,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         self,
         evaluator: BaseEvaluator,
         energy_minimization: bool = False,
-        qaoa_angles_function: Optional[BaseAnglesFunction] = None,
+        qaoa_angles_function: BaseAnglesFunction | None = None,
     ):
         """Initialize the class instance.
 
@@ -85,10 +84,10 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
-        parameter_ranges: Optional[List[Tuple[float, float]]] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        parameter_ranges: list[tuple[float, float]] | None = None,
         num_points: int = 15,
     ) -> ParamResult:
         r"""Train the parameters by doing a 2D scan.
@@ -156,8 +155,8 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
 
     def plot(
         self,
-        axis: Optional[Axes] = None,
-        fig: Optional[Figure] = None,
+        axis: Axes | None = None,
+        fig: Figure | None = None,
         xlabel: str = r"$\gamma$",
         ylabel: str = r"$\beta$",
     ):
@@ -209,7 +208,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
             qaoa_angles_function=function,
         )
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse the training arguments.
 
         These are given in the form:
@@ -270,9 +269,9 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         self,
         cost_op: SparsePauliOp,
         mixer=None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
-        parameter_ranges: Optional[list[tuple[float, float]]] = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        parameter_ranges: list[tuple[float, float]] | None = None,
         num_points: int = 15,
     ) -> ParamResult:
         r"""Train the parameters by doing a 1D scan and setting beta to the analytical
@@ -477,8 +476,8 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
     def plot(
         self,
-        axis: Optional[Axes] = None,
-        fig: Optional[Figure] = None,
+        axis: Axes | None = None,
+        fig: Figure | None = None,
         xlabel: str = r"$\gamma$",
         ylabel: str = r"$\beta$",
     ):
