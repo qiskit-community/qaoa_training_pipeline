@@ -16,7 +16,6 @@ from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.primitives.base import BaseEstimatorV2
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
@@ -64,7 +63,7 @@ class LightConeEvaluator(BaseEvaluator):
         self,
         cost_op: SparsePauliOp,
         params: list[float],
-        mixer: BaseOperator | None = None,
+        mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
@@ -136,7 +135,7 @@ class LightConeEvaluator(BaseEvaluator):
         edge: tuple[int, int],
         params: list[float],
         initial_state: QuantumCircuit | None = None,
-        mixer_operator: BaseOperator | None = None,
+        mixer_operator: QuantumCircuit | None = None,
     ) -> tuple[QuantumCircuit, str]:
         r"""Create the circuit for the given edge.
 
@@ -160,7 +159,7 @@ class LightConeEvaluator(BaseEvaluator):
             cost_operator=SparsePauliOp.from_list(paulis),
             reps=len(params) // 2,
             initial_state=initial_state,
-            mixer_operator=mixer_operator,
+            mixer_operator=mixer_operator,  # type: ignore
         )
 
         # Assumes the same parameter order as qaoa_ansatz.

@@ -12,7 +12,6 @@ import networkx as nx
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Operator, Pauli, PauliList, SparsePauliOp
-from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.utils.circuit_utils import split_circuit
@@ -48,7 +47,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         self,
         cost_op: SparsePauliOp,
         params: list[float],
-        mixer: BaseOperator | None = None,
+        mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
@@ -161,7 +160,9 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
                 data = data[:, 0].reshape(2, 1)
                 self._initial_states.append(data)
 
-    def _set_mixers(self, beta: float, num_qubits: int, mixer: BaseOperator | None = None) -> None:
+    def _set_mixers(
+        self, beta: float, num_qubits: int, mixer: QuantumCircuit | None = None
+    ) -> None:
         """Set the mixer operators per qubit.
 
         Currently, the code only supports one-local mixers. I.e. mixers made of
