@@ -11,7 +11,6 @@
 from abc import ABC, abstractmethod
 
 from qiskit import QuantumCircuit
-from qiskit.circuit.quantumcircuit import BaseOperator
 from qiskit.quantum_info import SparsePauliOp
 
 
@@ -29,7 +28,7 @@ class BaseEvaluator(ABC):
         self,
         cost_op: SparsePauliOp,
         params: list[float],
-        mixer: BaseOperator | None = None,
+        mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:

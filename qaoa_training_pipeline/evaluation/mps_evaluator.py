@@ -13,7 +13,6 @@ from math import prod, sqrt
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.utils.graph_utils import (
@@ -122,7 +121,7 @@ class MPSEvaluator(BaseEvaluator):
         self,
         cost_op: SparsePauliOp,
         params: list[float],
-        mixer: BaseOperator | None = None,
+        mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:

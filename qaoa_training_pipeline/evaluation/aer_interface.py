@@ -12,7 +12,6 @@ from qiskit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import BaseEstimatorV2
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
@@ -33,7 +32,7 @@ class AerEvaluator(BaseEvaluator):
         self,
         cost_op: SparsePauliOp,
         params: list[float],
-        mixer: BaseOperator | None = None,
+        mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
@@ -65,7 +64,7 @@ class AerEvaluator(BaseEvaluator):
         circuit = qaoa_ansatz(
             ansatz_op,
             reps=len(params) // 2,
-            mixer_operator=mixer,
+            mixer_operator=mixer,  # type: ignore
             initial_state=initial_state,
         )
 
