@@ -9,7 +9,6 @@
 """MPS-based QAOA evaluator."""
 
 from math import prod, sqrt
-from typing import Dict, Sequence
 
 import numpy as np
 from qiskit.circuit import QuantumCircuit
@@ -122,7 +121,7 @@ class MPSEvaluator(BaseEvaluator):
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: Sequence[float],
+        params: list[float],
         mixer: BaseOperator | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
@@ -245,7 +244,7 @@ class MPSEvaluator(BaseEvaluator):
 
         return np.real(cost_function_estimate)
 
-    def get_results_from_last_iteration(self) -> Dict:
+    def get_results_from_last_iteration(self) -> dict:
         """Gets important results obtained at the last optimization iteration.
 
         For now, the only result that is stored are the bond dimensions of the MPS.
@@ -349,7 +348,7 @@ class MPSEvaluator(BaseEvaluator):
         """Create a MPS evaluator from a config."""
         return cls(**config)
 
-    def to_config(self) -> Dict:
+    def to_config(self) -> dict:
         """Json serializable config to keep track of how results are generated."""
         config = super().to_config()
 

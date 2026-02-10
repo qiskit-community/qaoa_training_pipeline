@@ -8,8 +8,6 @@
 
 """Class to efficiently evaluate depth-one circuits."""
 
-from typing import Sequence
-
 import networkx as nx
 import numpy as np
 from qiskit import QuantumCircuit
@@ -49,7 +47,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: Sequence[float],
+        params: list[float],
         mixer: BaseOperator | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,

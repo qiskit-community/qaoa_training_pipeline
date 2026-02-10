@@ -11,6 +11,7 @@
 from abc import ABC, abstractmethod
 
 from qiskit import QuantumCircuit
+from qiskit.circuit.quantumcircuit import BaseOperator
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
@@ -63,7 +64,7 @@ class BaseTrainer(ABC):
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: QuantumCircuit | None = None,
+        mixer: BaseOperator | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
     ) -> ParamResult:

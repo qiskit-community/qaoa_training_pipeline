@@ -8,8 +8,6 @@
 
 """Evaluator based on the estimator primitive."""
 
-from typing import Sequence
-
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import BaseEstimatorV2
@@ -31,11 +29,10 @@ class AerEvaluator(BaseEvaluator):
 
         self.primitive = estimator
 
-    # pylint: disable=too-many-positional-arguments
-    def evaluate(
+    def evaluate(  # pylint: disable=too-many-positional-arguments
         self,
         cost_op: SparsePauliOp,
-        params: Sequence[float],
+        params: list[float],
         mixer: BaseOperator | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
