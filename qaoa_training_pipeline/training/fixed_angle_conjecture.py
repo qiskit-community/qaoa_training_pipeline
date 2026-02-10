@@ -11,8 +11,8 @@
 import json
 import os
 import warnings
+from collections.abc import Iterable, Mapping, Sequence
 from time import time
-from typing import Iterable, Mapping, Optional, Sequence
 
 import numpy as np
 
@@ -48,7 +48,7 @@ class FixedAngleConjecture(BaseTrainer):
     ratios that can be obtained in practice.
     """
 
-    def __init__(self, evaluator: Optional[BaseEvaluator] = None):
+    def __init__(self, evaluator: BaseEvaluator | None = None):
         """Setup the class and load the parameters.
 
         Args:
@@ -73,9 +73,9 @@ class FixedAngleConjecture(BaseTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
         reps: int = 1,
         degree: int | None = None,
     ) -> ParamResult:
@@ -174,7 +174,7 @@ class FixedAngleConjecture(BaseTrainer):
             "evaluator": None,
         }
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Extract training key word arguments from a string.
 
         Args:

@@ -9,9 +9,9 @@
 """Defines the methods that an evaluator should have."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Sequence
 
 from qiskit import QuantumCircuit
+from qiskit.circuit.quantumcircuit import BaseOperator
 from qiskit.quantum_info import SparsePauliOp
 
 
@@ -28,8 +28,8 @@ class BaseEvaluator(ABC):
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: Sequence[float],
-        mixer: QuantumCircuit | None = None,
+        params: list[float],
+        mixer: BaseOperator | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
@@ -47,10 +47,10 @@ class BaseEvaluator(ABC):
             The energy as a real value.
         """
 
-    def get_results_from_last_iteration(self) -> Dict:
+    def get_results_from_last_iteration(self) -> dict:
         """Function to access results of the simulation at the last iteration
 
-        This function (which should be overriden by derived class) should be used
+        This function (which should be overridden by derived class) should be used
         to retrieve results from the last call of the evaluator that are different
         from the energy.
         For instance, if there is an approximate simulator, it would be useful to

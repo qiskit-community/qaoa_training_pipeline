@@ -8,7 +8,6 @@
 
 import importlib.util
 import warnings
-from typing import Sequence
 
 import numpy as np
 from qiskit import transpile
@@ -134,7 +133,7 @@ class PPEvaluator(BaseEvaluator):
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: Sequence[float],
+        params: list[float],
         mixer: BaseOperator | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
