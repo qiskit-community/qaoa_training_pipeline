@@ -88,7 +88,7 @@ class RecursiveTransitionStates(BaseTrainer):
                 mixer,
                 initial_state,
                 ansatz_circuit,
-                ts_state,
+                previous_optimal_point=ts_state,
             )
             ts_state = result["optimized_params"]
             energy = result["energy"]
