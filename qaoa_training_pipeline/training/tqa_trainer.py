@@ -8,8 +8,8 @@
 
 """Classes to generate a beta and gamma schedule based on TQA."""
 
+from collections.abc import Callable
 from time import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -96,8 +96,8 @@ class TQATrainer(BaseTrainer, HistoryMixin):
 
     def __init__(
         self,
-        evaluator: Optional[BaseEvaluator] = None,
-        minimize_args: Optional[Dict[str, Any]] = None,
+        evaluator: BaseEvaluator | None = None,
+        minimize_args: dict[str, object] | None = None,
         energy_minimization: bool = False,
         initial_dt: tuple[float, float] | list[float] | None = None,
     ) -> None:
@@ -147,11 +147,12 @@ class TQATrainer(BaseTrainer, HistoryMixin):
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
         reps: int | None = None,
-        initial_dt: Tuple[float, float] | List[float] | None = None,
+        initial_dt: tuple[float, float] | list[float] | None = None,
     ) -> ParamResult:
         """Train the QAOA parameters."""
         if reps is None:
@@ -217,14 +218,14 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         return param_result
 
     @staticmethod
-    def tqa_schedule(reps: int, dt: Tuple[float] | float) -> np.ndarray:
+    def tqa_schedule(reps: int, dt: tuple[float] | float) -> np.ndarray:
         """Create the TQA schedule."""
         dt = dt[0] if isinstance(dt, tuple) else dt
         grid = np.arange(1, reps + 1) - 0.5
         return np.concatenate((1 - grid * dt / reps, grid * dt / reps)).tolist()
 
     @staticmethod
-    def lr_schedule(reps: int, dt: Tuple[float, float]):
+    def lr_schedule(reps: int, dt: tuple[float, float]):
         """Create the Linear Ramp schedule."""
         betas = np.arange(1, reps + 1)[::-1] * dt[0] / reps
         gammas = np.arange(1, reps + 1) * dt[1] / reps
@@ -232,8 +233,8 @@ class TQATrainer(BaseTrainer, HistoryMixin):
 
     def plot(
         self,
-        axis: Optional[Axes] = None,
-        fig: Optional[Figure] = None,
+        axis: Axes | None = None,
+        fig: Figure | None = None,
         **plot_args,
     ):
         """Plot the optimization."""
@@ -309,7 +310,7 @@ class TQATrainer(BaseTrainer, HistoryMixin):
             "evaluator": evaluator_str,
         }
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Extract training key word arguments from a string.
 
         The input args are only the number of repetitions. There the args_str is only a single int.

@@ -87,6 +87,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
         parameter_ranges: list[tuple[float, float]] | None = None,
         num_points: int = 15,
     ) -> ParamResult:
@@ -271,6 +272,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         mixer=None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
         parameter_ranges: list[tuple[float, float]] | None = None,
         num_points: int = 15,
     ) -> ParamResult:

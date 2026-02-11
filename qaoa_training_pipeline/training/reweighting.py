@@ -88,6 +88,7 @@ class ReweightingTrainer(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        params0: list[float] | None = None,
         trainer1_kwargs: Optional[dict] = None,
     ) -> ParamResult:
         r"""Train by unweighting the cost_op and then reweighting it.

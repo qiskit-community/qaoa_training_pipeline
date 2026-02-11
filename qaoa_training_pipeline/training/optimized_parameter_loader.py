@@ -45,6 +45,7 @@ class OptimizedParametersLoader(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        params0: list[float] | None = None,
         folder: str | None = None,
         file_pattern: str | None = None,
     ) -> ParamResult:
