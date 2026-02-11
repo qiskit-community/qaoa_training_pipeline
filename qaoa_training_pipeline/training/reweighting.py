@@ -124,7 +124,6 @@ class ReweightingTrainer(BaseTrainer):
 
         params0 = self.scale_parameters(result1)
 
-        assert isinstance(self._trainer_weighted, ScipyTrainer)
         result2 = self._trainer_weighted.train(cost_op, params0=params0)
 
         # Add to the result the intermediate step ParamResult is not serializable but its dict is.

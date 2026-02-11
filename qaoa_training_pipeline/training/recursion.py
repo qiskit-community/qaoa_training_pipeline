@@ -85,7 +85,6 @@ class RecursionTrainer(BaseTrainer):
             raise ValueError(f"params0 must be provided to train class {self.__class__.__name__}.")
         if reps is None:
             raise ValueError(f"reps must be provided to train class {self.__class__.__name__}.")
-        params0 = list(params0)
         start = time()
         current_reps = len(params0) // 2
 
