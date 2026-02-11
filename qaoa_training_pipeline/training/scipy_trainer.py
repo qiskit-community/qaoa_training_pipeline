@@ -9,7 +9,6 @@
 """This module is an interface to SciPy's minimize function."""
 
 from time import time
-from typing import Any, Dict, Iterable, Optional, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,9 +36,9 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
     def __init__(
         self,
         evaluator: BaseEvaluator,
-        minimize_args: Optional[Dict[str, Any]] = None,
+        minimize_args: dict[str, object] | None = None,
         energy_minimization: bool = False,
-        qaoa_angles_function: Optional[BaseAnglesFunction] = None,
+        qaoa_angles_function: BaseAnglesFunction | None = None,
     ):
         """Initialize the trainer.
 
@@ -58,7 +57,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         BaseTrainer.__init__(self, evaluator, qaoa_angles_function)
         HistoryMixin.__init__(self)
 
-        self._minimize_args = {"method": "COBYLA"}
+        self._minimize_args: dict[str, object] = {"method": "COBYLA"}
 
         minimize_args = minimize_args or {}
         self._minimize_args.update(minimize_args)
@@ -76,10 +75,10 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
     def train(
         self,
         cost_op: SparsePauliOp | None = None,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
-        params0: Iterable[float] | None = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
     ) -> ParamResult:
         r"""Call SciPy's minimize function to do the optimization.
 
@@ -111,7 +110,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             energy = self._sign * self.evaluator.evaluate(
                 cost_op=cost_op,
                 params=qaoa_angles,
-                mixer=cast(QuantumCircuit, mixer),
+                mixer=mixer,
                 ansatz_circuit=ansatz_circuit,
             )
 
@@ -136,8 +135,8 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
     def plot(
         self,
-        axis: Optional[Axes] = None,
-        fig: Optional[Figure] = None,
+        axis: Axes | None = None,
+        fig: Figure | None = None,
         **plot_args,
     ):
         """Plot the energy history.
@@ -190,7 +189,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             qaoa_angles_function=function,
         )
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse any train arguments from a string.
 
         The only argument that can be contained here is params0. It is the values

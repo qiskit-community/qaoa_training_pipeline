@@ -8,8 +8,6 @@
 
 """Trainer that leverages PCA to reduce the dimensionality of QAOA parameter optimization."""
 
-from typing import Any, Dict, Optional
-
 import numpy as np
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
@@ -38,7 +36,7 @@ class QAOAPCA(ScipyTrainer):
         data_loader: BaseDataLoader,
         num_components: int,
         evaluator: BaseEvaluator,
-        minimize_args: Optional[Dict[str, Any]] = None,
+        minimize_args: dict[str, object] | None = None,
         energy_minimization: bool = False,
     ):
         """Setup the QAOAPCA trainer.

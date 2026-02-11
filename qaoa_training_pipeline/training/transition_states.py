@@ -9,8 +9,8 @@
 """Transition states trainer."""
 
 from time import time
-from typing import List, Optional, cast
 
+# from typing import List, Optional, cast
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
@@ -61,16 +61,17 @@ class TransitionStatesTrainer(BaseTrainer):
     @property
     def trainer(self):
         """Return the trainer with which each sub-point is trained."""
-        return cast(ScipyTrainer, self._trainer)
+        return self._trainer
 
     # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
-        previous_optimal_point: List[float] | None = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
+        previous_optimal_point: list[float] | None = None,
     ) -> ParamResult:
         r"""Train the parameters based on a previous optimal point.
 
@@ -123,7 +124,7 @@ class TransitionStatesTrainer(BaseTrainer):
         return param_result
 
     @staticmethod
-    def make_ts(params: List[float]) -> List[List[float]]:
+    def make_ts(params: list[float]) -> list[list[float]]:
         """Create a list of transition states.
 
         This method takes the locally optimal parameters of a depth p QAOA and creates the
@@ -188,9 +189,9 @@ class TransitionStatesTrainer(BaseTrainer):
     def plot(
         self,
         parameter_history: bool = False,
-        axis: Optional[Axes] = None,
-        fig: Optional[Figure] = None,
-        colors: Optional[list] = None,
+        axis: Axes | None = None,
+        fig: Figure | None = None,
+        colors: list | None = None,
         **plot_args,
     ):
         """Plot the energy history of the different optimizations.
@@ -256,7 +257,7 @@ class TransitionStatesTrainer(BaseTrainer):
         else:
             raise ValueError(f"Unrecognized trainer {trainer_name}")
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse a string into the training kwargs.
 
         The string is of the form `previous_optimal_point:v1/v2/v3/v4...`.

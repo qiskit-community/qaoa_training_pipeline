@@ -9,7 +9,6 @@
 """Base trainer interface for trainers that rely on a data base."""
 
 from time import time
-from typing import Dict, Optional
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -53,7 +52,7 @@ class TransferTrainer(BaseTrainer):
         feature_extractor: GraphFeatureExtractor,
         feature_matcher: BaseFeatureMatcher | None = None,
         angle_aggregator: BaseAngleAggregator | None = None,
-        evaluator: Optional[BaseEvaluator] | None = None,
+        evaluator: BaseEvaluator | None = None,
     ):
         """Setup a class to train based on existing data.
 
@@ -104,9 +103,10 @@ class TransferTrainer(BaseTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
         qaoa_depth: int | None = None,
     ) -> ParamResult:
         """Performs the training."""
@@ -166,7 +166,7 @@ class TransferTrainer(BaseTrainer):
         if not isinstance(self._data, dict):
             raise TypeError(f"{self.__class__.__name__} needs data as a dict.")
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Extract training key word arguments from a string.
 
         The input args are only the number of repetitions. The input should be of the form
@@ -207,7 +207,7 @@ class TransferTrainer(BaseTrainer):
         return config
 
     @classmethod
-    def from_config(cls, config: Dict) -> "TransferTrainer":
+    def from_config(cls, config: dict) -> "TransferTrainer":
         """Create a class from a config."""
         data_loader_cls = DATA_LOADERS[config["data_loader"]]
         feature_extractor_cls = FEATURE_EXTRACTORS[config["feature_extractor"]]

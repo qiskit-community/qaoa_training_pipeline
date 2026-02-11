@@ -12,7 +12,6 @@ import json
 from collections.abc import Callable
 from importlib import resources
 from time import time
-from typing import Dict, NoReturn, Optional
 
 import numpy as np
 from networkx.classes.reportviews import DegreeView
@@ -42,8 +41,8 @@ class RandomRegularDepthOneFit(BaseTrainer):
 
     def __init__(
         self,
-        evaluator: Optional[BaseEvaluator] = None,
-        model_file: Optional[str] = None,
+        evaluator: BaseEvaluator | None = None,
+        model_file: str | None = None,
     ) -> None:
         """Initialize the trainer.
 
@@ -65,7 +64,7 @@ class RandomRegularDepthOneFit(BaseTrainer):
         self._functions = self._load_model(model_file)
 
     @staticmethod
-    def _load_model(file_name: str) -> Dict[str, Dict[int, Callable]]:
+    def _load_model(file_name: str) -> dict[str, dict[int, Callable]]:
         """Creates the functions and stores them in a dict.
 
         In this model, to each `k` regular graph are associated `PowerFunction`s whose argument
@@ -107,12 +106,14 @@ class RandomRegularDepthOneFit(BaseTrainer):
 
         return functions
 
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
     ) -> ParamResult:
         """Train based on a model.
 
@@ -170,7 +171,7 @@ class RandomRegularDepthOneFit(BaseTrainer):
 
         return cls(evaluator, config.get("model_file", None))
 
-    def to_config(self) -> Dict:
+    def to_config(self) -> dict:
         """Creates a serializable dictionary to keep track of how results are created.
 
         Note: This data structure is not intended for us to recreate the class instance.
@@ -184,11 +185,11 @@ class RandomRegularDepthOneFit(BaseTrainer):
             "evaluator": evaluator_str,
         }
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse train arguments. In this case there aren't any."""
         return dict()
 
     @property
-    def minimization(self) -> NoReturn:
+    def minimization(self) -> None:
         """Fits for random regular problems neither minimizes nor maximizes."""
         raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")

@@ -60,12 +60,13 @@ class BaseTrainer(ABC):
         """Return True if the energy is minimized."""
 
     @abstractmethod
-    def train(
+    def train(  # pylint: disable=too-many-positional-arguments
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
     ) -> ParamResult:
         """Performs the training."""
         raise NotImplementedError("Sub-classes must implement `train`.")

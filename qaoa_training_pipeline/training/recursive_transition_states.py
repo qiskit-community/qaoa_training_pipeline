@@ -1,7 +1,6 @@
 """Recursive transition states trainer."""
 
 from time import time
-from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -44,9 +43,10 @@ class RecursiveTransitionStates(BaseTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
         previous_optimal_point: list[float] | None = None,
         reps: int | None = None,
     ) -> ParamResult:
@@ -101,7 +101,7 @@ class RecursiveTransitionStates(BaseTrainer):
         return param_result
 
     @classmethod
-    def from_config(cls, config: Dict) -> "RecursiveTransitionStates":
+    def from_config(cls, config: dict) -> "RecursiveTransitionStates":
         """Create the trainer from a config file."""
 
         if config["trainer"] != "ScipyTrainer":
@@ -113,7 +113,7 @@ class RecursiveTransitionStates(BaseTrainer):
 
         return cls(trainer)
 
-    def to_config(self) -> Dict:
+    def to_config(self) -> dict:
         """Return the configuration of the trainer."""
         return {
             "trainer_name": self.__class__.__name__,
@@ -121,7 +121,7 @@ class RecursiveTransitionStates(BaseTrainer):
             "trainer": self._trainer.to_config(),
         }
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse a string into the training kwargs."""
         train_kwargs = dict()
         for key, val in self.extract_train_kwargs(args_str).items():
@@ -136,8 +136,8 @@ class RecursiveTransitionStates(BaseTrainer):
 
     def plot(
         self,
-        axis: Optional[Axes] = None,
-        fig: Optional[Figure] = None,
+        axis: Axes | None = None,
+        fig: Figure | None = None,
         **plot_args,
     ):
         """Plot the energy progression throughout the recursion."""

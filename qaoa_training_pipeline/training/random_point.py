@@ -62,6 +62,7 @@ class RandomPoint(BaseTrainer):
         mixer: Optional[QuantumCircuit] = None,
         initial_state: Optional[QuantumCircuit] = None,
         ansatz_circuit: Optional[QuantumCircuit] = None,
+        params0: list[float] | None = None,
         lower_bound: Optional[float] = None,
         upper_bound: Optional[float] = None,
         seed: Optional[int] = None,
