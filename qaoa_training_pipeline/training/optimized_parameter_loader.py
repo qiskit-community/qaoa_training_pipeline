@@ -10,7 +10,6 @@
 
 import glob
 import json
-from typing import Optional
 
 import numpy as np
 from qiskit import QuantumCircuit
@@ -42,9 +41,9 @@ class OptimizedParametersLoader(BaseTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
         params0: list[float] | None = None,
         folder: str | None = None,
         file_pattern: str | None = None,
@@ -113,7 +112,7 @@ class OptimizedParametersLoader(BaseTrainer):
         """
         return {"trainer_name": self.__class__.__name__}
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse the train args, i.e., get file and folder names.
 
         The string should have the format `folder:folder_name:file_pattern:pattern`.
