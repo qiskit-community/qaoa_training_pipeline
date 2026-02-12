@@ -64,14 +64,10 @@ class OptimizedParametersLoader(BaseTrainer):
             initial_state: Not needed for now.
             ansatz_circuit: Not needed for now.
         """
-        if folder is None:
-            raise ValueError(
-                f"class {self.__class__.__name__} requires a folder name to load the parameters."
-            )
-        if file_pattern is None:
-            raise ValueError(
-                f"class {self.__class__.__name__} requires a file pattern to load the parameters."
-            )
+        folder = self._require(folder, "folder name")
+        file_pattern = self._require(file_pattern, "file pattern")
+        self._warn_ignored_inputs(params0=params0)
+
         # 1. look for the file in the folder
         data, loaded_file_name = None, None
         for file_name in glob.glob(folder + "*.json"):

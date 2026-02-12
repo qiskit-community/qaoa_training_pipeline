@@ -155,8 +155,8 @@ class TQATrainer(BaseTrainer, HistoryMixin):
         initial_dt: tuple[float, float] | list[float] | None = None,
     ) -> ParamResult:
         """Train the QAOA parameters."""
-        if reps is None:
-            raise ValueError(f"class {self.__class__.__name__} requires reps to be set.")
+        reps = self._require(reps, "reps")
+        self._warn_ignored_inputs(params0=params0)
         self.reset_history()
 
         initial_dt = initial_dt or self.initial_dt

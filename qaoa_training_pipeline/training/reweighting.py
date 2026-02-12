@@ -122,6 +122,7 @@ class ReweightingTrainer(BaseTrainer):
             **trainer1_kwargs,
         )
 
+        self._warn_ignored_inputs(params0=params0)
         params0 = self.scale_parameters(result1)
 
         result2 = self._trainer_weighted.train(cost_op, params0=params0)

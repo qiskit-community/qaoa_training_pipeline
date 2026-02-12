@@ -111,11 +111,8 @@ class TransferTrainer(BaseTrainer):
     ) -> ParamResult:
         """Performs the training."""
 
-        if qaoa_depth is None:
-            raise ValueError(
-                f"class {self.__class__.__name__} requires parameter qaoa_depth to be specified."
-            )
-
+        qaoa_depth = self._require(qaoa_depth, "qaoa depth")
+        self._warn_ignored_inputs(params0=params0)
         if mixer is not None:
             raise NotImplementedError("Custom mixers are not yet supported.")
 

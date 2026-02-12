@@ -67,10 +67,8 @@ class RecursiveTransitionStates(BaseTrainer):
         Returns:
             A `ParamResult` with optimization results.
         """
-        if previous_optimal_point is None:
-            raise ValueError(f"class {self.__class__.__name__} requires a previous_optimal_point.")
-        if reps is None:
-            raise ValueError(f"class {self.__class__.__name__} requires number of reps.")
+        previous_optimal_point = self._require(previous_optimal_point, "a previous_optimal_point.")
+        reps = self._require(reps, "reps")
         start = time()
         current_reps = len(previous_optimal_point) // 2
         ts_state = previous_optimal_point

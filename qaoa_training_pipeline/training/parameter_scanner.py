@@ -107,6 +107,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
             num_points: The number of points in the param2 and param1 ranges to take. This
                 method will thus evaluate the energy `num_points**2` times.
         """
+        self._warn_ignored_inputs(params0=params0)
         self.reset_history()
         start = time()
 
@@ -290,6 +291,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             num_points: The number of points in the gamma range to take. This
                 method will thus evaluate the energy `num_points**2` times.
         """
+        self._warn_ignored_inputs(params0=params0)
         self.reset_history()
         start = time()
 
