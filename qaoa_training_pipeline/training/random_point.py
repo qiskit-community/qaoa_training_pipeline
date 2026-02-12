@@ -9,7 +9,6 @@
 """A class to generate random initial points."""
 
 from time import time
-from typing import Optional
 
 import numpy as np
 from qiskit import QuantumCircuit
@@ -33,7 +32,7 @@ class RandomPoint(BaseTrainer):
         self,
         lower_bound: float = 0,
         upper_bound: float = np.pi,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ) -> None:
         """Setup an instance to generate random initial points.
 
@@ -59,13 +58,13 @@ class RandomPoint(BaseTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
         params0: list[float] | None = None,
-        lower_bound: Optional[float] = None,
-        upper_bound: Optional[float] = None,
-        seed: Optional[int] = None,
+        lower_bound: float | None = None,
+        upper_bound: float | None = None,
+        seed: int | None = None,
         reps: int | None = None,
     ) -> ParamResult:
         """Return a random initial point.
@@ -109,7 +108,7 @@ class RandomPoint(BaseTrainer):
         """Create a random initial point generator from a config."""
         return cls(**config)
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse arguments for the train method from a string.
 
         Args:
