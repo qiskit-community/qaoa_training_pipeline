@@ -112,8 +112,8 @@ class RandomRegularDepthOneFit(BaseTrainer):
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
-        params0: list[float] | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
     ) -> ParamResult:
         """Train based on a model.
 
