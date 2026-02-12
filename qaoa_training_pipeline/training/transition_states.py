@@ -10,7 +10,6 @@
 
 from time import time
 
-# from typing import List, Optional, cast
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
