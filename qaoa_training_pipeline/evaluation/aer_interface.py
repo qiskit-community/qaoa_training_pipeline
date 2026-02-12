@@ -8,12 +8,11 @@
 
 """Evaluator based on the estimator primitive."""
 
-from typing import List, Optional, Union
-
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
+from qiskit.primitives import BaseEstimatorV2
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.quantum_info.operators.base_operator import BaseOperator
+
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
 
@@ -23,33 +22,32 @@ class AerEvaluator(BaseEvaluator):
     This is an abstract class that implements an interface to Qiskit Aer.
     """
 
-    def __init__(self, estimator):
+    def __init__(self, estimator: BaseEstimatorV2):
         """Initialize the primitive based on the given input."""
         super().__init__()
 
         self.primitive = estimator
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
-    def evaluate(
+    def evaluate(  # pylint: disable=too-many-positional-arguments
         self,
         cost_op: SparsePauliOp,
-        params: List[float],
-        mixer: Optional[BaseOperator] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[Union[QuantumCircuit, SparsePauliOp]] = None,
+        params: list[float],
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
         """Evaluate the expectation value of a cost operator given a set of parameters.
 
         Args:
-            cost_op (SparsePauliOp): The cost operator that defines :math:`H_C`.
-            params (List[float]): The parameters for QAOA. The length of this list will
+            cost_op: The cost operator that defines :math:`H_C`.
+            params: The parameters for QAOA. The length of this list will
                 determine the depth of the QAOA.
-            mixer (Optional[QuantumCircuit], optional): the mixer of the QAOA circuit.
+            mixer: The mixer of the QAOA circuit. Defaults to None.
+            initial_state: The initial state of the QAOA. Defaults to None.
+            ansatz_circuit: The circuit to be used as ansatz. Can be given either
+                directly as a `QuantumCircuit`, or as a `SparsePauliOp`, and the
+                circuit is constructed from the corresponding time-evolution operator.
                 Defaults to None.
-            initial_state (Optional[QuantumCircuit], optional): the initial state of the QAOA.
-            ansatz_circuit (Optional[Union[QuantumCircuit, SparsePauliOp]]: the circuit to be used
-                as ansatz. Can be given either directly as a `QuantumCircuit`, or as a `SparsePauliOp`,
-                and the circuit is constructed from the corresponding time-evolution operator.
 
         """
 
@@ -66,7 +64,7 @@ class AerEvaluator(BaseEvaluator):
         circuit = qaoa_ansatz(
             ansatz_op,
             reps=len(params) // 2,
-            mixer_operator=mixer,
+            mixer_operator=mixer,  # type: ignore
             initial_state=initial_state,
         )
 
@@ -74,6 +72,7 @@ class AerEvaluator(BaseEvaluator):
         if len(circuit.parameters) != len(params):
             raise ValueError("The QAOA Circuit does not have the correct number of parameters. ")
 
-        result = self.primitive.run([(circuit, cost_op, params)]).result()
+        param_dict = dict(zip(circuit.parameters, params))
+        result = self.primitive.run([(circuit, cost_op, param_dict)]).result()
 
-        return float(result[0].data.evs)
+        return float(result[0].data.evs)  # pyright: ignore[reportAttributeAccessIssue]

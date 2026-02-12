@@ -9,7 +9,6 @@
 """Functions for angle trainers."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -112,9 +111,7 @@ class FourierFunction(BaseAnglesFunction):
         """Initialize the Fourier function."""
         return cls(config.get("depth", None))
 
-    def plot_angles(
-        self, x: list, axis: Optional[Axes] = None, plot_args: Optional[Dict] = None
-    ) -> Axes:
+    def plot_angles(self, x: list, axis: Axes | None = None, plot_args: dict | None = None) -> Axes:
         """Plot the QAOA angles.
 
         Args:
@@ -142,9 +139,7 @@ class FourierFunction(BaseAnglesFunction):
 
         return axis
 
-    def plot_basis(
-        self, x: list, axis: Optional[Axes] = None, plot_args: Optional[Dict] = None
-    ) -> Axes:
+    def plot_basis(self, x: list, axis: Axes | None = None, plot_args: dict | None = None) -> Axes:
         """Plot the Fourier basis functions.
 
         Args:

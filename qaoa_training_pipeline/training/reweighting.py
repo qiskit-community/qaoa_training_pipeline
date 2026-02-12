@@ -9,7 +9,6 @@
 """Trainer for weighted graphs."""
 
 from time import time
-from typing import Optional
 
 import numpy as np
 from networkx.classes.reportviews import DegreeView
@@ -28,7 +27,7 @@ from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 class ReweightingTrainer(BaseTrainer):
     """Train the parameters by unweighting and reweighting the graph."""
 
-    def __init__(self, trainer1: BaseTrainer, trainer2: Optional[BaseTrainer] = None) -> None:
+    def __init__(self, trainer1: BaseTrainer, trainer2: BaseTrainer | None = None) -> None:
         """Initialize the instance.
 
         Args:
@@ -43,6 +42,7 @@ class ReweightingTrainer(BaseTrainer):
 
         self._trainer_unweighted = trainer1
         assert isinstance(self.evaluator, BaseEvaluator)
+        valid = True
 
         if trainer2 is None:
             self._trainer_weighted = ScipyTrainer(
@@ -80,14 +80,15 @@ class ReweightingTrainer(BaseTrainer):
         """Return the trainer of the weighted graph."""
         return self._trainer_weighted
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
-        trainer1_kwargs: Optional[dict] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
+        trainer1_kwargs: dict | None = None,
     ) -> ParamResult:
         r"""Train by unweighting the cost_op and then reweighting it.
 
@@ -189,7 +190,7 @@ class ReweightingTrainer(BaseTrainer):
 
         raise ValueError(f"Unrecognized trainer {name}.")
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse a string into the training kwargs."""
         if args_str is None:
             return dict()

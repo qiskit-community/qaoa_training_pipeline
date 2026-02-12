@@ -7,21 +7,20 @@
 """Pauli propagation-based QAOA evaluator."""
 
 import importlib.util
-from typing import Optional, Union
 import warnings
+
 import numpy as np
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
+from qiskit.circuit.library import qaoa_ansatz
 from qiskit.converters import circuit_to_dag
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.circuit.library import qaoa_ansatz
-from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
-
 # cspell: ignore juliacall seval qarg qargs overlapwithzero
 # Safely import Julia if is is installed.
+
 jl_loader = importlib.util.find_spec("juliacall")
 HAS_JL = jl_loader is not None
 if HAS_JL:
@@ -89,7 +88,7 @@ class PPEvaluator(BaseEvaluator):
     PauliPropagation and Julia themselves.
     """
 
-    def __init__(self, pp_kwargs: Optional[dict] = None):
+    def __init__(self, pp_kwargs: dict | None = None):
         """Initialize the Pauli propagation evaluator.
 
         Args:
@@ -129,14 +128,14 @@ class PPEvaluator(BaseEvaluator):
         if pp_kwargs is not None:
             self.pp_kwargs.update(pp_kwargs)
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
         params: list[float],
-        mixer: Optional[BaseOperator] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
         """Evaluate the QAOA circuit parameters."""
 
@@ -149,7 +148,7 @@ class PPEvaluator(BaseEvaluator):
             cost_op,
             reps=len(params) // 2,
             initial_state=initial_state,
-            mixer_operator=mixer,
+            mixer_operator=mixer,  # type: ignore
         )
         bound_circuit = circuit.assign_parameters(params, inplace=False)
         # Transpile the circuit to the set of supported gates
@@ -165,6 +164,11 @@ class PPEvaluator(BaseEvaluator):
 
     def sparse_pauli_op_to_pp(self, op: SparsePauliOp):
         """Returns the PP PauliSum representation of the SparsePauliOp."""
+        if not HAS_JL or jl is None or pp is None or convert is None:
+            raise RuntimeError(
+                "Julia/PauliPropagation is not available. Install `juliacall` and the "
+                "PauliPropagation.jl package to use this function."
+            )
         n_qubits = op.num_qubits
         assert pp, "pp must be defined before calling sparse_pauli_op_to_pp()"
         pp_pauli_sum = pp.PauliSum(n_qubits)
@@ -181,7 +185,7 @@ class PPEvaluator(BaseEvaluator):
 
     def qc_to_pp(
         self, circuit: QuantumCircuit
-    ) -> tuple[list[tuple[str, list[int]]], list[Union[int, float]]]:
+    ) -> tuple[list[tuple[str, list[int]]], list[int | float]]:
         """
         Args:
             circuit: The Qiskit circuit with no free parameters.
@@ -238,7 +242,7 @@ class PPEvaluator(BaseEvaluator):
 
     @classmethod
     # pylint: disable=unused-argument
-    def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
+    def parse_init_kwargs(cls, init_kwargs: str | None = None) -> dict:
         """A hook that sub-classes can implement to parse initialization kwargs."""
 
         if init_kwargs is None:

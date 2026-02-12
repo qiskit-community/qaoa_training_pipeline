@@ -1,20 +1,18 @@
 """Recursive transition states trainer."""
 
 from time import time
-from typing import Dict, Optional
+
+import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-
-
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
-from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class RecursiveTransitionStates(BaseTrainer):
@@ -41,15 +39,16 @@ class RecursiveTransitionStates(BaseTrainer):
         """Return True if the energy is minimized."""
         return self._trainer.minimization
 
-    # pylint: disable=arguments-differ, too-many-positional-arguments, too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        previous_optimal_point: list[float],
-        reps: int,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
+        previous_optimal_point: list[float] | None = None,
+        reps: int | None = None,
     ) -> ParamResult:
         """
         Args:
@@ -68,6 +67,10 @@ class RecursiveTransitionStates(BaseTrainer):
         Returns:
             A `ParamResult` with optimization results.
         """
+        if previous_optimal_point is None:
+            raise ValueError(f"class {self.__class__.__name__} requires a previous_optimal_point.")
+        if reps is None:
+            raise ValueError(f"class {self.__class__.__name__} requires number of reps.")
         start = time()
         current_reps = len(previous_optimal_point) // 2
         ts_state = previous_optimal_point
@@ -80,7 +83,13 @@ class RecursiveTransitionStates(BaseTrainer):
 
         while current_reps < reps:
             ts_trainer = TransitionStatesTrainer(self._trainer)
-            result = ts_trainer.train(cost_op, ts_state, mixer, initial_state, ansatz_circuit)
+            result = ts_trainer.train(
+                cost_op,
+                mixer,
+                initial_state,
+                ansatz_circuit,
+                previous_optimal_point=ts_state,
+            )
             ts_state = result["optimized_params"]
             energy = result["energy"]
             current_reps = len(ts_state) // 2
@@ -92,7 +101,7 @@ class RecursiveTransitionStates(BaseTrainer):
         return param_result
 
     @classmethod
-    def from_config(cls, config: Dict) -> "RecursiveTransitionStates":
+    def from_config(cls, config: dict) -> "RecursiveTransitionStates":
         """Create the trainer from a config file."""
 
         if config["trainer"] != "ScipyTrainer":
@@ -104,7 +113,7 @@ class RecursiveTransitionStates(BaseTrainer):
 
         return cls(trainer)
 
-    def to_config(self) -> Dict:
+    def to_config(self) -> dict:
         """Return the configuration of the trainer."""
         return {
             "trainer_name": self.__class__.__name__,
@@ -112,7 +121,7 @@ class RecursiveTransitionStates(BaseTrainer):
             "trainer": self._trainer.to_config(),
         }
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse a string into the training kwargs."""
         train_kwargs = dict()
         for key, val in self.extract_train_kwargs(args_str).items():
@@ -127,8 +136,8 @@ class RecursiveTransitionStates(BaseTrainer):
 
     def plot(
         self,
-        axis: Optional[Axes] = None,
-        fig: Optional[Figure] = None,
+        axis: Axes | None = None,
+        fig: Figure | None = None,
         **plot_args,
     ):
         """Plot the energy progression throughout the recursion."""

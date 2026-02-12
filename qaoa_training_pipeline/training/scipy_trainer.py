@@ -9,25 +9,24 @@
 """This module is an interface to SciPy's minimize function."""
 
 from time import time
-from typing import Any, Dict, Iterable, Optional
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
+
 import matplotlib.pyplot as plt
 import numpy as np
-
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from scipy.optimize import minimize
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.functions import (
+    FUNCTIONS,
     BaseAnglesFunction,
     IdentityFunction,
-    FUNCTIONS,
 )
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
@@ -37,9 +36,9 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
     def __init__(
         self,
         evaluator: BaseEvaluator,
-        minimize_args: Optional[Dict[str, Any]] = None,
+        minimize_args: dict[str, object] | None = None,
         energy_minimization: bool = False,
-        qaoa_angles_function: Optional[BaseAnglesFunction] = None,
+        qaoa_angles_function: BaseAnglesFunction | None = None,
     ):
         """Initialize the trainer.
 
@@ -58,7 +57,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         BaseTrainer.__init__(self, evaluator, qaoa_angles_function)
         HistoryMixin.__init__(self)
 
-        self._minimize_args = {"method": "COBYLA"}
+        self._minimize_args: dict[str, object] = {"method": "COBYLA"}
 
         minimize_args = minimize_args or {}
         self._minimize_args.update(minimize_args)
@@ -72,14 +71,14 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         """Return True if the energy is minimized."""
         return self._sign == 1
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
-        cost_op: SparsePauliOp,
-        params0: Iterable[float],
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        cost_op: SparsePauliOp | None = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
     ) -> ParamResult:
         r"""Call SciPy's minimize function to do the optimization.
 
@@ -94,6 +93,8 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             ansatz_circuit: The ansatz circuit in case it differs from the standard QAOA
                 circuit given by :math:`\exp(-i\gamma H_C)`.
         """
+        if params0 is None:
+            raise ValueError(f"class {self.__class__.__name__} requires params0 to be set.")
         self.reset_history()
 
         start = time()
@@ -104,12 +105,12 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
             qaoa_angles = self._qaoa_angles_function(x)
 
-            assert self._evaluator, "_evaluator must be defined before calling _energy()"
-            energy = self._sign * self._evaluator.evaluate(
+            if cost_op is None:
+                raise ValueError("cost_op must be set.")
+            energy = self._sign * self.evaluator.evaluate(
                 cost_op=cost_op,
                 params=qaoa_angles,
                 mixer=mixer,
-                initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
             )
 
@@ -134,8 +135,8 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
     def plot(
         self,
-        axis: Optional[Axes] = None,
-        fig: Optional[Figure] = None,
+        axis: Axes | None = None,
+        fig: Figure | None = None,
         **plot_args,
     ):
         """Plot the energy history.
@@ -188,7 +189,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             qaoa_angles_function=function,
         )
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse any train arguments from a string.
 
         The only argument that can be contained here is params0. It is the values

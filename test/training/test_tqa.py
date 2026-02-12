@@ -40,7 +40,7 @@ class TestTQA(TrainingPipelineTestCase):
             + "TQATrainer should return list of angles.",
         )
 
-        result = trainer.train(None, reps)
+        result = trainer.train(None, reps=reps)
 
         self.assertListEqual(
             result["optimized_qaoa_angles"],
@@ -65,7 +65,7 @@ class TestTQA(TrainingPipelineTestCase):
             + "on trained TQATrainer should return list of angles.",
         )
 
-        result = trainer.train(None, reps + 1)
+        result = trainer.train(None, reps=reps + 1)
         self.assertTrue(
             len(trainer.qaoa_angles_function(result["optimized_params"])) == 2 * (reps + 1),
             msg="Calling qaoa_angles_function without reps=... "
@@ -129,7 +129,7 @@ class TestTQA(TrainingPipelineTestCase):
         config = {}
 
         trainer = TQATrainer.from_config(config)
-        self.assertIsNone(trainer.evaluator)
+        self.assertIsNone(trainer._evaluator)
 
         config = {
             "evaluator": "MPSEvaluator",

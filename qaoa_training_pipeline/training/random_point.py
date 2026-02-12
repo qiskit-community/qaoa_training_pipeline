@@ -8,12 +8,12 @@
 
 """A class to generate random initial points."""
 
-from typing import Optional
 from time import time
-import numpy as np
 
+import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
+
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.param_result import ParamResult
 
@@ -32,7 +32,7 @@ class RandomPoint(BaseTrainer):
         self,
         lower_bound: float = 0,
         upper_bound: float = np.pi,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ) -> None:
         """Setup an instance to generate random initial points.
 
@@ -54,17 +54,18 @@ class RandomPoint(BaseTrainer):
         """Raises a warning as a random point neither minimizes nor maximizes."""
         raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        reps: int,
-        lower_bound: Optional[float] = None,
-        upper_bound: Optional[float] = None,
-        seed: Optional[int] = None,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
+        lower_bound: float | None = None,
+        upper_bound: float | None = None,
+        seed: int | None = None,
+        reps: int | None = None,
     ) -> ParamResult:
         """Return a random initial point.
 
@@ -83,6 +84,8 @@ class RandomPoint(BaseTrainer):
             initial_state: Not used.
             ansatz_circuit: Not used.
         """
+        if reps is None:
+            raise ValueError(f"class {self.__class__.__name__} requires reps to be specified")
         start = time()
 
         lb_ = lower_bound or self._lower_bound
@@ -105,7 +108,7 @@ class RandomPoint(BaseTrainer):
         """Create a random initial point generator from a config."""
         return cls(**config)
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse arguments for the train method from a string.
 
         Args:
