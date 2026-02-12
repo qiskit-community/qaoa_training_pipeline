@@ -91,8 +91,8 @@ class TransitionStatesTrainer(BaseTrainer):
         Returns:
             A dictionary with optimization results.
         """
-        if previous_optimal_point is None:
-            raise ValueError(f"class {self.__class__.__name__} requires a previous optimal point.")
+        previous_optimal_point = self._require(previous_optimal_point, "a previous optimal point")
+        self._warn_ignored_inputs(params0=params0)
         start = time()
 
         result, self._all_ts = dict(), dict()

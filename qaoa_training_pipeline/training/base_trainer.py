@@ -8,7 +8,9 @@
 
 """Base trainer interface."""
 
+import warnings
 from abc import ABC, abstractmethod
+from typing import TypeVar
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -19,6 +21,8 @@ from qaoa_training_pipeline.training.functions import (
     IdentityFunction,
 )
 from qaoa_training_pipeline.training.param_result import ParamResult
+
+T = TypeVar("T")
 
 
 class BaseTrainer(ABC):
@@ -116,3 +120,13 @@ class BaseTrainer(ABC):
     def extract_list(list_str: str, dtype: type = float) -> list:
         """Extract a list of elements from a string in format v0/v1/v2"""
         return [dtype(val) for val in list_str.split("/")]
+
+    def _warn_ignored_inputs(self, **kwargs):
+        for name, variable in kwargs.items():
+            if variable is not None:
+                warnings.warn(f"{self.__class__.__name__} ignores {name} input")
+
+    def _require(self, arg: T | None, name: str) -> T:
+        if arg is None:
+            raise ValueError(f"{self.__class__.__name__} requires {name} to be defined")
+        return arg

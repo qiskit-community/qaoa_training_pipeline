@@ -93,8 +93,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             ansatz_circuit: The ansatz circuit in case it differs from the standard QAOA
                 circuit given by :math:`\exp(-i\gamma H_C)`.
         """
-        if params0 is None:
-            raise ValueError(f"class {self.__class__.__name__} requires params0 to be set.")
+        params0 = self._require(params0, "params0")
         self.reset_history()
 
         start = time()

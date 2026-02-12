@@ -10,7 +10,6 @@
 
 import json
 import os
-import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from time import time
 
@@ -98,13 +97,8 @@ class FixedAngleConjecture(BaseTrainer):
             ansatz_circuit: Not used.
         """
 
-        def _warn_ignored_inputs(**kwargs):
-            for name, variable in kwargs.items():
-                if variable is not None:
-                    warnings.warn(f"{self.__class__.__name__} ignores {name} input")
-
-        _warn_ignored_inputs(
-            mixer=mixer, initial_state=initial_state, ansatz_circuit=ansatz_circuit
+        self._warn_ignored_inputs(
+            mixer=mixer, initial_state=initial_state, ansatz_circuit=ansatz_circuit, params0=params0
         )
 
         start = time()

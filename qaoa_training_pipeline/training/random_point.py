@@ -85,8 +85,8 @@ class RandomPoint(BaseTrainer):
             initial_state: Not used.
             ansatz_circuit: Not used.
         """
-        if reps is None:
-            raise ValueError(f"class {self.__class__.__name__} requires reps to be specified")
+        self._warn_ignored_inputs(params0=params0)
+        reps = self._require(reps, "reps")
         start = time()
 
         lb_ = lower_bound or self._lower_bound
