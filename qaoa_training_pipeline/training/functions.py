@@ -249,11 +249,18 @@ class PCAFunction(BaseAnglesFunction):
         config = super().to_config()
         config["num_components"] = self._num_components
 
+        def scaler_to_list(scaler):
+            if scaler is None:
+                return None
+            if type(scaler) is not np.ndarray:
+                return [scaler]
+            return scaler.tolist()
+
         if self._is_fitted:
             config["scaler"] = {
-                "mean": self._scaler.mean_.tolist() if self._scaler.mean_ else None,
-                "scale": self._scaler.scale_.tolist() if self._scaler.scale_ else None,
-                "var": self._scaler.var_.tolist() if self._scaler.var_ else None,
+                "mean": scaler_to_list(self._scaler.mean_),
+                "scale": scaler_to_list(self._scaler.scale_),
+                "var": scaler_to_list(self._scaler.var_),
             }
 
             config["pca"] = {
