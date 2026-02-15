@@ -252,9 +252,9 @@ class PCAFunction(BaseAnglesFunction):
         def scaler_to_list(scaler):
             if scaler is None:
                 return None
-            if type(scaler) is not np.ndarray:
-                return [scaler]
-            return scaler.tolist()
+            if isinstance(scaler, np.ndarray):
+                return scaler.tolist()
+            return [scaler]
 
         if self._is_fitted:
             config["scaler"] = {
@@ -283,7 +283,8 @@ class PCAFunction(BaseAnglesFunction):
             pca_func._scaler.mean_ = np.array(scaler_params["mean"])
             pca_func._scaler.scale_ = np.array(scaler_params["scale"])
             pca_func._scaler.var_ = np.array(scaler_params["var"])
-            pca_func._scaler.n_features_in_ = len(pca_func._scaler.mean_)
+            # Use object.__setattr__ to set read-only property n_features_in_
+            object.__setattr__(pca_func._scaler, "n_features_in_", len(pca_func._scaler.mean_))
 
         if "pca" in config:
             pca_params = config["pca"]
@@ -293,7 +294,8 @@ class PCAFunction(BaseAnglesFunction):
             pca_func._pca.explained_variance_ratio_ = np.array(
                 pca_params["explained_variance_ratio"]
             )
-            pca_func._pca.n_features_in_ = len(pca_func._pca.mean_)
+            # Use object.__setattr__ to set read-only property n_features_in_
+            object.__setattr__(pca_func._pca, "n_features_in_", len(pca_func._pca.mean_))
 
         return pca_func
 
