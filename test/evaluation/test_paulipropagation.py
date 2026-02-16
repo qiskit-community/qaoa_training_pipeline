@@ -11,8 +11,7 @@
 from unittest import TestCase
 import numpy as np
 
-from qiskit import transpile, QuantumCircuit
-from qiskit.circuit import Parameter
+from qiskit import transpile
 from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp
 from ddt import data, ddt, unpack
