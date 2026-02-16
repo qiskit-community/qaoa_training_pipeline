@@ -139,13 +139,16 @@ class PPEvaluator(BaseEvaluator):
     ) -> float:
         """Evaluate the QAOA circuit parameters."""
 
-        if ansatz_circuit is not None:
-            raise NotImplementedError(
-                f"Custom Ansatz circuits are currently not supported in {self.__class__.__name__}."
-            )
+        if ansatz_circuit is None:
+            ansatz_circuit = cost_op
+        else:
+            if not isinstance(ansatz_circuit, SparsePauliOp):
+                raise NotImplementedError(
+                    "Only ansatz_circuit specified by a sparse Pauli operator is supported."
+                )
 
         circuit = qaoa_ansatz(
-            cost_op,
+            ansatz_circuit,
             reps=len(params) // 2,
             initial_state=initial_state,
             mixer_operator=mixer,  # type: ignore
