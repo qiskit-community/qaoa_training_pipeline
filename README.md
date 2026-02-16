@@ -190,6 +190,7 @@ This repository is still in development: new functionality is being added and th
 |      30 | Convert a graph with partial assignment to a hamiltonian     |          #53 | 
 |      31 | Refactor linear angle interpolation (increase QAOA depth)    |          #55 |
 |      32 | Standardize the inheritance of evaluators and trainers       |          #57 |
+|      33 | Allow Pauli propagation to accept a custom circuit ansatz    |          #60 |
 
 ## IBM Public Repository Disclosure
 
