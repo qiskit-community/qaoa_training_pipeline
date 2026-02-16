@@ -8,8 +8,6 @@
 
 """Evaluator based on Qiskit Aer's MPS."""
 
-from typing import Dict, Optional
-
 from qiskit_aer import AerSimulator
 from qiskit_ibm_runtime import EstimatorV2
 
@@ -22,7 +20,7 @@ class MPSAerEvaluator(AerEvaluator):
     This evaluator can scale to large problem sizes by changing the bond dimension.
     """
 
-    def __init__(self, mps_init_args: Optional[Dict] = None) -> None:
+    def __init__(self, mps_init_args: dict | None = None) -> None:
         """Initialize the MPS evaluator.
 
         Args:

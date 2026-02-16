@@ -10,7 +10,7 @@
 
 import platform
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
 
@@ -36,7 +36,7 @@ class ParamResult:
         optimized_params: list,
         duration: float,
         trainer: "BaseTrainer",
-        energy: Optional[float] = None,
+        energy: float | None = None,
     ):
         """Initialize the data class."""
         self.data = {}
@@ -46,7 +46,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 31,
+            "qaoa_training_pipeline_version": 32,
         }
 
         # Convert, e.g., np.float to float

@@ -10,9 +10,8 @@
 
 import json
 import os
-import warnings
+from collections.abc import Iterable, Mapping, Sequence
 from time import time
-from typing import Iterable, Mapping, Optional, Sequence
 
 import numpy as np
 
@@ -48,7 +47,7 @@ class FixedAngleConjecture(BaseTrainer):
     ratios that can be obtained in practice.
     """
 
-    def __init__(self, evaluator: Optional[BaseEvaluator] = None):
+    def __init__(self, evaluator: BaseEvaluator | None = None):
         """Setup the class and load the parameters.
 
         Args:
@@ -69,15 +68,16 @@ class FixedAngleConjecture(BaseTrainer):
             f"Optimization is currently not implemented by {self.__class__.__name__}."
         )
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
         reps: int = 1,
         degree: int | None = None,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
     ) -> ParamResult:
         """Load the fixed-angles based on the degree of the graph in the cost operator.
 
@@ -97,13 +97,8 @@ class FixedAngleConjecture(BaseTrainer):
             ansatz_circuit: Not used.
         """
 
-        def _warn_ignored_inputs(**kwargs):
-            for name, variable in kwargs.items():
-                if variable is not None:
-                    warnings.warn(f"{self.__class__.__name__} ignores {name} input")
-
-        _warn_ignored_inputs(
-            mixer=mixer, initial_state=initial_state, ansatz_circuit=ansatz_circuit
+        self._warn_ignored_inputs(
+            mixer=mixer, initial_state=initial_state, ansatz_circuit=ansatz_circuit, params0=params0
         )
 
         start = time()
@@ -137,7 +132,10 @@ class FixedAngleConjecture(BaseTrainer):
 
         energy = None
         if self._evaluator is not None:
-            energy = self._evaluator.evaluate(cost_op, angles_data["beta"] + angles_data["gamma"])
+            energy = self._evaluator.evaluate(
+                cost_op=cost_op,
+                params=angles_data["beta"] + angles_data["gamma"],
+            )
 
         param_result = ParamResult(
             angles_data["beta"] + angles_data["gamma"],
@@ -171,7 +169,7 @@ class FixedAngleConjecture(BaseTrainer):
             "evaluator": None,
         }
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Extract training key word arguments from a string.
 
         Args:

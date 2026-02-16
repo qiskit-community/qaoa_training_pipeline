@@ -8,18 +8,19 @@
 
 """Tests of the Transition States trainer."""
 
-from test import TrainingPipelineTestCase
-
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline import EfficientDepthOneEvaluator
 from qaoa_training_pipeline.evaluation import LightConeEvaluator, MPSEvaluator
-from qaoa_training_pipeline.training import TransitionStatesTrainer, ScipyTrainer
+from qaoa_training_pipeline.training import ScipyTrainer, TransitionStatesTrainer
+
+from ..training_pipeline_test_case import TrainingPipelineTestCase
 
 
 class TestTransitionStates(TrainingPipelineTestCase):
     """Class to test the transition states."""
 
+    # pylint: disable=invalid-name
     def setUp(self):
         """Setup some useful variables."""
         self.dummy_trainer = ScipyTrainer(EfficientDepthOneEvaluator())
@@ -81,11 +82,11 @@ class TestTransitionStates(TrainingPipelineTestCase):
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
 
         trainer1 = ScipyTrainer(EfficientDepthOneEvaluator())
-        result1 = trainer1.train(cost_op, [0.5, 0.2])
+        result1 = trainer1.train(cost_op, params0=[0.5, 0.2])
 
         trainer2 = TransitionStatesTrainer(ScipyTrainer(LightConeEvaluator()))
         p0 = result1["optimized_params"]
-        result2 = trainer2.train(cost_op, p0)
+        result2 = trainer2.train(cost_op, previous_optimal_point=p0)
 
         self.assertTrue(result1["energy"] < result2["energy"])
 

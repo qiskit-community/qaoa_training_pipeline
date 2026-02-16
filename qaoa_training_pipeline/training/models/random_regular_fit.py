@@ -8,14 +8,13 @@
 
 """A model for depth-one QAOA parameters on random regular graphs."""
 
-from collections.abc import Callable
 import json
+from collections.abc import Callable
 from importlib import resources
 from time import time
-from typing import Dict, NoReturn, Optional
+
 import numpy as np
 from networkx.classes.reportviews import DegreeView
-
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
@@ -24,6 +23,7 @@ from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.models.power_function import PowerFunction
+from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -41,8 +41,8 @@ class RandomRegularDepthOneFit(BaseTrainer):
 
     def __init__(
         self,
-        evaluator: Optional[BaseEvaluator] = None,
-        model_file: Optional[str] = None,
+        evaluator: BaseEvaluator | None = None,
+        model_file: str | None = None,
     ) -> None:
         """Initialize the trainer.
 
@@ -64,7 +64,7 @@ class RandomRegularDepthOneFit(BaseTrainer):
         self._functions = self._load_model(model_file)
 
     @staticmethod
-    def _load_model(file_name: str) -> Dict[str, Dict[int, Callable]]:
+    def _load_model(file_name: str) -> dict[str, dict[int, Callable]]:
         """Creates the functions and stores them in a dict.
 
         In this model, to each `k` regular graph are associated `PowerFunction`s whose argument
@@ -106,14 +106,15 @@ class RandomRegularDepthOneFit(BaseTrainer):
 
         return functions
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
-    ) -> Dict:
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
+    ) -> ParamResult:
         """Train based on a model.
 
         Args:
@@ -144,21 +145,21 @@ class RandomRegularDepthOneFit(BaseTrainer):
         energy = None
 
         # Optionally, evaluate the energy if an evaluator is provided.
-        if self.evaluator is not None:
+        if self._evaluator is not None:
             energy = self.evaluator.evaluate(
                 cost_op,
                 params=optimized_params,
-                mixer=mixer,
+                mixer=mixer,  # type: ignore
                 initial_state=initial_state,
                 ansatz_circuit=ansatz_circuit,
             )
 
-        return {
-            "optimized_params": optimized_params,
-            "trainer": self.to_config(),
-            "train_duration": time() - start,
-            "energy": energy,
-        }
+        return ParamResult(
+            optimized_params=optimized_params,
+            duration=time() - start,
+            trainer=self,
+            energy=energy,
+        )
 
     @classmethod
     def from_config(cls, config: dict) -> "RandomRegularDepthOneFit":
@@ -170,7 +171,7 @@ class RandomRegularDepthOneFit(BaseTrainer):
 
         return cls(evaluator, config.get("model_file", None))
 
-    def to_config(self) -> Dict:
+    def to_config(self) -> dict:
         """Creates a serializable dictionary to keep track of how results are created.
 
         Note: This data structure is not intended for us to recreate the class instance.
@@ -184,11 +185,11 @@ class RandomRegularDepthOneFit(BaseTrainer):
             "evaluator": evaluator_str,
         }
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse train arguments. In this case there aren't any."""
         return dict()
 
     @property
-    def minimization(self) -> NoReturn:
+    def minimization(self) -> None:
         """Fits for random regular problems neither minimizes nor maximizes."""
         raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")

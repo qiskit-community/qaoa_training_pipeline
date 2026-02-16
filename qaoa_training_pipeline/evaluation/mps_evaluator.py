@@ -9,7 +9,6 @@
 """MPS-based QAOA evaluator."""
 
 from math import prod, sqrt
-from typing import Dict, List, Optional
 
 import numpy as np
 from qiskit.circuit import QuantumCircuit
@@ -53,10 +52,10 @@ class MPSEvaluator(BaseEvaluator):
     def __init__(
         self,
         use_vidal_form: bool = False,
-        threshold_circuit: Optional[float] = None,
-        bond_dim_circuit: Optional[int] = None,
-        threshold_mpo: Optional[float] = None,
-        bond_dim_mpo: Optional[int] = None,
+        threshold_circuit: float | None = None,
+        bond_dim_circuit: int | None = None,
+        threshold_mpo: float | None = None,
+        bond_dim_mpo: int | None = None,
         use_swap_strategy: bool = False,
         store_schmidt_values: bool = False,
         store_intermediate_schmidt_values: bool = False,
@@ -68,26 +67,25 @@ class MPSEvaluator(BaseEvaluator):
         (at least for sparse quadratic operators) that the MPO compression is negligible.
 
         Args:
-            use_vidal_form (bool): Whether to express the Matrix Product State in the Vidal
+            use_vidal_form: Whether to express the Matrix Product State in the Vidal
                 form (see doc of `circuit_mps_vidal.py` for more detail). If true, uses
                 the vidal form and, otherwise, uses the canonical gauge form. Note that
                 the choice of the gauge affects only the efficiency of the simulator, but
                 not the accuracy. This means that, for a given truncation threshold and maximum
                 bond dimension, both simulators yield the same accuracy.
-            threshold_circuit (Optional[float], optional): Truncation threshold for the circuit
-                simulation. Defaults to None. If None is given the MPS is equivalent to a
-                 very slow statevector simulator. The threshold should correlate with the fidelity.
-            bond_dim_circuit (Optional[int], optional): Maximum bond dimension for the circuit
-                simulation. Defaults to None.
-            threshold_mpo (Optional[float], optional): Truncation threshold for constructing the
-                MPO representation of the cost function. Defaults to None.
-            bond_dim_mpo (Optional[int], optional): Maximum bond dimension for the MPO representation
-                of the cost function. Defaults to None.
-            use_swap_strategy (bool): Use a line swap strategy to apply the gates on the tensor
+            threshold_circuit: Truncation threshold for the circuit simulation. Defaults to None.
+                If None is given the MPS is equivalent to a very slow statevector simulator.
+                The threshold should correlate with the fidelity.
+            bond_dim_circuit: Maximum bond dimension for the circuit simulation. Defaults to None.
+            threshold_mpo: Truncation threshold for constructing the MPO representation of the
+                cost function. Defaults to None.
+            bond_dim_mpo: Maximum bond dimension for the MPO representation of the cost function.
+                Defaults to None.
+            use_swap_strategy: Use a line swap strategy to apply the gates on the tensor
                 network. Defaults to False.
-            store_schmidt_values (bool): If true then the Schmidt values are stored in a JSON
+            store_schmidt_values: If true then the Schmidt values are stored in a JSON
                 serializable format.
-            store_intermediate_schmidt_values (bool): If `True`, stores the intermediate Schmidt
+            store_intermediate_schmidt_values: If `True`, stores the intermediate Schmidt
                 values obtained at each application of a two-qubit gate.
                 Note that setting this variable to `True` generates N vectors of integers of size
                 m, N being the number of two-qubit gates of the circuit and m being the maximum
@@ -117,37 +115,32 @@ class MPSEvaluator(BaseEvaluator):
 
         self._results_last_iteration = {}
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: List[float],
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        params: list[float],
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
         r"""Evaluates the energy.
 
         Args:
-            cost_op (SparsePauliOp): The cost operator that defines :math:`H_C`.
+            cost_op: The cost operator that defines :math:`H_C`.
                 Only quadratic cost functions are currently supported.
-            params (List[float]): The parameters for QAOA. The length of this list will
+            params: The parameters for QAOA. The length of this list will
                 determine the depth of the QAOA.
                 The params are given in the order
                 :math:`[\beta_0, \beta_1, \ldots, \gamma_0, \gamma_1, \ldots]`.
-            mixer (Optional[QuantumCircuit], optional):
-                Circuit to be used as the mixer part of the QAOA circuit. Defaults to None.
+            mixer: Circuit to be used as the mixer part of the QAOA circuit. Defaults to None.
                 If equal to None, just uses a layer of Rx gates.
-            initial_state (Optional[QuantumCircuit], optional): Circuit used for the state
-                initialization. Defaults to None.
-            ansatz_circuit (Optional[QuantumCircuit], optional):
-                Ansatz circuit for the QAOA. Defaults to None. If equal to None, just uses
+            initial_state: Circuit used for the state initialization. Defaults to None.
+            ansatz_circuit: Ansatz circuit for the QAOA. Defaults to None. If equal to None, just uses
                 the Trotterized propagator associated with the underlying Hamiltonian. When
                 specified, this ansatz is given as a network of Rzz gates only with a single
                 parameter which is gamma. This will then be used to construct a cost operator
                 layer in the evaluator.
-            use_vidal_form (bool): if true, uses the Vidal canonization for representing
-                the MPS.
 
         Raises:
             NotImplementedError: if a user-defined mixer is provided as input.
@@ -156,7 +149,7 @@ class MPSEvaluator(BaseEvaluator):
             KeyError: if the size of the `params` vector is an odd number.
 
         Returns:
-            float: Energy calculated for the `params` parameters.
+            Energy calculated for the `params` parameters.
         """
         if len(params) % 2 != 0:
             raise KeyError("Number of parameters must be an even integer")
@@ -164,9 +157,14 @@ class MPSEvaluator(BaseEvaluator):
         # Must come before the cost_op is permuted by the swap strategy.
         if ansatz_circuit is None:
             edges = operator_to_list_of_hyper_edges(cost_op)
-        else:
+        elif isinstance(ansatz_circuit, QuantumCircuit):
             qc_graph = circuit_to_graph(ansatz_circuit)
             edges = [([u, v], w.get("weight", 1.0)) for u, v, w in qc_graph.edges(data=True)]
+        else:
+            raise NotImplementedError(
+                f"ansatz_circuit of type {type(ansatz_circuit).__name__} is not supported. "
+                "Only QuantumCircuit is supported."
+            )
 
         # If there are any hyper edges, then the swap strategy cannot be implemented.
         if any(len(i_edge[0]) > 2 for i_edge in edges) and self._use_swap_strategy:
@@ -194,15 +192,22 @@ class MPSEvaluator(BaseEvaluator):
             self._cost_op = QAOACostFunction(cost_op, self._threshold_cost, self._max_bond_cost)
 
         # Construct the circuit
-        beta_parameters = params[: len(params) // 2]
-        gamma_parameters = params[len(params) // 2 :]
+        beta_parameters = list(params[: len(params) // 2])
+        gamma_parameters = list(params[len(params) // 2 :])
+
+        # Type narrowing: mixer must be QuantumCircuit or None for construct_from_list_of_edges
+        if mixer is not None and not isinstance(mixer, QuantumCircuit):
+            raise NotImplementedError(
+                f"Mixer of type {type(mixer).__name__} is not supported. "
+                "Only QuantumCircuit mixers are supported."
+            )
 
         circuit = self._circuit_type.construct_from_list_of_edges(
             edges,
             truncation_threshold=self._threshold_circuit,
             max_bond_dim=self._max_bond_circuit,
             swap_strategy=self._swap_strategy,
-            mixer=mixer,
+            mixer=mixer,  # type: ignore[arg-type]
             initial_state=initial_state,
             store_intermediate_schmidt_values=self._store_intermediate_schmidt_values,
         )
@@ -232,7 +237,7 @@ class MPSEvaluator(BaseEvaluator):
 
         return np.real(cost_function_estimate)
 
-    def get_results_from_last_iteration(self) -> Dict:
+    def get_results_from_last_iteration(self) -> dict:
         """Gets important results obtained at the last optimization iteration.
 
         For now, the only result that is stored are the bond dimensions of the MPS.
@@ -308,7 +313,7 @@ class MPSEvaluator(BaseEvaluator):
         return prod(sum(i**2 for i in i_schmidt) for i_schmidt in self._intermediate_schmidt_values)
 
     @property
-    def schmidt_values(self) -> List[List[float]] | None:
+    def schmidt_values(self) -> list[list[float]] | None:
         """Get the Schmidt values for a given bond of the MPS.
 
         Returns:
@@ -336,7 +341,7 @@ class MPSEvaluator(BaseEvaluator):
         """Create a MPS evaluator from a config."""
         return cls(**config)
 
-    def to_config(self) -> Dict:
+    def to_config(self) -> dict:
         """Json serializable config to keep track of how results are generated."""
         config = super().to_config()
 
@@ -348,7 +353,7 @@ class MPSEvaluator(BaseEvaluator):
         return config
 
     @classmethod
-    def parse_init_kwargs(cls, init_kwargs: Optional[str] = None) -> dict:
+    def parse_init_kwargs(cls, init_kwargs: str | None = None) -> dict:
         """Parse initialization kwargs.
 
         This allows us to override any defaults set in the methods files.
