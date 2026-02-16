@@ -8,18 +8,14 @@
 
 """Class to efficiently evaluate depth-one circuits."""
 
-from typing import List, Optional
-
 import networkx as nx
 import numpy as np
-
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp, Operator
-from qiskit.quantum_info import PauliList, Pauli
+from qiskit.quantum_info import Operator, Pauli, PauliList, SparsePauliOp
 
-from qaoa_training_pipeline.utils.graph_utils import circuit_to_graph, operator_to_graph
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.utils.circuit_utils import split_circuit
+from qaoa_training_pipeline.utils.graph_utils import circuit_to_graph, operator_to_graph
 
 
 # cspell: words correlator correlators toarray kron
@@ -46,14 +42,14 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         self._mixers = None
         self._initial_states = None
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: List[float],
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        params: list[float],
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
         """Evaluate the energy.
 
@@ -98,11 +94,16 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         if ansatz_circuit is None:
             circuit_graph = graph
-        else:
+        elif isinstance(ansatz_circuit, QuantumCircuit):
             circuit_graph = nx.adjacency_matrix(
                 circuit_to_graph(ansatz_circuit),
                 nodelist=range(length),
             ).toarray()
+        else:
+            raise NotImplementedError(
+                f"ansatz_circuit of type {type(ansatz_circuit).__name__} is not supported. "
+                "Only QuantumCircuit is supported."
+            )
 
         # Compute the energy from the two-qubit correlators
         energy = sum(
@@ -143,7 +144,9 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         return mixer
 
-    def _set_initial_states(self, num_qubits: int, initial_state: Optional[QuantumCircuit] = None):
+    def _set_initial_states(
+        self, num_qubits: int, initial_state: QuantumCircuit | None = None
+    ) -> None:
         """Set the initial state."""
         if initial_state is None:
             equal_pop = np.array([[np.sqrt(0.5)], [np.sqrt(0.5)]], dtype=complex)
@@ -157,7 +160,9 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
                 data = data[:, 0].reshape(2, 1)
                 self._initial_states.append(data)
 
-    def _set_mixers(self, beta: float, num_qubits: int, mixer: Optional[QuantumCircuit] = None):
+    def _set_mixers(
+        self, beta: float, num_qubits: int, mixer: QuantumCircuit | None = None
+    ) -> None:
         """Set the mixer operators per qubit.
 
         Currently, the code only supports one-local mixers. I.e. mixers made of
@@ -166,9 +171,14 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         if mixer is None:
             mix = self.mixer(beta)
             self._mixers = [mix] * num_qubits
-        else:
+        elif isinstance(mixer, QuantumCircuit):
             splits = split_circuit(mixer.assign_parameters([beta], inplace=False))
             self._mixers = [Operator(sub_circ).data for sub_circ in splits]
+        else:
+            raise NotImplementedError(
+                f"Mixer of type {type(mixer).__name__} is not supported. "
+                "Only QuantumCircuit mixers are supported."
+            )
 
     def single_z(self, idx, circuit_graph: np.ndarray, gamma: float):
         """Compute the energy of <Zi>"""

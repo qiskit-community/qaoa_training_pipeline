@@ -8,16 +8,14 @@
 
 """Perform a naive light-cone simulation of QAOA."""
 
-from typing import Any, Dict, List, Optional, Tuple
-
 import networkx as nx
 import numpy as np
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
+from qiskit.primitives.base import BaseEstimatorV2
 from qiskit.quantum_info import SparsePauliOp
-from qiskit.quantum_info.operators.base_operator import BaseOperator
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
@@ -41,7 +39,7 @@ class LightConeEvaluator(BaseEvaluator):
     This could be improved on in subsequent PRs.
     """
 
-    def __init__(self, shots: int = 4096, estimator: Optional[Any] = None):
+    def __init__(self, shots: int = 4096, estimator: BaseEstimatorV2 | None = None):
         """Initialize the light-cone evaluator.
 
         Args:
@@ -60,14 +58,14 @@ class LightConeEvaluator(BaseEvaluator):
         # The graph from which we will take sub-graphs using the light-cone.
         self.graph = None
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
-        params: List[float],
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        params: list[float],
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ) -> float:
         r"""Evaluate the energy.
 
@@ -134,11 +132,11 @@ class LightConeEvaluator(BaseEvaluator):
 
     def make_radius_circuit(
         self,
-        edge: Tuple[int, int],
-        params: List[float],
-        initial_state: Optional[QuantumCircuit] = None,
-        mixer_operator: Optional[BaseOperator] = None,
-    ) -> Tuple[QuantumCircuit, str]:
+        edge: tuple[int, int],
+        params: list[float],
+        initial_state: QuantumCircuit | None = None,
+        mixer_operator: QuantumCircuit | None = None,
+    ) -> tuple[QuantumCircuit, str]:
         r"""Create the circuit for the given edge.
 
         This method proceeds by first shrinking the graph of the problem to the light cone.
@@ -161,7 +159,7 @@ class LightConeEvaluator(BaseEvaluator):
             cost_operator=SparsePauliOp.from_list(paulis),
             reps=len(params) // 2,
             initial_state=initial_state,
-            mixer_operator=mixer_operator,
+            mixer_operator=mixer_operator,  # type: ignore
         )
 
         # Assumes the same parameter order as qaoa_ansatz.
@@ -174,7 +172,7 @@ class LightConeEvaluator(BaseEvaluator):
 
         return ansatz, obs[::-1]
 
-    def make_radius_edges(self, edge: Tuple[int, int], radius: int) -> Dict[Tuple, float]:
+    def make_radius_edges(self, edge: tuple[int, int], radius: int) -> dict[tuple, float]:
         r"""Make the subset of edges that are a radius p away.
 
         Args:
@@ -217,10 +215,10 @@ class LightConeEvaluator(BaseEvaluator):
 
     @staticmethod
     def make_sub_correlators(
-        edges: Dict[Tuple[int, int], float],
-        source_edge: Tuple[int, int],
+        edges: dict[tuple[int, int], float],
+        source_edge: tuple[int, int],
         base_size: int,
-    ) -> Tuple[List[Tuple[str, float]], Tuple]:
+    ) -> tuple[list[tuple[str, float]], tuple]:
         r"""Build Paulis from the edges to construct a cost_op for `qaoa_ansatz`.
 
         First construct an array where each row is a correlator.
@@ -284,7 +282,7 @@ class LightConeEvaluator(BaseEvaluator):
         """
         return cls(**config)
 
-    def to_config(self) -> Dict:
+    def to_config(self) -> dict:
         """Json serializable config to keep track of how results are generated."""
         config = super().to_config()
 

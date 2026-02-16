@@ -8,8 +8,9 @@
 
 """Base trainer interface."""
 
+import warnings
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import TypeVar
 
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
@@ -20,6 +21,8 @@ from qaoa_training_pipeline.training.functions import (
     IdentityFunction,
 )
 from qaoa_training_pipeline.training.param_result import ParamResult
+
+T = TypeVar("T")
 
 
 class BaseTrainer(ABC):
@@ -44,8 +47,10 @@ class BaseTrainer(ABC):
         self._qaoa_angles_function = qaoa_angles_function or IdentityFunction()
 
     @property
-    def evaluator(self) -> BaseEvaluator | None:
+    def evaluator(self) -> BaseEvaluator:
         """Return the evaluator of the trainer."""
+        if self._evaluator is None:
+            raise ValueError("The evaluator must be defined before accessing it")
         return self._evaluator
 
     @property
@@ -59,14 +64,13 @@ class BaseTrainer(ABC):
         """Return True if the energy is minimized."""
 
     @abstractmethod
-    def train(
+    def train(  # pylint: disable=too-many-positional-arguments
         self,
         cost_op: SparsePauliOp,
-        *args,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
-        **kwargs,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
     ) -> ParamResult:
         """Performs the training."""
         raise NotImplementedError("Sub-classes must implement `train`.")
@@ -89,11 +93,11 @@ class BaseTrainer(ABC):
         }
 
     @abstractmethod
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Extract training key word arguments from a string."""
 
     @staticmethod
-    def extract_train_kwargs(kwargs_str: Optional[str] = None) -> dict:
+    def extract_train_kwargs(kwargs_str: str | None = None) -> dict:
         """A standardized manner to parse keyword arguments.
 
         The kwarg string is given, e.g., in form `k1:v1:k2:v2`. If the value is
@@ -113,6 +117,16 @@ class BaseTrainer(ABC):
         return {items[idx]: items[idx + 1] for idx in range(0, len(items), 2)}
 
     @staticmethod
-    def extract_list(list_str: str, dtype: type = float) -> List:
+    def extract_list(list_str: str, dtype: type = float) -> list:
         """Extract a list of elements from a string in format v0/v1/v2"""
         return [dtype(val) for val in list_str.split("/")]
+
+    def _warn_ignored_inputs(self, **kwargs):
+        for name, variable in kwargs.items():
+            if variable is not None:
+                warnings.warn(f"{self.__class__.__name__} ignores {name} input")
+
+    def _require(self, arg: T | None, name: str) -> T:
+        if arg is None:
+            raise ValueError(f"{self.__class__.__name__} requires {name} to be defined")
+        return arg

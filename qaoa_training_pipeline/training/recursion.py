@@ -8,20 +8,20 @@
 
 """Class to recursively train QAOA parameters."""
 
+from collections.abc import Callable
 from time import time
-from typing import Callable, Dict, Optional
+
+import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
-from qaoa_training_pipeline.training.parameter_extenders import PARAMETEREXTENDERS
 from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.training.parameter_extenders import PARAMETEREXTENDERS
+from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 
 class RecursionTrainer(BaseTrainer):
@@ -59,15 +59,15 @@ class RecursionTrainer(BaseTrainer):
         """Return True if the energy is minimized."""
         return self._trainer.minimization
 
-    # pylint: disable=arguments-differ, pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def train(
         self,
         cost_op: SparsePauliOp,
-        params0: list[float],
-        reps: int,
-        mixer: Optional[QuantumCircuit] = None,
-        initial_state: Optional[QuantumCircuit] = None,
-        ansatz_circuit: Optional[QuantumCircuit] = None,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        params0: list[float] | None = None,
+        reps: int | None = None,
     ) -> ParamResult:
         """Perform the training.
 
@@ -80,6 +80,9 @@ class RecursionTrainer(BaseTrainer):
             initial_sate: The initial state is passed on to the Scipy trainer.
             ansatz_circuit: The ansatz circuit is passed on to the Scipy trainer.
         """
+
+        params0 = self._require(params0, "params0")
+        reps = self._require(reps, "reps")
         start = time()
         current_reps = len(params0) // 2
 
@@ -107,7 +110,7 @@ class RecursionTrainer(BaseTrainer):
                 ansatz_circuit=ansatz_circuit,
             )
 
-            params0 = result["optimized_params"]
+            params0 = list(result["optimized_params"])
             energy = result["energy"]
             self._all_results[current_reps] = result.data
 
@@ -117,7 +120,7 @@ class RecursionTrainer(BaseTrainer):
         return param_result
 
     @classmethod
-    def from_config(cls, config: Dict) -> "RecursionTrainer":
+    def from_config(cls, config: dict) -> "RecursionTrainer":
         """Create the trainer from a config file.
 
         The parameter extender is chosen from one of the parameter extenders
@@ -134,7 +137,7 @@ class RecursionTrainer(BaseTrainer):
 
         return cls(trainer, parameter_extender)
 
-    def to_config(self) -> Dict:
+    def to_config(self) -> dict:
         """Return the configuration of the trainer."""
         return {
             "trainer_name": self.__class__.__name__,
@@ -143,7 +146,7 @@ class RecursionTrainer(BaseTrainer):
             "parameter_extender": self._parameter_extender.__name__,
         }
 
-    def parse_train_kwargs(self, args_str: Optional[str] = None) -> dict:
+    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Parse a string into the training kwargs."""
         train_kwargs = dict()
         for key, val in self.extract_train_kwargs(args_str).items():
@@ -158,8 +161,8 @@ class RecursionTrainer(BaseTrainer):
 
     def plot(
         self,
-        axis: Optional[Axes] = None,
-        fig: Optional[Figure] = None,
+        axis: Axes | None = None,
+        fig: Figure | None = None,
         **plot_args,
     ):
         """Plot the energy progression throughout the recursion."""

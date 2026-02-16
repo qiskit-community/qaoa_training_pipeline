@@ -9,7 +9,7 @@
 """Classes to identify extrema in arrays of data."""
 
 from abc import ABC, abstractmethod
-from typing import Tuple
+
 import numpy as np
 
 
@@ -17,14 +17,14 @@ class BaseExtremaLocator(ABC):
     """A base class to define an extrema locator."""
 
     @abstractmethod
-    def __call__(self, array: np.ndarray) -> Tuple[int, float]:
+    def __call__(self, array: np.ndarray) -> tuple[int, float]:
         """The method to return the index and the energy."""
 
 
 class Argmax(BaseExtremaLocator):
     """Wrapper of the numpy argmax."""
 
-    def __call__(self, array: np.ndarray) -> Tuple[int, float]:
+    def __call__(self, array: np.ndarray) -> tuple[int, float]:
         """Get the maximum energy and where it is."""
         idx = int(np.argmax(array))
 
@@ -35,7 +35,7 @@ class Argmax(BaseExtremaLocator):
 class Argmin(BaseExtremaLocator):
     """Wrapper of the numpy argmin."""
 
-    def __call__(self, array: np.ndarray) -> Tuple[int, float]:
+    def __call__(self, array: np.ndarray) -> tuple[int, float]:
         """Get the minimum energy and where it is."""
         idx = int(np.argmin(array))
 
