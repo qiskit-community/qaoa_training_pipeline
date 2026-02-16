@@ -76,6 +76,11 @@ class AverageAngleAggregator(BaseAngleAggregator):
         """Average over the qaoa_angles."""
         if isinstance(qaoa_angles, List):
             qaoa_angles = np.array(qaoa_angles)
+        
+        #Period for gamma is 2pi, for beta is pi/2
+        depth = int(qaoa_angles.shape[1]/2)
+        qaoa_angles[:,depth:] = (qaoa_angles[:,depth:]) % (2*np.pi)
+        qaoa_angles[:,0:depth] = (qaoa_angles[:,0:depth]) % (np.pi/2)
 
         if any(i >= len(qaoa_angles.shape) for i in self._axis):
             raise ValueError("Input data not coherent with chosen axes")
