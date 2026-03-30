@@ -292,7 +292,12 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             phase_j = np.exp(-1.0j * 4 * gamma * circuit_graph[idx2, k])
             u1 = np.diag([1.0, phase_j, phase_i, phase_i * phase_j])
 
-            rho_ij = 0.5 * rho_ij + 0.5 * np.dot(u1, np.dot(rho_ij, u1.conj().T))
+            # info of the qubit k
+            qk = self._initial_states[k].copy()
+            # coefficient of the |1> state
+            ck = np.abs(qk[1]) ** 2
+
+            rho_ij = (1 - ck) * rho_ij + ck * np.dot(u1, np.dot(rho_ij, u1.conj().T))
 
         # Apply the two-qubit Rzz gate between `i` and `j`
         if circuit_graph[idx1, idx2] != 0.0:
