@@ -252,3 +252,10 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
 
         # Prepares the |0001> state which has energy 3/2.
         self.assertAlmostEqual(energy, 1.5)
+
+    def test_warm_start(self):
+        """
+        Test custom warm start energy
+        """
+        cost_op = SparsePauliOp.from_list([("IIZZ", -0.3), ("ZIIZ", -0.7), ("IZIZ", -0.9)])
+        params = []
