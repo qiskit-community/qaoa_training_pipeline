@@ -191,6 +191,8 @@ This repository is still in development: new functionality is being added and th
 |      31 | Refactor linear angle interpolation (increase QAOA depth)    |          #55 |
 |      32 | Standardize the inheritance of evaluators and trainers       |          #57 |
 |      33 | Allow Pauli propagation to accept a custom circuit ansatz    |          #60 |
+|      34 | ScipyTrainer uses a custom initial_state.                    |          #62 |
+
 
 ## IBM Public Repository Disclosure
 
