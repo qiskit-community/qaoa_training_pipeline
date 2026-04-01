@@ -293,7 +293,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             u1 = np.diag([1.0, phase_j, phase_i, phase_i * phase_j])
 
             # info of the qubit k
-            qk = self._initial_states[k].copy()
+            qk = self._initial_states[k]
             # coefficient of the |1> state
             ck = np.abs(qk[1]) ** 2
 
