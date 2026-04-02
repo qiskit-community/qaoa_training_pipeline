@@ -17,7 +17,7 @@ from qiskit import transpile, QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import qaoa_ansatz, PauliEvolutionGate
 from qiskit.primitives import StatevectorEstimator
-from qiskit.quantum_info import SparsePauliOp, Pauli, Operator,Statevector
+from qiskit.quantum_info import SparsePauliOp, Pauli, Operator, Statevector
 
 from qiskit_aer import Aer
 
@@ -257,18 +257,12 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         """
         Test custom warm start comparing with exact circuit execution.
         """
-        cost_op = SparsePauliOp.from_list(
-            [
-                ("ZZI", -1),
-                ("ZIZ", +0.81),
-                ("IZZ",-0.43)
-            ]
-        )
-        params = [0.41,0.34]
+        cost_op = SparsePauliOp.from_list([("ZZI", -1), ("ZIZ", +0.81), ("IZZ", -0.43)])
+        params = [0.41, 0.34]
         init = QuantumCircuit(3)
         for j in range(3):
-            theta = 0.1 * (j+1)
-            init.ry(theta ,j)
+            theta = 0.1 * (j + 1)
+            init.ry(theta, j)
 
         # Build the full QAOA circuit to get the reference statevector
         qc = QuantumCircuit(3)
@@ -288,5 +282,3 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
 
         energy = self.evaluator.evaluate(cost_op, params, initial_state=init)
         self.assertAlmostEqual(float(energy), expected_energy)
-
-
