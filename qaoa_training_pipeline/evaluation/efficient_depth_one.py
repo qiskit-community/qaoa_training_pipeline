@@ -208,8 +208,12 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             phase_i = np.exp(-1.0j * 4 * gamma * circuit_graph[idx, k])
 
             u1 = np.diag([1.0, phase_i])
+            # info of the qubit k
+            qk = self._initial_states[k]
+            # coefficient of the |1> state
+            ck = np.abs(qk[1]) ** 2
+            rho_i = (1 - ck) * rho_i + ck * np.dot(u1, np.dot(rho_i, u1.conj().T))
 
-            rho_i = 0.5 * rho_i + 0.5 * np.dot(u1, np.dot(rho_i, u1.conj().T))
 
         # Apply the mixer operator
         assert self._mixers, "_mixers must be defined before calling single_z()"
