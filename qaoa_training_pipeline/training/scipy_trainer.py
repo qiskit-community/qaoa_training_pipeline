@@ -111,6 +111,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
                 params=qaoa_angles,
                 mixer=mixer,
                 ansatz_circuit=ansatz_circuit,
+                initial_state=initial_state,
             )
 
             energy = float(energy)
