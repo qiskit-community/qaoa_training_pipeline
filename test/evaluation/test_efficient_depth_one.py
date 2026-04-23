@@ -17,7 +17,7 @@ from qiskit import transpile, QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import qaoa_ansatz, PauliEvolutionGate
 from qiskit.primitives import StatevectorEstimator
-from qiskit.quantum_info import SparsePauliOp, Pauli, Operator
+from qiskit.quantum_info import SparsePauliOp, Pauli, Operator, Statevector
 
 from qiskit_aer import Aer
 
@@ -252,3 +252,36 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
 
         # Prepares the |0001> state which has energy 3/2.
         self.assertAlmostEqual(energy, 1.5)
+
+
+    def test_warm_start(self):
+        """
+        Test custom warm start comparing with exact circuit execution.
+        """
+        cost_op = SparsePauliOp.from_list([("ZII", -1), ("IZI", +0.81), ("IIZ", -0.43),("ZZI",
+                                                                                        -1.5),
+                                           ("ZIZ", +0.21), ("IZZ", -0.11)])
+        params = [0.41, 0.34]
+        init = QuantumCircuit(3)
+        for j in range(3):
+            theta = 0.1 * (j + 1)
+            init.ry(theta, j)
+
+        # Build the full QAOA circuit to get the reference statevector
+        qc = QuantumCircuit(3)
+        qc.compose(init, inplace=True)
+
+        # Cost unitary: exp(-i gamma * cost_op)
+        cost_gate = PauliEvolutionGate(cost_op, time=params[1])
+        qc.append(cost_gate, range(3))
+
+        # Mixer unitary: exp(-i beta * sum_j X_j)  ≡  Rx(2*beta) on each qubit
+        for j in range(3):
+            qc.rx(2 * params[0], j)
+
+        # Compute <psi | cost_op | psi> via statevector simulation
+        sv = Statevector(qc)
+        expected_energy = sv.expectation_value(cost_op).real
+
+        energy = self.evaluator.evaluate(cost_op, params, initial_state=init)
+        self.assertAlmostEqual(float(energy), expected_energy)
