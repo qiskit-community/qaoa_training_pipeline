@@ -336,5 +336,6 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         sv = Statevector(qc)
         expected_energy = sv.expectation_value(cost_op).real
 
+        # Evaluate
         energy = self.evaluator.evaluate(cost_op, params, initial_state=init, mixer=mixer)
         self.assertAlmostEqual(float(energy), expected_energy)
