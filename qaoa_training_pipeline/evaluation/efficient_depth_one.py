@@ -214,7 +214,6 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             ck = np.abs(qk[1]) ** 2
             rho_i = (1 - ck) * rho_i + ck * np.dot(u1, np.dot(rho_i, u1.conj().T))
 
-
         # Apply the mixer operator
         assert self._mixers, "_mixers must be defined before calling single_z()"
         mixer_i = self._mixers[idx]
