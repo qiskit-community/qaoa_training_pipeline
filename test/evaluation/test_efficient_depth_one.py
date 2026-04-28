@@ -256,7 +256,7 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
 
     def test_warm_start(self):
         """
-        Test custom warm start comparing with exact circuit execution.
+        Test the efficient depth-one with a custom initial state and standard mixer.
         """
         cost_op = SparsePauliOp.from_list([("ZII", -1), ("IZI", +0.81), ("IIZ", -0.43),("ZZI",
                                                                                         -1.5),
