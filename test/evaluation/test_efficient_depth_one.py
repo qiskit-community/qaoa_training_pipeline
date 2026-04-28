@@ -253,14 +253,20 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         # Prepares the |0001> state which has energy 3/2.
         self.assertAlmostEqual(energy, 1.5)
 
-
     def test_warm_start(self):
         """
         Test the efficient depth-one with a custom initial state and standard mixer.
         """
-        cost_op = SparsePauliOp.from_list([("ZII", -1), ("IZI", +0.81), ("IIZ", -0.43),("ZZI",
-                                                                                        -1.5),
-                                           ("ZIZ", +0.21), ("IZZ", -0.11)])
+        cost_op = SparsePauliOp.from_list(
+            [
+                ("ZII", -1),
+                ("IZI", +0.81),
+                ("IIZ", -0.43),
+                ("ZZI", -1.5),
+                ("ZIZ", +0.21),
+                ("IZZ", -0.11),
+            ]
+        )
         params = [0.41, 0.34]
         init = QuantumCircuit(3)
         for j in range(3):
