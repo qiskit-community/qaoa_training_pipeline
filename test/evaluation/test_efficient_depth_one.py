@@ -291,3 +291,50 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
 
         energy = self.evaluator.evaluate(cost_op, params, initial_state=init)
         self.assertAlmostEqual(float(energy), expected_energy)
+
+    def test_warm_start_aligned_driver(self):
+        """
+        Test the efficient depth-one with a custom initial state and mixer.
+        """
+        cost_op = SparsePauliOp.from_list(
+            [
+                ("ZII", -1),
+                ("IZI", +0.81),
+                ("IIZ", -0.43),
+                ("ZZI", -1.5),
+                ("ZIZ", +0.21),
+                ("IZZ", -0.11),
+            ]
+        )
+        params = [0.41, 0.34]
+        init = QuantumCircuit(3)
+        for j in range(3):
+            theta = 0.1 * (j + 1)
+            init.ry(theta, j)
+
+        # Build the full QAOA circuit to get the reference statevector
+        qc = QuantumCircuit(3)
+        qc.compose(init, inplace=True)
+
+        # Cost unitary: exp(-i gamma * cost_op)
+        cost_gate = PauliEvolutionGate(cost_op, time=params[1])
+        qc.append(cost_gate, range(3))
+
+        # Mixer so that the initial state is the ground state
+        mixer = QuantumCircuit(3)
+        beta = Parameter("Beta")
+
+        for j in range(3):
+            theta = 0.1 * (j + 1)
+            mixer.ry(theta, j)
+            mixer.rz(-2 * beta, j)
+            mixer.ry(-theta, j)
+
+        qc.compose(mixer.assign_parameters({beta: params[0]}), inplace=True)
+
+        # Compute <psi | cost_op | psi> via statevector simulation
+        sv = Statevector(qc)
+        expected_energy = sv.expectation_value(cost_op).real
+
+        energy = self.evaluator.evaluate(cost_op, params, initial_state=init, mixer=mixer)
+        self.assertAlmostEqual(float(energy), expected_energy)
