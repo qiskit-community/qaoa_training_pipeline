@@ -8,6 +8,9 @@
 
 """Class to efficiently evaluate depth-one circuits."""
 
+import multiprocessing as mp
+from concurrent.futures import ThreadPoolExecutor
+
 import networkx as nx
 import numpy as np
 from qiskit import QuantumCircuit
@@ -36,8 +39,15 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
     The limitation to quadratic forms could be removed in the future.
     """
 
-    def __init__(self) -> None:
-        """Initialize the class."""
+    def __init__(self, use_parallel: bool = False, max_workers: int | None = None) -> None:
+        """Initialize the class.
+
+        Args:
+            use_parallel: If True, use parallel computation for correlators and single-qubit terms.
+                This can significantly speed up evaluation for large graphs. Default is False.
+            max_workers: Maximum number of worker threads for parallel computation. If None,
+                defaults to the number of CPU cores. Only used if use_parallel is True.
+        """
         super().__init__()
         self._mixers = None
         self._initial_states = None
@@ -49,6 +59,10 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         self._cost_diag_terms = None
         self._circuit_neighbors = []
         self._mixer_pairs = None
+
+        # Parallelization settings
+        self._use_parallel = use_parallel
+        self._max_workers = max_workers if max_workers is not None else mp.cpu_count()
 
     # pylint: disable=too-many-positional-arguments
     def evaluate(
@@ -117,19 +131,53 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         # Compute the energy from the two-qubit correlators
         assert self._cost_edges is not None, "_cost_edges must be initialized before evaluating"
-        energy = sum(
-            weight * self.correlator(i, j, circuit_graph, params[1])
-            for i, j, weight in self._cost_edges
-        )
 
-        # Compute the energy from the single-qubit terms
-        assert (
-            self._cost_diag_terms is not None
-        ), "_cost_diag_terms must be initialized before evaluating"
-        energy += sum(
-            weight * self.single_z(i, circuit_graph, params[1])
-            for i, weight in self._cost_diag_terms
-        )
+        if self._use_parallel:
+            # Parallel computation of correlators
+            with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+                # Submit all correlator computations
+                edge_futures = [
+                    executor.submit(self.correlator, i, j, circuit_graph, params[1])
+                    for i, j, _ in self._cost_edges
+                ]
+
+                # Collect results and compute weighted sum
+                energy = sum(
+                    weight * future.result()
+                    for (i, j, weight), future in zip(self._cost_edges, edge_futures)
+                )
+
+                # Compute the energy from the single-qubit terms
+                assert (
+                    self._cost_diag_terms is not None
+                ), "_cost_diag_terms must be initialized before evaluating"
+
+                # Submit all single-qubit computations
+                single_futures = [
+                    executor.submit(self.single_z, i, circuit_graph, params[1])
+                    for i, _ in self._cost_diag_terms
+                ]
+
+                # Collect results and add to energy
+                energy += sum(
+                    weight * future.result()
+                    for (i, weight), future in zip(self._cost_diag_terms, single_futures)
+                )
+        else:
+            # Sequential computation (original implementation)
+            energy = sum(
+                weight * self.correlator(i, j, circuit_graph, params[1])
+                for i, j, weight in self._cost_edges
+            )
+
+            # Compute the energy from the single-qubit terms
+            assert (
+                self._cost_diag_terms is not None
+            ), "_cost_diag_terms must be initialized before evaluating"
+            energy += sum(
+                weight * self.single_z(i, circuit_graph, params[1])
+                for i, weight in self._cost_diag_terms
+            )
 
         return np.real(energy)
 
@@ -358,5 +406,14 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
     @classmethod
     def from_config(cls, config: dict) -> "EfficientDepthOneEvaluator":
-        """Create the evaluator."""
+        """Create the evaluator from a configuration dictionary.
+
+        Args:
+            config: Configuration dictionary that may contain:
+                - use_parallel (bool): Enable parallel computation
+                - max_workers (int): Maximum number of worker threads
+
+        Returns:
+            An instance of EfficientDepthOneEvaluator.
+        """
         return cls(**config)
