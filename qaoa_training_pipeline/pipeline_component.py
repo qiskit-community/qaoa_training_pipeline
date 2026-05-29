@@ -13,9 +13,9 @@ from typing import TypeVar
 
 T = TypeVar("T")
 
+
 class PipelineComponent(ABC):
-    """An abstract class that all pipeline components should inherit from.
-    """
+    """An abstract class that all pipeline components should inherit from."""
 
     def __init__(self):
         super().__init__()
@@ -33,7 +33,6 @@ class PipelineComponent(ABC):
         Note: This data structure is not intended for us to recreate the class instance.
         """
         raise NotImplementedError("Sub-classes must implement `to_config`.")
-
 
     @abstractmethod
     def parse_train_kwargs(self, args_str: str | None = None) -> dict:
