@@ -26,6 +26,7 @@ class ParamsProvider(ABC):
     @abstractmethod
     def provide_params(
         self,
+        *args
     ) -> ParamResult:
         """Return a ParamResult object containing the parameters.
         """
