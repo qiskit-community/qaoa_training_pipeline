@@ -7,28 +7,56 @@
 # that they have been altered from the originals.
 
 from abc import ABC, abstractmethod
+import warnings
+from typing import TypeVar
 
-import numpy as np
-
-from qaoa_training_pipeline.pipeline_component import PipelineComponent 
 from qaoa_training_pipeline.training.param_result import ParamResult
 
+T = TypeVar("T")
 
-class ParamsProvider(PipelineComponent):
-    """An interface that parameter providers need to follow.
+class ParamsProvider(ABC):
+    """ A parameter provider is a class that provides QAOA angles 
     """
 
-    def __init__(self):
+    def __init__(
+        self, 
+    ):
         super().__init__()
     
     @abstractmethod
     def provide_params(
         self,
-        folder: str | None = None,
-        file_pattern: str | None = None,
     ) -> ParamResult:
         """Return a ParamResult object containing the parameters.
         """
         raise NotImplementedError("Sub-classes must implement `provide_params`.")
 
-    
+    @classmethod
+    @abstractmethod
+    def from_config(cls, config: dict):
+        """Return an instance of the class based on a config."""
+        raise NotImplementedError("Sub-classes must implement `from_config`.")
+
+    @abstractmethod
+    def to_config(self) -> dict:
+        """Creates a serializable dictionary to keep track of how results are created.
+
+        Note: This data structure is not intended for us to recreate the class instance.
+        """
+        raise NotImplementedError("Sub-classes must implement `to_config`.")
+
+    @staticmethod
+    def extract_list(list_str: str, dtype: type = float) -> list:
+        """Extract a list of elements from a string in format v0/v1/v2"""
+        return [dtype(val) for val in list_str.split("/")]
+
+    def _warn_ignored_inputs(self, **kwargs):
+        for name, variable in kwargs.items():
+            if variable is not None:
+                warnings.warn(f"{self.__class__.__name__} ignores {name} input")
+
+    def _require(self, arg: T | None, name: str) -> T:
+        """Raise a ValueError if the argument is None."""
+        if arg is None:
+            raise ValueError(f"{self.__class__.__name__} requires {name} to be defined")
+        return arg
