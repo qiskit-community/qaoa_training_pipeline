@@ -14,22 +14,18 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 
 T = TypeVar("T")
 
+
 class ParamsProvider(ABC):
-    """ A parameter provider is a class that provides QAOA angles 
-    """
+    """A parameter provider is a class that provides QAOA angles"""
 
     def __init__(
-        self, 
+        self,
     ):
         super().__init__()
-    
+
     @abstractmethod
-    def provide_params(
-        self,
-        *args
-    ) -> ParamResult:
-        """Return a ParamResult object containing the parameters.
-        """
+    def provide_params(self, *args) -> ParamResult:
+        """Return a ParamResult object containing the parameters."""
         raise NotImplementedError("Sub-classes must implement `provide_params`.")
 
     @classmethod
