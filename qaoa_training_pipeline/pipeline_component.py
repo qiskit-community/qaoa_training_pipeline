@@ -38,7 +38,6 @@ class PipelineComponent(ParamsProvider):
     @abstractmethod
     def run(
         self,
-        *,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit,
         initial_state: QuantumCircuit,
