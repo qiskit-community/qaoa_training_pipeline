@@ -25,9 +25,8 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class PipelineComponent(ParamsProvider):
-    """A pipeline component is a class that is responsible for providing or receiving
-    QAOA angles according to a method defined in subclasses inheriting from
-    PipelineComponent."""
+    """A pipeline component receives and provides QAOA angles.
+    """
 
     @abstractmethod
     def run(
