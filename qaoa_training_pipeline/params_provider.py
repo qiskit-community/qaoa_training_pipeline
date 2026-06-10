@@ -38,6 +38,11 @@ class ParamsProvider(ABC):
         """Initialize the parameter provider."""
         self._qaoa_angles_function = qaoa_angles_function or IdentityFunction()
 
+    @property
+    def qaoa_angles_function(self) -> BaseAnglesFunction:
+        """Return the QAOA angles function of the params provider."""
+        return self._qaoa_angles_function
+
     @abstractmethod
     def provide_params(self, **kwargs) -> ParamResult:
         """Return a ParamResult object containing the parameters."""
