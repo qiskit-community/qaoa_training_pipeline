@@ -20,13 +20,20 @@ from abc import abstractmethod
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
+from qaoa_training_pipeline.qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider
+from qaoa_training_pipeline.qaoa_training_pipeline.training.functions import BaseAnglesFunction
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class PipelineComponent(ParamsProvider):
     """A pipeline component receives and provides QAOA angles.
     """
+    def __init__(self, qaoa_angles_function: BaseAnglesFunction | None = None, evaluator: BaseEvaluator | None = None,):
+        """Initialize the pipeline component."""
+
+        super().__init__(qaoa_angles_function)
+        self._evaluator = evaluator
 
     @abstractmethod
     def run(
@@ -45,3 +52,10 @@ class PipelineComponent(ParamsProvider):
     def provide_params(self, **kwargs) -> ParamResult:
         """Provides QAOA angles by receiving initial angles and running a method to improve them"""
         return self.run(**kwargs)
+
+    @property
+    def evaluator(self) -> BaseEvaluator:
+        """Return the evaluator of the trainer."""
+        if self._evaluator is None:
+            raise ValueError("The evaluator must be defined before accessing it")
+        return self._evaluator
