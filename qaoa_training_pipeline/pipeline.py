@@ -6,6 +6,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+
+"""QAOA training pipeline orchestration and execution.
+
+This module defines the Pipeline class, which orchestrates the execution of an initial
+ParamsProvider and multiple PipelineComponents to generate QAOA angles. It allows
+multi-stage angle generation strategies. 
+"""
+
+
 from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider
 from qaoa_training_pipeline.qaoa_training_pipeline.pipeline_component import PipelineComponent
 
@@ -18,10 +27,10 @@ class Pipeline:
 
     def __init__(
         self,
-        pipeline_components: list[PipelineComponent] | None = [],
+        pipeline_components: list[PipelineComponent] | None = None,
         params_provider: ParamsProvider | None = None,
     ):
-        self._pipeline_components = pipeline_components
+        self._pipeline_components = pipeline_components or []
         self._params_provider = params_provider
 
     def extract_runtime_kwargs(self, kwargs_str: str | None = None) -> dict:

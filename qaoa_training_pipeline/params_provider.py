@@ -6,6 +6,15 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+
+"""Abstract base class for QAOA parameter providers.
+
+This module defines the ParamsProvider abstract base class, which defines the structure for 
+QAOA angle retrieval in subclasses. Parameter providers are responsible for supplying QAOA 
+angles.
+"""
+
+
 from abc import ABC, abstractmethod
 import warnings
 from typing import TypeVar
@@ -18,13 +27,8 @@ T = TypeVar("T")
 class ParamsProvider(ABC):
     """A parameter provider is a class that provides QAOA angles"""
 
-    def __init__(
-        self,
-    ):
-        super().__init__()
-
     @abstractmethod
-    def provide_params(self, *args) -> ParamResult:
+    def provide_params(self, **kwargs) -> ParamResult:
         """Return a ParamResult object containing the parameters."""
         raise NotImplementedError("Sub-classes must implement `provide_params`.")
 
