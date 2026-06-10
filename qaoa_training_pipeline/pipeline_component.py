@@ -53,9 +53,9 @@ class PipelineComponent(ParamsProvider):
         or optimization)"""
         raise NotImplementedError("Sub-classes must implement `run`.")
 
-    def provide_params(self, **kwargs) -> ParamResult:
+    def provide_params(self, *args, **kwargs) -> ParamResult:
         """Provides QAOA angles by receiving initial angles and running a method to improve them"""
-        return self.run(**kwargs)
+        return self.run(*args, **kwargs)
 
     @property
     def evaluator(self) -> BaseEvaluator:

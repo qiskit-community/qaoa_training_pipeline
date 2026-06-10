@@ -44,7 +44,7 @@ class ParamsProvider(ABC):
         return self._qaoa_angles_function
 
     @abstractmethod
-    def provide_params(self, **kwargs) -> ParamResult:
+    def provide_params(self, *args, **kwargs) -> ParamResult:
         """Return a ParamResult object containing the parameters."""
         raise NotImplementedError("Sub-classes must implement `provide_params`.")
 
