@@ -35,6 +35,11 @@ class PipelineComponent(ParamsProvider):
         super().__init__(qaoa_angles_function)
         self._evaluator = evaluator
 
+    @property
+    @abstractmethod
+    def minimization(self) -> bool:
+        """Return True if the energy is minimized."""
+
     @abstractmethod
     def run(
         self,
