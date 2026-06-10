@@ -20,12 +20,23 @@ import warnings
 from typing import TypeVar
 
 from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.training.functions import (
+    BaseAnglesFunction,
+    IdentityFunction,
+)
 
 T = TypeVar("T")
 
 
 class ParamsProvider(ABC):
     """A parameter provider is a class that provides QAOA angles."""
+
+    def __init__(
+        self, 
+        qaoa_angles_function: BaseAnglesFunction | None = None,
+    ):
+        """Initialize the parameter provider."""
+        self._qaoa_angles_function = qaoa_angles_function or IdentityFunction()
 
     @abstractmethod
     def provide_params(self, **kwargs) -> ParamResult:
