@@ -25,7 +25,7 @@ T = TypeVar("T")
 
 
 class ParamsProvider(ABC):
-    """A parameter provider is a class that provides QAOA angles"""
+    """A parameter provider is a class that provides QAOA angles."""
 
     @abstractmethod
     def provide_params(self, **kwargs) -> ParamResult:
