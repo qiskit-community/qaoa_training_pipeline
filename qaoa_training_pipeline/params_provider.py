@@ -61,3 +61,24 @@ class ParamsProvider(ABC):
         if arg is None:
             raise ValueError(f"{self.__class__.__name__} requires {name} to be defined")
         return arg
+    
+    def parse_runtime_kwargs(self, kwargs_str: str | None = None) -> dict:
+        """Method to parse keyword arguments passed when using the pipeline
+        from the command line.
+
+        The kwarg string is given, e.g., in form `k1:v1:k2:v2`. If the value is
+        a list then the values in the list must be spaced by a `/`, for example,
+        `params0:1.234/4.56`.
+        """
+        if kwargs_str is None:
+            return dict()
+
+        items = kwargs_str.split(":")
+
+        if len(items) % 2 != 0:
+            raise ValueError(
+                f"Malformed keyword arguments {kwargs_str}: should be k1:v1:k2:v2_...."
+            )
+
+        return {items[idx]: items[idx + 1] for idx in range(0, len(items), 2)}
+
