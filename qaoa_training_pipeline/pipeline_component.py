@@ -15,7 +15,6 @@ receive QAOA angles and improve them to generate optimized QAOA angles.
 
 """
 
-from _typeshed import IdentityFunction
 from abc import abstractmethod
 
 from qiskit import QuantumCircuit
@@ -23,7 +22,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider
-from qaoa_training_pipeline.qaoa_training_pipeline.training.functions import BaseAnglesFunction, IdentityFunction
+from qaoa_training_pipeline.qaoa_training_pipeline.training.functions import BaseAnglesFunction
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
