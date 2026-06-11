@@ -32,7 +32,7 @@ class ParamsProvider(ABC):
     """A parameter provider is a class that provides QAOA angles."""
 
     def __init__(
-        self, 
+        self,
         qaoa_angles_function: BaseAnglesFunction | None = None,
     ):
         """Initialize the parameter provider."""
@@ -77,7 +77,7 @@ class ParamsProvider(ABC):
         if arg is None:
             raise ValueError(f"{self.__class__.__name__} requires {name} to be defined")
         return arg
-    
+
     def parse_runtime_kwargs(self, kwargs_str: str | None = None) -> dict:
         """Method to parse keyword arguments passed when using the pipeline
         from the command line.
@@ -97,4 +97,3 @@ class ParamsProvider(ABC):
             )
 
         return {items[idx]: items[idx + 1] for idx in range(0, len(items), 2)}
-

@@ -27,13 +27,13 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class PipelineComponent(ParamsProvider):
-    """A pipeline component receives and provides QAOA angles.
-    """
+    """A pipeline component receives and provides QAOA angles."""
+
     def __init__(
-        self, 
+        self,
         evaluator: BaseEvaluator | None = None,
         *,
-        qaoa_angles_function: BaseAnglesFunction  | None = None
+        qaoa_angles_function: BaseAnglesFunction | None = None,
     ):
         """Initialize the pipeline component."""
 
@@ -46,6 +46,7 @@ class PipelineComponent(ParamsProvider):
         """Return True if the energy is minimized."""
 
     @abstractmethod
+    # pylint: disable=too-many-positional-arguments
     def run(
         self,
         cost_op: SparsePauliOp,
