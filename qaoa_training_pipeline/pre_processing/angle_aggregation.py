@@ -86,7 +86,11 @@ class AverageAngleAggregator(BaseAngleAggregator):
         #Period for gamma is 2pi, for beta is pi/2
         depth = int(qaoa_angles.shape[1]/2)
         qaoa_angles[:,depth:] = (qaoa_angles[:,depth:]) % (2*np.pi)
-        qaoa_angles[:,0:depth] = (qaoa_angles[:,0:depth]) % (np.pi/2)
+        #Period for gamma is 2pi, for beta is pi/2
+        if self._wrap_angles:
+            depth = int(qaoa_angles.shape[1]/2)
+            qaoa_angles[:,depth:] = (qaoa_angles[:,depth:]) % self._beta_wrap
+            qaoa_angles[:,0:depth] = (qaoa_angles[:,0:depth]) % self._gamma_wrap
 
         if any(i >= len(qaoa_angles.shape) for i in self._axis):
             raise ValueError("Input data not coherent with chosen axes")
