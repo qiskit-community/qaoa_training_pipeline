@@ -17,7 +17,7 @@ from qaoa_training_pipeline.utils.graph_utils import graph_to_dict
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
 
-class TestFeatureExtractor(TrainingPipelineTestCase):
+class TestAverageAngleAggregator(TrainingPipelineTestCase):
     """Test the feature extractor."""
 
     def setUp(self):
