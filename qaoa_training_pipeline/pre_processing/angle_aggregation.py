@@ -108,7 +108,12 @@ class AverageAngleAggregator(BaseAngleAggregator):
     @classmethod
     def from_config(cls, config: Dict) -> "AverageAngleAggregator":
         """Create the trivial feature matcher."""
-        return cls(config.get("axis", 0))
+        return cls(
+            config.get("axis", 0),
+            config.get("wrap_angles", False),
+            config.get("beta_wrap", 2 * np.pi),
+            config.get("gamma_wrap", 2 * np.pi),
+        )
 
 
 ANGLE_AGGREGATORS = {
