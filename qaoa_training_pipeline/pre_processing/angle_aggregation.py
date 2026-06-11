@@ -100,6 +100,9 @@ class AverageAngleAggregator(BaseAngleAggregator):
         """Create config from the angle aggregator."""
         config = super().to_config()
         config["axis"] = self._axis
+        config["wrap_angles"] = self._wrap_angles
+        config["beta_wrap"] = self._beta_wrap
+        config["gamma_wrap"] = self._gamma_wrap
         return config
 
     @classmethod
