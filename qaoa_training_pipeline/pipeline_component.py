@@ -30,7 +30,7 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 class PipelineComponent(ParamsProvider):
     """A pipeline component receives and provides QAOA angles.
     """
-    def __init__(self, qaoa_angles_function: BaseAnglesFunction = IdentityFunction(), evaluator: BaseEvaluator | None = None,):
+    def __init__(self, qaoa_angles_function: BaseAnglesFunction  | None = None, evaluator: BaseEvaluator | None = None,):
         """Initialize the pipeline component."""
 
         super().__init__(qaoa_angles_function)
