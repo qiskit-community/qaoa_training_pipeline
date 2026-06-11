@@ -13,24 +13,22 @@ from test import TrainingPipelineTestCase
 import numpy as np
 
 from qaoa_training_pipeline.pre_processing.angle_aggregation import AverageAngleAggregator
-from qaoa_training_pipeline.utils.graph_utils import graph_to_dict
-from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
 
 class TestAverageAngleAggregator(TrainingPipelineTestCase):
     """Test the feature extractor."""
 
     def setUp(self):
-        self.qaoa_angles = np.random.uniform(0, 2*np.pi, (2, 10))
+        self.qaoa_angles = np.random.uniform(0, 2 * np.pi, (2, 10))
 
     def test_aggregate_angles(self):
         """Test angle aggregation."""
         aggregator = AverageAngleAggregator()
         features = aggregator(self.qaoa_angles)
         self.assertTupleEqual(features.shape, (1, 10))
-    
+
     def test_aggregate_angles_with_wrapping(self):
         """Test angle aggregation with wrapping."""
-        aggregator = AverageAngleAggregator(wrap_angles=True, beta_wrap=np.pi, gamma_wrap=np.pi/2)
+        aggregator = AverageAngleAggregator(wrap_angles=True, beta_wrap=np.pi, gamma_wrap=np.pi / 2)
         features = aggregator(self.qaoa_angles)
         self.assertTupleEqual(features.shape, (1, 10))
