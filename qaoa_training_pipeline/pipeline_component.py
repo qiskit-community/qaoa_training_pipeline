@@ -69,3 +69,14 @@ class PipelineComponent(ParamsProvider):
         if self._evaluator is None:
             raise ValueError("The evaluator must be defined before accessing it")
         return self._evaluator
+
+    def to_config(self) -> dict:
+        """Creates a serializable dictionary to keep track of how results are created.
+
+        Note: This data structure is not intended for us to recreate the class instance.
+        """
+        return {
+            "trainer_name": self.__class__.__name__,
+            "evaluator": self._evaluator.to_config() if self._evaluator else None,
+            "qaoa_angles_function": self._qaoa_angles_function.to_config(),
+        }
