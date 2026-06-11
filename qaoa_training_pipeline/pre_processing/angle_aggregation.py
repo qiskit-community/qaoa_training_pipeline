@@ -61,7 +61,13 @@ class TrivialAngleAggregator(BaseAngleAggregator):
 class AverageAngleAggregator(BaseAngleAggregator):
     """Average a set of angles together."""
 
-    def __init__(self, axis: Union[int, List[int]] = 0):
+    def __init__(
+            self, 
+            axis: Union[int, List[int]] = 0,
+            wrap_angles: bool = False,
+            beta_wrap: float = 2 * np.pi,
+            gamma_wrap: float = 2 * np.pi,
+        ):
         """Setup the angle aggregator.
 
         Args:
