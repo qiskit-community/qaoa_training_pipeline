@@ -77,6 +77,9 @@ class AverageAngleAggregator(BaseAngleAggregator):
             axis = [axis]
 
         self._axis = axis
+        self._wrap_angles = wrap_angles
+        self._beta_wrap = beta_wrap
+        self._gamma_wrap = gamma_wrap
 
     def __call__(self, qaoa_angles: Union[np.ndarray, List]):
         """Average over the qaoa_angles."""
