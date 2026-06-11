@@ -25,10 +25,10 @@ class TestAverageAngleAggregator(TrainingPipelineTestCase):
         """Test angle aggregation."""
         aggregator = AverageAngleAggregator()
         features = aggregator(self.qaoa_angles)
-        self.assertTupleEqual(features.shape, (1, 10))
+        self.assertTupleEqual(features.shape, (10,))
 
     def test_aggregate_angles_with_wrapping(self):
         """Test angle aggregation with wrapping."""
         aggregator = AverageAngleAggregator(wrap_angles=True, beta_wrap=np.pi, gamma_wrap=np.pi / 2)
         features = aggregator(self.qaoa_angles)
-        self.assertTupleEqual(features.shape, (1, 10))
+        self.assertTupleEqual(features.shape, (10,))
