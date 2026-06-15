@@ -24,9 +24,8 @@ Example:
 """
 
 
-from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider
-from qaoa_training_pipeline.qaoa_training_pipeline.pipeline_component import PipelineComponent
-
+from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider, PARAMS_PROVIDERS
+from qaoa_training_pipeline.qaoa_training_pipeline.pipeline_component import PipelineComponent, PIPELINE_COMPONENTS
 
 class Pipeline:
     """Orchestrates the QAOA angles training pipeline. The Pipeline class manages the training 
@@ -69,3 +68,24 @@ class Pipeline:
         """
         self._pipeline_components = pipeline_components or []
         self._params_provider = params_provider
+
+    @classmethod
+    def from_config(cls, config: dict) -> "Pipeline":
+        """Create a Pipeline from a configuration dictionary."""
+
+        params_provider = None
+
+        if "params_provider" in config:
+            provider_cls =  PARAMS_PROVIDERS[config["provider_name"]]
+            params_provider = provider_cls.from_config(config["params_provider"])
+
+        pipeline_components = []
+
+        if "pipeline_components" in config:
+            for component_config in config["pipeline_components"]:
+                component_cls = PIPELINE_COMPONENTS[component_config["component_name"]]
+                pipeline_components.append(
+                    component_cls.from_config(component_config)
+                )
+
+        return cls(pipeline_components, params_provider)

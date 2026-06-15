@@ -139,3 +139,23 @@ class PipelineComponent(ParamsProvider):
             "evaluator": self._evaluator.to_config() if self._evaluator else None,
             "qaoa_angles_function": self._qaoa_angles_function.to_config(),
         }
+
+
+    # Import all ParamsProvider implementations
+from qaoa_training_pipeline.training import (
+    RecursionTrainer,
+    RecursiveTransitionStates,
+    ReweightingTrainer,
+    ScipyTrainer,
+    TransferTrainer,
+    TransitionStatesTrainer,
+)
+
+PIPELINE_COMPONENTS = {
+    "RecursionTrainer": RecursionTrainer,
+    "RecursiveTransitionStates": RecursiveTransitionStates,
+    "ReweightingTrainer": ReweightingTrainer,
+    "ScipyTrainer": ScipyTrainer,
+    "TransferTrainer": TransferTrainer,
+    "TransitionStatesTrainer": TransitionStatesTrainer,
+}
