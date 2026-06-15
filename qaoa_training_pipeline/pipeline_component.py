@@ -8,11 +8,14 @@
 
 """Pipeline components for QAOA angles training.
 
-This module defines the PipelineComponent abstract class, which extends
-ParamsProvider to support active parameter generation through methods found in the literature. 
-Pipeline components are the building blocks of QAOA training pipelines, where each PipelineComponent can 
-receive QAOA angles and improve them to generate optimized QAOA angles.
+This module defines the PipelineComponent abstract class, which extends ParamsProvider to
+support QAOA angles optimization. Pipeline components are the building blocks of QAOA 
+training pipelines. PipelineComponents can receive QAOA angles and improve them
+through various optimization or training methods found in the literature.
 
+Multiple instances of PipelineComponent can be chained together in a Pipeline to create 
+multi-stage optimization workflows, where each component refines the parameters produced by
+the previous stage.
 """
 
 from abc import abstractmethod
@@ -27,7 +30,21 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class PipelineComponent(ParamsProvider):
-    """A pipeline component receives and provides QAOA angles."""
+    """Abstract base class for pipeline components that optimize QAOA angles.
+    
+    PipelineComponent extends ParamsProvider to add training and optimization capabilities.
+    It receives initial QAOA angles and applies methods found in the literature to improve them.
+    Such methods require PipelineComponent to assess the energy of a given objective through an 
+    energy evaluator, and to either minimize or maximize such objective.
+    
+    Attributes:
+        _evaluator: Evaluator for assessing angles quality during optimization.
+        _qaoa_angles_function: Inherited from ParamsProvider; transforms angles before use.
+    
+    Abstract methods that sub-classes implement:
+        - run: Defines the optimization method.
+        - minimization: Indicates whether this component minimizes or maximizes the objective.
+    """
 
     def __init__(
         self,
@@ -35,7 +52,14 @@ class PipelineComponent(ParamsProvider):
         *,
         qaoa_angles_function: BaseAnglesFunction | None = None,
     ):
-        """Initialize the pipeline component."""
+        """Initialize the pipeline component.
+        
+        Args:
+            evaluator: evaluator for assessing parameter quality during optimization. 
+
+            qaoa_angles_function: Optional function to transform QAOA angles. If None,
+            uses IdentityFunction (no transformation).
+        """
 
         super().__init__(qaoa_angles_function)
         self._evaluator = evaluator
@@ -43,7 +67,12 @@ class PipelineComponent(ParamsProvider):
     @property
     @abstractmethod
     def minimization(self) -> bool:
-        """Return True if the energy is minimized."""
+        """Indicate whether this component minimizes or maximizes the objective.
+        
+        Returns:
+            True if the component performs energy minimization (typical for QAOA),
+            False if it performs maximization.
+        """
 
     @abstractmethod
     # pylint: disable=too-many-positional-arguments
@@ -55,28 +84,75 @@ class PipelineComponent(ParamsProvider):
         ansatz_circuit: QuantumCircuit,
         params0: list[float],
     ):
-        """Runs the PipelineComponent method to provide angles (which may involve training
-        or optimization)"""
+        """Execute the optimization method to improve QAOA angles.
+        
+        This abstract method must be implemented by subclasses to define their specific
+        optimization or training strategy. It receives the problem definition and initial
+        parameters, then applies an optimization method to improve them.
+        
+        Args:
+            cost_op: The cost Hamiltonian as a sparse Pauli operator, defining the
+            optimization problem.
+            mixer: Quantum circuit representing the mixer Hamiltonian (typically X mixer).
+            initial_state: Quantum circuit preparing the initial state (typically |+⟩^n).
+            ansatz_circuit: Parameterized quantum circuit representing the QAOA ansatz.
+            params0: Initial QAOA angles to be optimized.
+        
+        Returns:
+            ParamResult object containing the optimized angles and associated metadata
+            (e.g., optimization history, final energy,...).
+        
+        Raises:
+            NotImplementedError: If the subclass does not implement this method.
+        """
         raise NotImplementedError("Sub-classes must implement `run`.")
 
     def provide_params(self, *args, **kwargs) -> ParamResult:
-        """Provides QAOA angles by receiving initial angles and running a method to improve them"""
+        """Provide optimized QAOA angles by running the optimization method.
+        
+        This method implements the ParamsProvider interface by delegating to the run method.
+        It receives initial angles and applies the component's optimization strategy to
+        improve them.
+        
+        Args:
+            *args: Positional arguments passed to the run method (cost_op, mixer,
+                  initial_state, ansatz_circuit, params0).
+            **kwargs: Additional keyword arguments for the run method.
+        
+        Returns:
+            ParamResult object containing the optimized QAOA parameters.
+        """
         return self.run(*args, **kwargs)
 
     @property
     def evaluator(self) -> BaseEvaluator:
-        """Return the evaluator of the trainer."""
+        """Get the evaluator used for the QAOA angles energy evaluation.
+        
+        Returns:
+            The BaseEvaluator instance used to evaluate parameter quality during
+            optimization.
+        
+        Raises:
+            ValueError: If the evaluator was not defined during initialization and
+            is accessed before being set.
+        """
         if self._evaluator is None:
             raise ValueError("The evaluator must be defined before accessing it")
         return self._evaluator
 
     def to_config(self) -> dict:
-        """Creates a serializable dictionary to keep track of how results are created.
-
-        Note: This data structure is not intended for us to recreate the class instance.
+        """Serialize the PipelineComponent to a configuration dictionary.
+        
+        Creates a serializable dictionary representation of the component's configuration,
+        including the component name, evaluator settings, and angle transformation function.
+        This is used for tracking how results are generated and for logging purposes.
+        
+        Returns:
+            Dictionary containing the PipelineComponent's configuration, i.e., its name, 
+            evaluator, and angle transformation function.
         """
         return {
-            "trainer_name": self.__class__.__name__,
+            "pipeline_component_name": self.__class__.__name__,
             "evaluator": self._evaluator.to_config() if self._evaluator else None,
             "qaoa_angles_function": self._qaoa_angles_function.to_config(),
         }
