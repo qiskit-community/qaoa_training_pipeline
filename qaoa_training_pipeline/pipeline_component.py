@@ -42,7 +42,7 @@ class PipelineComponent(ParamsProvider):
         _qaoa_angles_function: Inherited from ParamsProvider; transforms angles before use.
     
     Abstract methods that sub-classes implement:
-        - run: Defines the optimization method.
+        - provide_params: Defines the optimization method.
         - minimization: Indicates whether this component minimizes or maximizes the objective.
     """
 
@@ -76,14 +76,14 @@ class PipelineComponent(ParamsProvider):
 
     @abstractmethod
     # pylint: disable=too-many-positional-arguments
-    def run(
+    def provide_params(
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit,
         initial_state: QuantumCircuit,
         ansatz_circuit: QuantumCircuit,
         params0: list[float],
-    ):
+    ) -> ParamResult:
         """Execute the optimization method to improve QAOA angles.
         
         This abstract method must be implemented by subclasses to define their specific
@@ -105,24 +105,7 @@ class PipelineComponent(ParamsProvider):
         Raises:
             NotImplementedError: If the subclass does not implement this method.
         """
-        raise NotImplementedError("Sub-classes must implement `run`.")
-
-    def provide_params(self, *args, **kwargs) -> ParamResult:
-        """Provide optimized QAOA angles by running the optimization method.
-        
-        This method implements the ParamsProvider interface by delegating to the run method.
-        It receives initial angles and applies the component's optimization strategy to
-        improve them.
-        
-        Args:
-            *args: Positional arguments passed to the run method (cost_op, mixer,
-                  initial_state, ansatz_circuit, params0).
-            **kwargs: Additional keyword arguments for the run method.
-        
-        Returns:
-            ParamResult object containing the optimized QAOA parameters.
-        """
-        return self.run(*args, **kwargs)
+        raise NotImplementedError("Sub-classes must implement `provide_params`.")
 
     @property
     def evaluator(self) -> BaseEvaluator:
