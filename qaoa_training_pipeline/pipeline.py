@@ -89,3 +89,11 @@ class Pipeline:
                 )
 
         return cls(pipeline_components, params_provider)
+
+    def execute(self, provider_args: dict, components_args: dict):
+        """Executes the pipeline"""
+        params = self._params_provider.provide_params(**provider_args)
+        for component in self._pipeline_components:
+            params = component.provide_params(**components_args, params0=params["optimized_params"])
+
+        return params
