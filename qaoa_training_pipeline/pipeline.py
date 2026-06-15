@@ -70,25 +70,32 @@ class Pipeline:
         self._params_provider = params_provider
 
     @classmethod
-    def from_config(cls, config: dict) -> "Pipeline":
+    def from_config(cls, config: dict, input_problem, args):
         """Create a Pipeline from a configuration dictionary."""
 
         params_provider = None
-
+        provider_args = {}
         if "params_provider" in config:
             provider_cls =  PARAMS_PROVIDERS[config["provider_name"]]
             params_provider = provider_cls.from_config(config["params_provider"])
-
+            if any(x in config["provider_name"] for x in ["DepthOneScanTrainer","TransferTrainer","RandomRegularDepthOneFit"]):
+                provider_args["cost_op"] = input_problem
+        
         pipeline_components = []
-
+        components_args = {}
         if "pipeline_components" in config:
-            for component_config in config["pipeline_components"]:
+            for component_idx, component_config in enumerate(config["pipeline_components"]):
                 component_cls = PIPELINE_COMPONENTS[component_config["component_name"]]
+                component = component_cls.from_config(component_config)
                 pipeline_components.append(
-                    component_cls.from_config(component_config)
+                    component
                 )
-
-        return cls(pipeline_components, params_provider)
+                if hasattr(args, f"component_kwargs{component_idx}"):
+                    train_args_str = getattr(args, f"component_kwargs{component_idx}")
+                    cmd_train_kwargs = component.parse_runtime_kwargs(train_args_str)
+                    components_args.update(cmd_train_kwargs)
+                    
+        return cls(pipeline_components, params_provider), provider_args, components_args
 
     def execute(self, provider_args: dict, components_args: dict):
         """Executes the pipeline"""
