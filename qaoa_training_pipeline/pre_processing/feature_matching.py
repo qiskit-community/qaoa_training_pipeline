@@ -70,6 +70,7 @@ class MinimumNormFeatureMatcher(BaseFeatureMatcher):
         the sets of features in the data are `f1` and `f2` we return
         min(np.dot(x, f1), np.dot(x, f2)).
         """
+        # We assume that the first feature is the QAOA depth which needs to be matched exactly.
         return min((x for x in set_of_features if x[0] == features[0]),key=lambda x: np.linalg.norm(np.array(x[1:]) - np.array(features[1:])))
 
     @classmethod
