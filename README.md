@@ -185,7 +185,14 @@ This repository is still in development: new functionality is being added and th
 |      25 | Enable GPU on SV simulation via init_kwargs "GPU"            |          #47 |
 |      26 | Clean up pylance warning (type hinting, not None, etc.)      |          #48 |
 |      27 | Add LABS with GPU support                                    |          #50 |
-
+|      28 | Add a trainer that computes optimal beta per gamma           |          #49 |
+|      29 | Bug fix - Add vertices to the graph in operator_to_graph     |          #52 |
+|      30 | Convert a graph with partial assignment to a hamiltonian     |          #53 | 
+|      31 | Refactor linear angle interpolation (increase QAOA depth)    |          #55 |
+|      32 | Standardize the inheritance of evaluators and trainers       |          #57 |
+|      33 | Allow Pauli propagation to accept a custom circuit ansatz    |          #60 |
+|      34 | ScipyTrainer uses a custom initial_state.                    |          #62 |
+|      35 | Bug fix - Initial state used in computing correlates.        |          #64 |
 
 ## IBM Public Repository Disclosure
 
