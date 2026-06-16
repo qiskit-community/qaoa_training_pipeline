@@ -141,21 +141,3 @@ class PipelineComponent(ParamsProvider):
         }
 
 
-    # Import all ParamsProvider implementations
-from qaoa_training_pipeline.training import (
-    RecursionTrainer,
-    RecursiveTransitionStates,
-    ReweightingTrainer,
-    ScipyTrainer,
-    TransferTrainer,
-    TransitionStatesTrainer,
-)
-
-PIPELINE_COMPONENTS = {
-    "RecursionTrainer": RecursionTrainer,
-    "RecursiveTransitionStates": RecursiveTransitionStates,
-    "ReweightingTrainer": ReweightingTrainer,
-    "ScipyTrainer": ScipyTrainer,
-    "TransferTrainer": TransferTrainer,
-    "TransitionStatesTrainer": TransitionStatesTrainer,
-}

@@ -220,16 +220,3 @@ class ParamsProvider(ABC):
 
         return {items[idx]: items[idx + 1] for idx in range(0, len(items), 2)}
 
-from qaoa_training_pipeline.training import (
-    DepthOneScanTrainer,
-    FixedAngleConjecture,
-    OptimizedParametersLoader,
-    RandomPoint,
-)
-
-PARAMS_PROVIDERS = {
-    "DepthOneScanTrainer": DepthOneScanTrainer,
-    "FixedAngleConjecture": FixedAngleConjecture,
-    "OptimizedParametersLoader": OptimizedParametersLoader,
-    "RandomPoint": RandomPoint,
-}

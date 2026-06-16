@@ -24,8 +24,10 @@ Example:
 """
 
 
-from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider, PARAMS_PROVIDERS
-from qaoa_training_pipeline.qaoa_training_pipeline.pipeline_component import PipelineComponent, PIPELINE_COMPONENTS
+from collections import defaultdict
+from qaoa_training_pipeline.qaoa_training_pipeline.training import PIPELINE_COMPONENTS, PARAMS_PROVIDERS
+from qaoa_training_pipeline.qaoa_training_pipeline.pipeline_component import PipelineComponent
+from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider
 
 class Pipeline:
     """Orchestrates the QAOA angles training pipeline. The Pipeline class manages the training 
@@ -76,31 +78,37 @@ class Pipeline:
         params_provider = None
         provider_args = {}
         if "params_provider" in config:
-            provider_cls =  PARAMS_PROVIDERS[config["provider_name"]]
-            params_provider = provider_cls.from_config(config["params_provider"])
-            if any(x in config["provider_name"] for x in ["DepthOneScanTrainer","TransferTrainer","RandomRegularDepthOneFit"]):
+            provider_config = config["params_provider"]
+            provider_cls =  PARAMS_PROVIDERS[provider_config["provider_name"]]
+            params_provider = provider_cls.from_config(provider_config["provider_init"])
+            if any(x in provider_config["provider_name"] for x in ["DepthOneScanTrainer","TransferTrainer","RandomRegularDepthOneFit"]):
                 provider_args["cost_op"] = input_problem
-        
+            if hasattr(args, f"provider_kwargs"):
+                provider_args_str = getattr(args, f"provider_kwargs")
+                cmd_provider_kwargs = params_provider.parse_runtime_kwargs(provider_args_str)
+                provider_args.update(cmd_provider_kwargs)
         pipeline_components = []
-        components_args = {}
+        components_args = defaultdict(dict)
         if "pipeline_components" in config:
             for component_idx, component_config in enumerate(config["pipeline_components"]):
                 component_cls = PIPELINE_COMPONENTS[component_config["component_name"]]
-                component = component_cls.from_config(component_config)
+                component = component_cls.from_config(component_config["component_init"])
                 pipeline_components.append(
                     component
                 )
                 if hasattr(args, f"component_kwargs{component_idx}"):
                     train_args_str = getattr(args, f"component_kwargs{component_idx}")
                     cmd_train_kwargs = component.parse_runtime_kwargs(train_args_str)
-                    components_args.update(cmd_train_kwargs)
-                    
+                    components_args[component_idx].update(cmd_train_kwargs)
+                components_args[component_idx].update({"cost_op": input_problem})
         return cls(pipeline_components, params_provider), provider_args, components_args
 
-    def execute(self, provider_args: dict, components_args: dict):
+    def execute(self, provider_args: dict, components_args: dict, results_logger: dict):
         """Executes the pipeline"""
         params = self._params_provider.provide_params(**provider_args)
-        for component in self._pipeline_components:
-            params = component.provide_params(**components_args, params0=params["optimized_params"])
-
+        results_logger["params_provider"] = params
+        for component_idx, component in enumerate(self._pipeline_components):
+            components_args[component_idx].update(params0=params["optimized_params"])
+            params = component.provide_params(**components_args[component_idx])
+            results_logger[component_idx] = params
         return params
