@@ -73,15 +73,28 @@ class Pipeline:
 
     @classmethod
     def from_config(cls, config: dict, input_problem, args):
-        """Create a Pipeline from a configuration dictionary."""
+        """Create a Pipeline from a configuration dictionary. This entails creating 
+        the ParamsProvider and PipelineComponents objects, together with their runtime arguments
+        provided through args.
+        Args:
+            config: A dictionary containing the whole pipeline configuration.
+            input_problem: The cost operator to be passed to the PipelineComponents and in 
+            some cases to the ParamsProvider.
+            args: The runtime arguments provided through the command line.
+        Returns:
+            A Pipeline object, a dictionary containing the runtime arguments for the 
+            ParamsProvider and a dictionary containing the runtime arguments for the
+            PipelineComponents.
+        """
 
         params_provider = None
         provider_args = {}
+        #Initialize the ParamsProvider object and its runtime arguments
         if "params_provider" in config:
             provider_config = config["params_provider"]
             provider_cls =  PARAMS_PROVIDERS[provider_config["provider_name"]]
             params_provider = provider_cls.from_config(provider_config["provider_init"])
-            if any(x in provider_config["provider_name"] for x in ["DepthOneScanTrainer","TransferTrainer","RandomRegularDepthOneFit"]):
+            if any(x in provider_config["provider_name"] for x in ["DepthOneScanTrainer","TransferTrainer","RandomRegularDepthOneFit", "ScipyTrainer"]):
                 provider_args["cost_op"] = input_problem
             if hasattr(args, f"provider_kwargs"):
                 provider_args_str = getattr(args, f"provider_kwargs")
@@ -89,6 +102,7 @@ class Pipeline:
                 provider_args.update(cmd_provider_kwargs)
         pipeline_components = []
         components_args = defaultdict(dict)
+        #Initialize the PipelineComponents objects and their runtime arguments
         if "pipeline_components" in config:
             for component_idx, component_config in enumerate(config["pipeline_components"]):
                 component_cls = PIPELINE_COMPONENTS[component_config["component_name"]]
@@ -101,14 +115,25 @@ class Pipeline:
                     cmd_train_kwargs = component.parse_runtime_kwargs(train_args_str)
                     components_args[component_idx].update(cmd_train_kwargs)
                 components_args[component_idx].update({"cost_op": input_problem})
+        #Return a fully defined Pipeline object with the components and their runtime arguments
         return cls(pipeline_components, params_provider), provider_args, components_args
 
     def execute(self, provider_args: dict, components_args: dict, results_logger: dict):
-        """Executes the pipeline"""
+        """Executes the pipeline sequentially: first the ParamsProvider is used to provide initial angles,
+        then the pipeline components are executed sequentially, each one providing the input for the next one.
+        Args:
+            provider_args: Dictionary of arguments to be passed to the ParamsProvider.
+            components_args: Dictionary of arguments to be passed to each component.
+            results_logger: Dictionary to store the results of each component.
+        Returns:
+            The final parameters obtained after executing the pipeline.
+        """
+        #Get initial angles from the ParamsProvider
         params = self._params_provider.provide_params(**provider_args)
         results_logger["params_provider"] = params
+        #Execute the pipeline components sequentially
         for component_idx, component in enumerate(self._pipeline_components):
-            components_args[component_idx].update(params0=params["optimized_params"])
+            components_args[component_idx].update(params0=params["optimized_qaoa_angles"])
             params = component.provide_params(**components_args[component_idx])
             results_logger[component_idx] = params
         return params
