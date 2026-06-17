@@ -55,7 +55,7 @@ class PipelineComponent(ParamsProvider):
         """Initialize the pipeline component.
 
         Args:
-            evaluator: evaluator for assessing parameter quality during optimization. 
+            evaluator: evaluator for assessing parameter quality during optimization.
             qaoa_angles_function: Optional function to transform QAOA angles. If None,
                 uses IdentityFunction (no transformation).
         """
@@ -95,9 +95,9 @@ class PipelineComponent(ParamsProvider):
             mixer: Quantum circuit representing the mixer Hamiltonian (typically X mixer).
             initial_state: Quantum circuit preparing the initial state (typically |+⟩^n).
             ansatz_circuit: Parameterized quantum circuit representing the QAOA ansatz.
-            params0: Initial QAOA angles to be optimized. They are expected to be in the format 
+            params0: Initial QAOA angles to be optimized. They are expected to be in the format
                 [β1, ..., βp, γ1, ..., γp].
-        
+
         Returns:
             ParamResult object containing the optimized angles and associated metadata
             (e.g., optimization history, final energy,...).
