@@ -63,7 +63,7 @@ jobs:
           echo "JULIA_PKG_PRECOMPILE_AUTO=0" >> $GITHUB_ENV
       - name: Preinstall Julia deps
         run: |
-          julia -e 'import Pkg; Pkg.add("PythonCall"); Pkg.precompile();
+          julia -e 'import Pkg; Pkg.add("PythonCall"); Pkg.precompile();'
       - uses: ./.github/actions/install-main-dependencies
         with:
           os: ${{ matrix.os }}
