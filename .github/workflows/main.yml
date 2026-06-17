@@ -51,6 +51,14 @@ jobs:
             setup.py
             requirements.txt
             requirements-dev.txt
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.10'
+      - name: Configure Julia for PythonCall
+        run: |
+          echo "PYTHON_JULIACALL_EXE=$(which julia)" >> $GITHUB_ENV
+          echo "JULIA_PKG_PRECOMPILE_AUTO=0" >> $GITHUB_ENV
       - uses: ./.github/actions/install-main-dependencies
         with:
           os: ${{ matrix.os }}
