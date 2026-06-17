@@ -30,7 +30,9 @@ from qaoa_training_pipeline.qaoa_training_pipeline.pipeline_component import Pip
 from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider
 
 class Pipeline:
-    """Orchestrates the QAOA angles training pipeline. The Pipeline class manages the training 
+    """Orchestrates the QAOA angles training pipeline. 
+    
+    The Pipeline class manages the training 
     of QAOA angles by combining an initial ParamsProvider with a sequence of PipelineComponents.
     It provides a flexible framework for building complex angles optimization pipelines 
     through the stacking of PipelineComponents that carry out different optimization methods.
