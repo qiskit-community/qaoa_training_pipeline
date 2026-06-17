@@ -58,7 +58,12 @@ jobs:
       - name: Configure Julia for PythonCall
         run: |
           echo "PYTHON_JULIACALL_EXE=$(which julia)" >> $GITHUB_ENV
+          echo "PYTHON_JULIAPKG_DISABLE_INSTALL=1" >> $GITHUB_ENV
+          echo "JULIA_PKG_USE_CLI=true" >> $GITHUB_ENV
           echo "JULIA_PKG_PRECOMPILE_AUTO=0" >> $GITHUB_ENV
+      - name: Preinstall Julia deps
+        run: |
+          julia -e 'import Pkg; Pkg.add("PythonCall"); Pkg.precompile();
       - uses: ./.github/actions/install-main-dependencies
         with:
           os: ${{ matrix.os }}
