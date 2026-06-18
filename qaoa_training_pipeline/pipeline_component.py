@@ -25,7 +25,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider
-from qaoa_training_pipeline.functions import BaseAnglesFunction
+from qaoa_training_pipeline.training.functions import BaseAnglesFunction
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
@@ -74,7 +74,7 @@ class PipelineComponent(ParamsProvider):
         """
 
     @abstractmethod
-    # pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments,arguments-differ
     def provide_params(
         self,
         cost_op: SparsePauliOp,

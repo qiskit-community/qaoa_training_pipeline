@@ -28,7 +28,7 @@ import warnings
 from typing import TypeVar
 
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.functions import (
+from qaoa_training_pipeline.training.functions import (
     BaseAnglesFunction,
     IdentityFunction,
 )
