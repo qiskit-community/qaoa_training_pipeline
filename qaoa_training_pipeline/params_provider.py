@@ -78,7 +78,7 @@ class ParamsProvider(ABC):
         return self._qaoa_angles_function
 
     @abstractmethod
-    def provide_params(self, *args, **kwargs) -> ParamResult:
+    def provide_params(self) -> ParamResult:
         """Provide QAOA angles to the next element in the pipeline.
 
         This abstract method must be implemented by subclasses to define how QAOA
