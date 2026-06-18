@@ -193,6 +193,7 @@ This repository is still in development: new functionality is being added and th
 |      33 | Allow Pauli propagation to accept a custom circuit ansatz    |          #60 |
 |      34 | ScipyTrainer uses a custom initial_state.                    |          #62 |
 |      35 | Bug fix - Initial state used in computing correlates.        |          #64 |
+|      36 | Bug fix - Fix Julia issues and installation of Julia in CI.  |          #67 |
 
 ## IBM Public Repository Disclosure
 

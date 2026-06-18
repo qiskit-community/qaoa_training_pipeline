@@ -36,7 +36,7 @@ if HAS_JL:
         warnings.warn(
             "juliacall installed but no PauliPropagation. Attempting to install PauliPropagation."
         )
-        jl.seval('Pkg.add("PauliPropagation")')
+        jl.seval('using Pkg; Pkg.add("PauliPropagation")')
         jl.seval("using PauliPropagation")
     pp = jl.PauliPropagation
 
