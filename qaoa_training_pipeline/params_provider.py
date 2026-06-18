@@ -58,6 +58,7 @@ class ParamsProvider(ABC):
 
     def __init__(
         self,
+        *,
         qaoa_angles_function: BaseAnglesFunction | None = None,
     ):
         """Initialize the parameter provider.

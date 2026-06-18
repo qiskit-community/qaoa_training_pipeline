@@ -23,8 +23,8 @@ from abc import abstractmethod
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider
+from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.params_provider import ParamsProvider
 from qaoa_training_pipeline.training.functions import BaseAnglesFunction
 from qaoa_training_pipeline.training.param_result import ParamResult
 
@@ -60,7 +60,7 @@ class PipelineComponent(ParamsProvider):
                 uses IdentityFunction (no transformation).
         """
 
-        super().__init__(qaoa_angles_function)
+        super().__init__(qaoa_angles_function=qaoa_angles_function)
         self._evaluator = evaluator
 
     @property
