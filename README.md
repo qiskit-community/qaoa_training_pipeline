@@ -194,6 +194,7 @@ This repository is still in development: new functionality is being added and th
 |      34 | ScipyTrainer uses a custom initial_state.                    |          #62 |
 |      35 | Bug fix - Initial state used in computing correlates.        |          #64 |
 |      36 | Bug fix - Fix Julia issues and installation of Julia in CI.  |          #67 |
+|      37 | Refactoring: Add parameter providers and pipeline components |          #66 |
 
 ## IBM Public Repository Disclosure
 
