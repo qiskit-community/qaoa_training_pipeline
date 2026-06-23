@@ -11,3 +11,4 @@ qiskit
 qiskit-ibm-runtime
 qiskit-optimization[cplex]
 scikit-learn
+cotengra<=0.8.1
