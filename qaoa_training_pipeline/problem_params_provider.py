@@ -19,12 +19,11 @@ cost operator.
 
 
 from abc import abstractmethod
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.qaoa_training_pipeline.params_provider import ParamsProvider
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.training.functions import BaseAnglesFunction
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
 
 
 class ProblemParamsProvider(ParamsProvider):
@@ -38,20 +37,8 @@ class ProblemParamsProvider(ParamsProvider):
         - provide_params: Provides QAOA angles to the next element of the pipeline.
     """
 
-    def __init__(
-        self,
-        *,
-        qaoa_angles_function: BaseAnglesFunction | None = None,
-    ):
-        """Initialize the parameter provider.
-
-        Args:
-            qaoa_angles_function: Optional function to transform QAOA angles to a different
-            basis, e.g. Fourier. If None, uses IdentityFunction (no transformation).
-        """
-        super().__init__(qaoa_angles_function=qaoa_angles_function)
-
     @abstractmethod
+    # pylint: disable=too-many-positional-arguments,arguments-differ
     def provide_params(
         self,
         cost_op: SparsePauliOp,
@@ -59,7 +46,7 @@ class ProblemParamsProvider(ParamsProvider):
         initial_state: QuantumCircuit,
         ansatz_circuit: QuantumCircuit,
     ) -> ParamResult:
-        """Provide QAOA angles to the next element in the pipeline, based on the problem 
+        """Provide QAOA angles to the next element in the pipeline, based on the problem
         cost operator.
 
         This abstract method must be implemented by subclasses to define how QAOA
