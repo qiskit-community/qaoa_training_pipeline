@@ -27,11 +27,10 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 
 
 class ProblemParamsProvider(ParamsProvider):
-    """Abstract base class for providing QAOA angles that are problem dependent
-    in the training pipeline.
+    """Abstract base class to provide QAOA angles dependent on the problem.
 
     ProblemParamsProvider defines the interface for parameter providers in the QAOA training
-    pipeline that need the problem cost operator.
+    pipeline that need information on how the QAOA ansatz is constructed.
 
     Abstract methods that sub-classes implement:
         - provide_params: Provides QAOA angles to the next element of the pipeline.
@@ -46,17 +45,17 @@ class ProblemParamsProvider(ParamsProvider):
         initial_state: QuantumCircuit,
         ansatz_circuit: QuantumCircuit,
     ) -> ParamResult:
-        """Provide QAOA angles to the next element in the pipeline, based on the problem
-        cost operator.
+        """Provide QAOA angles to the next element in the pipeline, based on the problem.
 
-        This abstract method must be implemented by subclasses to define how QAOA
-        angles are generated or retrieved using the cost operator provided.
+        This abstract method must be implemented by subclasses. It defines how QAOA
+        angles are generated or retrieved using elements that enter the QAOA ansatz
+        and the cost function.
 
         Args:
             cost_op: The problem cost operator.
             mixer: The mixer operator.
-            initial_state: The initial state of the problem.
-            ansatz_circuit: The ansatz circuit used to generate the QAOA angles.
+            initial_state: The initial state of the QAOA ansatz.
+            ansatz_circuit: The ansatz that generates the cost layer.
 
         Returns:
             ParamResult object containing the QAOA angles and associated metadata.
