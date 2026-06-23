@@ -8,7 +8,7 @@
 
 """Pipeline components for QAOA angles training.
 
-This module defines the PipelineComponent abstract class, which extends ParamsProvider to
+This module defines the PipelineComponent abstract class, which extends ProblemParamsProvider to
 support QAOA angles optimization. Pipeline components are the building blocks of QAOA 
 training pipelines. PipelineComponents can receive QAOA angles and improve them
 through various optimization or training methods found in the literature.
@@ -24,15 +24,15 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.params_provider import ParamsProvider
+from qaoa_training_pipeline.qaoa_training_pipeline.problem_params_provider import ProblemParamsProvider
 from qaoa_training_pipeline.training.functions import BaseAnglesFunction
 from qaoa_training_pipeline.training.param_result import ParamResult
 
 
-class PipelineComponent(ParamsProvider):
+class PipelineComponent(ProblemParamsProvider):
     """Abstract base class for pipeline components that optimize QAOA angles.
 
-    PipelineComponent extends ParamsProvider to add training and optimization capabilities.
+    PipelineComponent extends ProblemParamsProvider to add training and optimization capabilities.
     It receives initial QAOA angles and applies methods found in the literature to improve them.
     Such methods require PipelineComponent to assess the energy of a given objective through an
     energy evaluator, and to either minimize or maximize such objective.
