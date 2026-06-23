@@ -54,8 +54,6 @@ class ParamsProvider(ABC):
         - to_config: Serializes the ParamsProvider to a config file
     """
 
-    requires_cost_op = True
-
     def __init__(
         self,
         *,
@@ -84,10 +82,6 @@ class ParamsProvider(ABC):
 
         This abstract method must be implemented by subclasses to define how QAOA
         angles are generated or retrieved.
-
-        Args:
-            *args: Variable positional arguments specific to the implementation.
-            **kwargs: Variable keyword arguments specific to the implementation.
 
         Returns:
             ParamResult object containing the QAOA angles and associated metadata.
