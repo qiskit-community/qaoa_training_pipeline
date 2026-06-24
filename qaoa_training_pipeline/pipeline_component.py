@@ -24,7 +24,7 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.qaoa_training_pipeline.problem_params_provider import (
+from qaoa_training_pipeline.problem_params_provider import (
     ProblemParamsProvider,
 )
 from qaoa_training_pipeline.training.functions import BaseAnglesFunction
