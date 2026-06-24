@@ -338,3 +338,24 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
 
         energy = self.evaluator.evaluate(cost_op, params, initial_state=init, mixer=mixer)
         self.assertAlmostEqual(float(energy), expected_energy)
+
+    @data((0, 0), (1, 1), (0.1234, -0.56), (0.25, 0.5), (0.5, 0.25))
+    @unpack
+    def test_serial_vs_parallel(self, beta, gamma):
+        """Test that serial and parallel implementations produce identical results."""
+        cost_op = SparsePauliOp.from_list([("IIZZ", 1.0), ("ZIIZ", -1.0), ("IZIZ", 2.3)])
+
+        # Create serial evaluator
+        serial_evaluator = EfficientDepthOneEvaluator(use_parallel=False)
+
+        # Create parallel evaluator
+        parallel_evaluator = EfficientDepthOneEvaluator(use_parallel=True, max_workers=4)
+
+        # Compute energy with serial implementation
+        serial_energy = serial_evaluator.evaluate(cost_op, [beta, gamma])
+
+        # Compute energy with parallel implementation
+        parallel_energy = parallel_evaluator.evaluate(cost_op, [beta, gamma])
+
+        # Verify they produce the same result
+        self.assertAlmostEqual(serial_energy, parallel_energy, places=10)
