@@ -16,18 +16,23 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.pipeline_component import PipelineComponent
+from qaoa_training_pipeline.training.functions import BaseAnglesFunction, IdentityFunction
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
-class ReweightingTrainer(BaseTrainer):
+class ReweightingTrainer(PipelineComponent):
     """Train the parameters by unweighting and reweighting the graph."""
 
-    def __init__(self, trainer1: BaseTrainer, trainer2: BaseTrainer | None = None) -> None:
+    def __init__(
+        self,
+        trainer1: PipelineComponent,
+        trainer2: PipelineComponent | None,
+        qaoa_angles_function: BaseAnglesFunction = IdentityFunction(),
+    ) -> None:
         """Initialize the instance.
 
         Args:
@@ -38,7 +43,10 @@ class ReweightingTrainer(BaseTrainer):
                 first training phase is neglected. Note that if the second trainer is not given
                 the class will default to a `ScipyTrainer`.
         """
-        super().__init__(trainer1.evaluator)
+        super().__init__(
+            trainer1.evaluator,
+            qaoa_angles_function=qaoa_angles_function,
+        )
 
         self._trainer_unweighted = trainer1
         assert isinstance(self.evaluator, BaseEvaluator)
@@ -71,17 +79,17 @@ class ReweightingTrainer(BaseTrainer):
         return self._trainer_weighted.minimization
 
     @property
-    def unweighted_trainer(self) -> BaseTrainer:
+    def unweighted_trainer(self) -> PipelineComponent:
         """Return the trainer of the unweighted graph."""
         return self._trainer_unweighted
 
     @property
-    def weighted_trainer(self) -> BaseTrainer:
+    def weighted_trainer(self) -> PipelineComponent:
         """Return the trainer of the weighted graph."""
         return self._trainer_weighted
 
     # pylint: disable=too-many-positional-arguments
-    def train(
+    def run(
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
@@ -113,7 +121,7 @@ class ReweightingTrainer(BaseTrainer):
         unweighted_cost_op = self.unweight(cost_op)
 
         trainer1_kwargs = trainer1_kwargs or {}
-        result1 = self._trainer_unweighted.train(
+        result1 = self._trainer_unweighted.provide_params(
             unweighted_cost_op,
             mixer=mixer,
             initial_state=initial_state,
@@ -124,7 +132,7 @@ class ReweightingTrainer(BaseTrainer):
         self._warn_ignored_inputs(params0=params0)
         params0 = self.scale_parameters(result1)
 
-        result2 = self._trainer_weighted.train(cost_op, params0=params0)
+        result2 = self._trainer_weighted.provide_params(cost_op, params0=params0)
 
         # Add to the result the intermediate step ParamResult is not serializable but its dict is.
         result2["unweighted_optimization"] = result1.data
@@ -178,14 +186,12 @@ class ReweightingTrainer(BaseTrainer):
         return betas + [gamma * scale for gamma in gammas]
 
     @staticmethod
-    def _trainer_from_config(name: str, trainer_init: dict) -> BaseTrainer:
+    def _trainer_from_config(name: str, trainer_init: dict) -> PipelineComponent:
         """Initialize an instance of a trainer."""
 
         # Note: we cannot user the TRAINERS mapping otherwise we will circular import outselves.
         if name == "ScipyTrainer":
             return ScipyTrainer.from_config(trainer_init)
-        elif name == "DepthOneScanTrainer":
-            return DepthOneScanTrainer.from_config(trainer_init)
         elif name == "TransitionStatesTrainer":
             return TransitionStatesTrainer.from_config(trainer_init)
 
