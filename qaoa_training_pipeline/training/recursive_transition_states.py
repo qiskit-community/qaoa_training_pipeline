@@ -9,13 +9,13 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.pipeline_component import PipelineComponent
 from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
 
 
-class RecursiveTransitionStates(BaseTrainer):
+class RecursiveTransitionStates(PipelineComponent):
     """Recursively train QAOA by constructing transition states.
 
     This class uses an initial set of parameters for depth `p` QAOA to construct transition states
@@ -40,13 +40,12 @@ class RecursiveTransitionStates(BaseTrainer):
         return self._trainer.minimization
 
     # pylint: disable=too-many-positional-arguments
-    def train(
+    def run(
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
-        params0: list[float] | None = None,
         previous_optimal_point: list[float] | None = None,
         reps: int | None = None,
     ) -> ParamResult:
@@ -81,7 +80,7 @@ class RecursiveTransitionStates(BaseTrainer):
 
         while current_reps < reps:
             ts_trainer = TransitionStatesTrainer(self._trainer)
-            result = ts_trainer.train(
+            result = ts_trainer.run(
                 cost_op,
                 mixer,
                 initial_state,
@@ -119,10 +118,10 @@ class RecursiveTransitionStates(BaseTrainer):
             "trainer": self._trainer.to_config(),
         }
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
+    def parse_runtime_kwargs(self, kwargs_str: str | None = None) -> dict:
         """Parse a string into the training kwargs."""
         train_kwargs = dict()
-        for key, val in self.extract_train_kwargs(args_str).items():
+        for key, val in self.parse_runtime_kwargs(kwargs_str).items():
             if key == "reps":
                 train_kwargs[key] = int(val)
             elif key == "previous_optimal_point":
