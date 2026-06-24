@@ -18,13 +18,12 @@ from matplotlib.figure import Figure
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.pipeline_component import PipelineComponent
 from qaoa_training_pipeline.training.param_result import ParamResult
-from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 
-class TransitionStatesTrainer(BaseTrainer):
+class TransitionStatesTrainer(PipelineComponent):
     """A trainer that leverages transition states.
 
     The approach to training QAOA with transition states is described in Sack et al.
@@ -36,7 +35,10 @@ class TransitionStatesTrainer(BaseTrainer):
     improved local extrema.
     """
 
-    def __init__(self, trainer: BaseTrainer):
+    def __init__(
+        self,
+        trainer: PipelineComponent,
+    ):
         """Initialize the Transition state trainer.
 
         Args:
@@ -63,7 +65,7 @@ class TransitionStatesTrainer(BaseTrainer):
         return self._trainer
 
     # pylint: disable=too-many-positional-arguments
-    def train(
+    def run(
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
@@ -97,7 +99,7 @@ class TransitionStatesTrainer(BaseTrainer):
         result, self._all_ts = dict(), dict()
 
         for idx, ts_state in enumerate(self.make_ts(previous_optimal_point)):
-            res = self.trainer.train(
+            res = self.trainer.provide_params(
                 cost_op, mixer, initial_state, ansatz_circuit, params0=ts_state
             )
             res.update({"ts": ts_state})
@@ -251,18 +253,16 @@ class TransitionStatesTrainer(BaseTrainer):
         # Note: we cannot user the TRAINERS mapping otherwise we will circular import ourselves.
         if trainer_name == "ScipyTrainer":
             return cls(ScipyTrainer.from_config(config["trainer_init"]))
-        elif trainer_name == "DepthOneScanTrainer":
-            return cls(DepthOneScanTrainer.from_config(config["trainer_init"]))
         else:
             raise ValueError(f"Unrecognized trainer {trainer_name}")
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
+    def parse_runtime_kwargs(self, kwargs_str: str | None = None) -> dict:
         """Parse a string into the training kwargs.
 
         The string is of the form `previous_optimal_point:v1/v2/v3/v4...`.
         """
         train_kwargs = dict()
-        for key, val in self.extract_train_kwargs(args_str).items():
+        for key, val in super().parse_runtime_kwargs(kwargs_str).items():
             if key == "previous_optimal_point":
                 train_kwargs[key] = self.extract_list(val)
             else:
