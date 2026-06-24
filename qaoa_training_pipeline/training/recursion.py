@@ -18,13 +18,13 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.pipeline_component import PipelineComponent
 from qaoa_training_pipeline.training.param_result import ParamResult
 from qaoa_training_pipeline.training.parameter_extenders import PARAMETEREXTENDERS
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 
-class RecursionTrainer(BaseTrainer):
+class RecursionTrainer(PipelineComponent):
     """Recursively train QAOA by initializing level `p+1` with level `p`.
 
     This class uses a function, called the `parameter_extender` to ingest parameters
@@ -43,7 +43,10 @@ class RecursionTrainer(BaseTrainer):
                 points for the parameter optimization at depth `p+1`.
             trainer: The trainer must be the ScipyTrainer.
         """
-        super().__init__(trainer.evaluator, trainer.qaoa_angles_function)
+        super().__init__(
+            trainer.evaluator,
+            qaoa_angles_function=trainer.qaoa_angles_function,
+        )
 
         # Takes parameters from QAOA depth p to depth p+1.
         self._parameter_extender = parameter_extender or PARAMETEREXTENDERS["extend"]
@@ -60,7 +63,7 @@ class RecursionTrainer(BaseTrainer):
         return self._trainer.minimization
 
     # pylint: disable=too-many-positional-arguments
-    def train(
+    def run(
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
@@ -102,7 +105,7 @@ class RecursionTrainer(BaseTrainer):
                     f"does not match the expected depth of {2*current_reps}. "
                 )
 
-            result = self._trainer.train(
+            result = self._trainer.run(
                 cost_op,
                 params0=new_params0,
                 mixer=mixer,
@@ -146,10 +149,10 @@ class RecursionTrainer(BaseTrainer):
             "parameter_extender": self._parameter_extender.__name__,
         }
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
+    def parse_runtime_kwargs(self, kwargs_str: str | None = None) -> dict:
         """Parse a string into the training kwargs."""
         train_kwargs = dict()
-        for key, val in self.extract_train_kwargs(args_str).items():
+        for key, val in super().parse_runtime_kwargs(kwargs_str).items():
             if key == "reps":
                 train_kwargs[key] = int(val)
             elif key == "params0":
