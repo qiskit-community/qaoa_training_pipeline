@@ -21,7 +21,6 @@ from .transition_states import TransitionStatesTrainer
 
 
 PARAMS_PROVIDERS = {
-    "DepthOneScanTrainer": DepthOneScanTrainer,
     "OptimizedParametersLoader": OptimizedParametersLoader,
     "RandomPoint": RandomPoint,
     "TransferTrainer": TransferTrainer,
@@ -37,4 +36,9 @@ PIPELINE_COMPONENTS = {
     "ScipyTrainer": ScipyTrainer,
     "TransitionStatesTrainer": TransitionStatesTrainer,
     "QAOAPCA": QAOAPCA,
+}
+
+PROBLEM_PARAMS_PROVIDERS = {
+    "DepthOneScanTrainer": DepthOneScanTrainer,
+    "TransferTrainer": TransferTrainer,
 }
