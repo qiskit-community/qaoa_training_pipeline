@@ -20,7 +20,7 @@ from qaoa_training_pipeline.training.param_result import ParamResult
 
 class OptimizedParametersLoader(ParamsProvider):
     """Class to load parameters from a file."""
-    
+
     def __init__(
         self,
         folder: str | None = None,

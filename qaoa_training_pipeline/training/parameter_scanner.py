@@ -63,7 +63,7 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
         super().__init__(self, qaoa_angles_function=qaoa_angles_function)
         HistoryMixin.__init__(self)
 
-        #Parameters needed for energy evaluation during optimal search
+        # Parameters needed for energy evaluation during optimal search
         self._evaluator = evaluator
         self._parameter_ranges = parameter_ranges
         self._num_points = num_points
@@ -122,8 +122,12 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
         self._energies = np.zeros((self._num_points, self._num_points), dtype=float)
 
         # By default params1 scans beta and params2 scans gamma
-        self._params1 = np.linspace(parameter_ranges[0][0], parameter_ranges[0][1], self._num_points)
-        self._params2 = np.linspace(parameter_ranges[1][0], parameter_ranges[1][1], self._num_points)
+        self._params1 = np.linspace(
+            parameter_ranges[0][0], parameter_ranges[0][1], self._num_points
+        )
+        self._params2 = np.linspace(
+            parameter_ranges[1][0], parameter_ranges[1][1], self._num_points
+        )
 
         self._opt_param2, self._opt_param1 = None, None
 
