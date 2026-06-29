@@ -112,4 +112,3 @@ class ParamResult:
             param_result.add_history(trainer)
 
         return param_result
-

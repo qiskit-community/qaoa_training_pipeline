@@ -135,4 +135,3 @@ class RandomPoint(BaseTrainer):
             "trainer_name": self.__class__.__name__,
             "evaluator": "NA",
         }
-

@@ -152,4 +152,3 @@ class RecursiveTransitionStates(BaseTrainer):
         axis.legend()
 
         return fig, axis
-

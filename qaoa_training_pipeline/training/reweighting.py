@@ -222,4 +222,3 @@ class ReweightingTrainer(BaseTrainer):
             "trainer_unweighted": self._trainer_unweighted.to_config(),
             "trainer_weighted": self._trainer_weighted.to_config(),
         }
-

@@ -193,4 +193,3 @@ class RandomRegularDepthOneFit(BaseTrainer):
     def minimization(self) -> None:
         """Fits for random regular problems neither minimizes nor maximizes."""
         raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")
-

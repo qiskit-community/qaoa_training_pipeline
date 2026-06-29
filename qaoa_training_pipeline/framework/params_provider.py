@@ -216,4 +216,3 @@ class ParamsProvider(ABC):
             )
 
         return {items[idx]: items[idx + 1] for idx in range(0, len(items), 2)}
-

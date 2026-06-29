@@ -526,4 +526,3 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             evaluator_cls.from_config(config["evaluator_init"]),
             config.get("energy_minimization", False),
         )
-

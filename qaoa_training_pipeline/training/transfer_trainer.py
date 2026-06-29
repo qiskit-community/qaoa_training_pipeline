@@ -223,4 +223,3 @@ class TransferTrainer(BaseTrainer):
             angle_aggregator=angle_aggregator_cls.from_config(config["angle_aggregator_init"]),
             evaluator=evaluator,
         )
-

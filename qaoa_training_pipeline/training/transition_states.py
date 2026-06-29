@@ -269,4 +269,3 @@ class TransitionStatesTrainer(BaseTrainer):
                 raise ValueError("Unknown key in provided train_kwargs.")
 
         return train_kwargs
-

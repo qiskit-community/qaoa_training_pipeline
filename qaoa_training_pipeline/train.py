@@ -298,4 +298,3 @@ def train(args: argparse.Namespace):
 if __name__ == "__main__":
     script_args, _ = get_script_args()
     train(script_args)
-

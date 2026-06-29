@@ -179,4 +179,3 @@ class RecursionTrainer(BaseTrainer):
         axis.legend()
 
         return fig, axis
-

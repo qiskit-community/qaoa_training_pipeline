@@ -141,4 +141,3 @@ class PipelineComponent(ProblemParamsProvider):
             "evaluator": self._evaluator.to_config() if self._evaluator else None,
             "qaoa_angles_function": self._qaoa_angles_function.to_config(),
         }
-

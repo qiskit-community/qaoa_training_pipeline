@@ -64,4 +64,3 @@ class ProblemParamsProvider(ParamsProvider):
             NotImplementedError: If the subclass does not implement this method.
         """
         raise NotImplementedError("Sub-classes must implement `provide_params`.")
-

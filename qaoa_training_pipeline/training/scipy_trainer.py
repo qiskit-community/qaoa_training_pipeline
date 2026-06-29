@@ -219,4 +219,3 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         config.update(self._minimize_args)
 
         return config
-

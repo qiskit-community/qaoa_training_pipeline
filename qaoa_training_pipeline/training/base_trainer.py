@@ -130,4 +130,3 @@ class BaseTrainer(ABC):
         if arg is None:
             raise ValueError(f"{self.__class__.__name__} requires {name} to be defined")
         return arg
-
