@@ -1,4 +1,4 @@
-﻿"""Recursive transition states trainer."""
+"""Recursive transition states trainer."""
 
 from time import time
 
