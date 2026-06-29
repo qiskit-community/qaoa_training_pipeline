@@ -98,7 +98,7 @@ class PipelineComponent(ProblemParamsProvider):
             initial_state: Quantum circuit preparing the initial state (typically |+âŸ©^n).
             ansatz_circuit: Parameterized quantum circuit representing the QAOA ansatz.
             params0: Initial QAOA angles to be optimized. They are expected to be in the format
-                [Î²1, ..., Î²p, Î³1, ..., Î³p].
+                [β1, ..., βp, γ1, ..., γp].
 
         Returns:
             ParamResult object containing the optimized angles and associated metadata
