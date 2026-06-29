@@ -403,7 +403,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         plus: bool,
     ) -> float:
         """
-        Compute Ptod_{f âˆˆ mutual_nbrs} cos( 2*J_{u,f}*gamma + 2*J_{v,f}*gamma ).
+        Compute Ptod_{f ∈ mutual_nbrs} cos( 2*J_{u,f}*gamma + 2*J_{v,f}*gamma ).
         Empty product returns 1.0.
         """
         if not mutual_nbrs:
