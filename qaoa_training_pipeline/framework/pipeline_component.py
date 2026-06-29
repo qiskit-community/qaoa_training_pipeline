@@ -95,7 +95,7 @@ class PipelineComponent(ProblemParamsProvider):
             cost_op: The cost Hamiltonian as a sparse Pauli operator, defining the
             optimization problem.
             mixer: Quantum circuit representing the mixer Hamiltonian (typically X mixer).
-            initial_state: Quantum circuit preparing the initial state (typically |+âŸ©^n).
+            initial_state: Quantum circuit preparing the initial state (typically |+⟩^n).
             ansatz_circuit: Parameterized quantum circuit representing the QAOA ansatz.
             params0: Initial QAOA angles to be optimized. They are expected to be in the format
                 [β1, ..., βp, γ1, ..., γp].
