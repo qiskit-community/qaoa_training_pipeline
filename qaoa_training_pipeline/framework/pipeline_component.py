@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -24,11 +24,11 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.qaoa_training_pipeline.problem_params_provider import (
+from qaoa_training_pipeline.framework.problem_params_provider import (
     ProblemParamsProvider,
 )
 from qaoa_training_pipeline.training.functions import BaseAnglesFunction
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
 class PipelineComponent(ProblemParamsProvider):
@@ -95,10 +95,10 @@ class PipelineComponent(ProblemParamsProvider):
             cost_op: The cost Hamiltonian as a sparse Pauli operator, defining the
             optimization problem.
             mixer: Quantum circuit representing the mixer Hamiltonian (typically X mixer).
-            initial_state: Quantum circuit preparing the initial state (typically |+⟩^n).
+            initial_state: Quantum circuit preparing the initial state (typically |+âŸ©^n).
             ansatz_circuit: Parameterized quantum circuit representing the QAOA ansatz.
             params0: Initial QAOA angles to be optimized. They are expected to be in the format
-                [β1, ..., βp, γ1, ..., γp].
+                [Î²1, ..., Î²p, Î³1, ..., Î³p].
 
         Returns:
             ParamResult object containing the optimized angles and associated metadata
@@ -141,3 +141,4 @@ class PipelineComponent(ProblemParamsProvider):
             "evaluator": self._evaluator.to_config() if self._evaluator else None,
             "qaoa_angles_function": self._qaoa_angles_function.to_config(),
         }
+

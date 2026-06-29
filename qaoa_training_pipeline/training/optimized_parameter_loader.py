@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -17,7 +17,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
 class OptimizedParametersLoader(BaseTrainer):
@@ -121,3 +121,4 @@ class OptimizedParametersLoader(BaseTrainer):
                 raise ValueError("Unknown key in provided train_kwargs.")
 
         return train_kwargs
+

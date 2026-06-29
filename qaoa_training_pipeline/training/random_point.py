@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -15,7 +15,7 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
 class RandomPoint(BaseTrainer):
@@ -135,3 +135,4 @@ class RandomPoint(BaseTrainer):
             "trainer_name": self.__class__.__name__,
             "evaluator": "NA",
         }
+

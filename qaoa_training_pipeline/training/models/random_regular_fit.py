@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -23,7 +23,7 @@ from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.models.power_function import PowerFunction
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -193,3 +193,4 @@ class RandomRegularDepthOneFit(BaseTrainer):
     def minimization(self) -> None:
         """Fits for random regular problems neither minimizes nor maximizes."""
         raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")
+

@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -23,7 +23,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -185,3 +185,4 @@ class FixedAngleConjecture(BaseTrainer):
                 raise ValueError("Unknown key in provided train_kwargs.")
 
         return train_kwargs
+

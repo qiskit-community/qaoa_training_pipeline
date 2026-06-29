@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -33,7 +33,7 @@ from qaoa_training_pipeline.utils.data_utils import load_input, input_to_operato
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.pre_processing import PREPROCESSORS
 from qaoa_training_pipeline.training import TRAINERS
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.utils.problem_classes import PROBLEM_CLASSES
 
 
@@ -298,3 +298,4 @@ def train(args: argparse.Namespace):
 if __name__ == "__main__":
     script_args, _ = get_script_args()
     train(script_args)
+

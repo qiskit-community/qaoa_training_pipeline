@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -31,7 +31,7 @@ from qaoa_training_pipeline.training.functions import (
     IdentityFunction,
 )
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -381,7 +381,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         self, graph: nx.Graph, node: int, nbrs: set, gamma: float, weight_attr: str
     ) -> float:
         """
-        Compute Prod_{w ∈ nbrs} cos( 2 * J_{node,w} * gamma ).
+        Compute Prod_{w âˆˆ nbrs} cos( 2 * J_{node,w} * gamma ).
         Empty product returns 1.0.
         """
         if not nbrs:
@@ -403,7 +403,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         plus: bool,
     ) -> float:
         """
-        Compute Ptod_{f ∈ mutual_nbrs} cos( 2*J_{u,f}*gamma + 2*J_{v,f}*gamma ).
+        Compute Ptod_{f âˆˆ mutual_nbrs} cos( 2*J_{u,f}*gamma + 2*J_{v,f}*gamma ).
         Empty product returns 1.0.
         """
         if not mutual_nbrs:
@@ -526,3 +526,4 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             evaluator_cls.from_config(config["evaluator_init"]),
             config.get("energy_minimization", False),
         )
+

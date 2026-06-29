@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -112,3 +112,4 @@ class ParamResult:
             param_result.add_history(trainer)
 
         return param_result
+

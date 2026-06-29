@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -20,7 +20,7 @@ from qaoa_training_pipeline.training.functions import (
     BaseAnglesFunction,
     IdentityFunction,
 )
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 T = TypeVar("T")
 
@@ -130,3 +130,4 @@ class BaseTrainer(ABC):
         if arg is None:
             raise ValueError(f"{self.__class__.__name__} requires {name} to be defined")
         return arg
+

@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -27,7 +27,7 @@ from abc import ABC, abstractmethod
 import warnings
 from typing import TypeVar
 
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.training.functions import (
     BaseAnglesFunction,
     IdentityFunction,
@@ -216,3 +216,4 @@ class ParamsProvider(ABC):
             )
 
         return {items[idx]: items[idx + 1] for idx in range(0, len(items), 2)}
+

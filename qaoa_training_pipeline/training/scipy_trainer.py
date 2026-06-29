@@ -1,4 +1,4 @@
-#
+﻿#
 #
 # (C) Copyright IBM 2024.
 #
@@ -27,7 +27,7 @@ from qaoa_training_pipeline.training.functions import (
     IdentityFunction,
 )
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
 class ScipyTrainer(BaseTrainer, HistoryMixin):
@@ -219,3 +219,4 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         config.update(self._minimize_args)
 
         return config
+
