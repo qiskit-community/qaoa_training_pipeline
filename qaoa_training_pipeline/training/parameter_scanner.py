@@ -381,7 +381,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         self, graph: nx.Graph, node: int, nbrs: set, gamma: float, weight_attr: str
     ) -> float:
         """
-        Compute Prod_{w âˆˆ nbrs} cos( 2 * J_{node,w} * gamma ).
+        Compute Prod_{w ∈ nbrs} cos( 2 * J_{node,w} * gamma ).
         Empty product returns 1.0.
         """
         if not nbrs:
