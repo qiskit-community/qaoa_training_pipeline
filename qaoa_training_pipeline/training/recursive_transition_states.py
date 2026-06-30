@@ -9,8 +9,8 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
-from qaoa_training_pipeline.pipeline_component import PipelineComponent
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.pipeline_component import PipelineComponent
+from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
 

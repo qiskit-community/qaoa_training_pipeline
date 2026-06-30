@@ -22,8 +22,8 @@ from abc import abstractmethod
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.params_provider import ParamsProvider
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.params_provider import ParamsProvider
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
 class ProblemParamsProvider(ParamsProvider):

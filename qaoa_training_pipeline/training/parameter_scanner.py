@@ -21,7 +21,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.problem_params_provider import ProblemParamsProvider
+from qaoa_training_pipeline.framework.problem_params_provider import ProblemParamsProvider
 
 # cspell: ignore argmin contourf colorbar
 from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
@@ -31,7 +31,7 @@ from qaoa_training_pipeline.training.functions import (
     IdentityFunction,
 )
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 

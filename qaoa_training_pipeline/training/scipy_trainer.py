@@ -20,14 +20,14 @@ from scipy.optimize import minimize
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.pipeline_component import PipelineComponent
+from qaoa_training_pipeline.framework.pipeline_component import PipelineComponent
 from qaoa_training_pipeline.training.functions import (
     FUNCTIONS,
     BaseAnglesFunction,
     IdentityFunction,
 )
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
 class ScipyTrainer(PipelineComponent, HistoryMixin):

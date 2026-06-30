@@ -27,9 +27,9 @@ from qaoa_training_pipeline.pre_processing.feature_matching import (
     BaseFeatureMatcher,
     TrivialFeatureMatcher,
 )
-from qaoa_training_pipeline.problem_params_provider import ProblemParamsProvider
+from qaoa_training_pipeline.framework.problem_params_provider import ProblemParamsProvider
 from qaoa_training_pipeline.training.data_loading import DATA_LOADERS, BaseDataLoader
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
 class TransferTrainer(ProblemParamsProvider):

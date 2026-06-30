@@ -20,7 +20,7 @@ from qaoa_training_pipeline.training.functions import (
     BaseAnglesFunction,
     IdentityFunction,
 )
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 T = TypeVar("T")
 

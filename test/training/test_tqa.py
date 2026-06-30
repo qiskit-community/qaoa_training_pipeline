@@ -11,7 +11,7 @@
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.training.tqa_trainer import TQATrainer
 
 # Disable import order for this line. Python has a stdlib test module, but this

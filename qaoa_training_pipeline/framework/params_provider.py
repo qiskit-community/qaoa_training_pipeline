@@ -27,7 +27,7 @@ from abc import ABC, abstractmethod
 import warnings
 from typing import TypeVar
 
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.training.functions import (
     BaseAnglesFunction,
     IdentityFunction,
