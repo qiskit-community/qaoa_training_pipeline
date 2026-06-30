@@ -307,7 +307,7 @@ class TQATrainerFunction(BaseAnglesFunction):
     to :meth:`__call__`, then an error is raised.
     """
 
-    def __init__(self, tqa_schedule_method: str, reps: int | None = None) -> None:
+    def __init__(self, tqa_schedule_method: str | None = None) -> None:
         """Create an instance of a TQATrainer QAOA angles function.
 
         Args:
@@ -318,10 +318,12 @@ class TQATrainerFunction(BaseAnglesFunction):
                 in :meth:`__call__`, an error is raised. Defaults to None.
         """
         super().__init__()
-        self._tqa_schedule = (
-            self.tqa_schedule if tqa_schedule_method == "tqa_schedule" else self.lr_schedule
-        )
-        self.reps = reps
+        if tqa_schedule_method == "tqa_schedule":
+            self._tqa_schedule = self.tqa_schedule
+        elif tqa_schedule_method == "lr_schedule":
+            self._tqa_schedule = self.lr_schedule
+        else:
+            raise ValueError("TQA schedule can only be tqa_schedule or lr_schedule")
 
     # pylint: disable=unused-argument
     def __call__(self, x: list, **kwargs) -> list:
