@@ -31,7 +31,7 @@ from qaoa_training_pipeline.pre_processing.feature_matching import (
 )
 from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.training.data_loading import DATA_LOADERS, BaseDataLoader
-from qaoa_training_pipeline.training.param_result import ParamResult
+from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
 class TransferTrainer(BaseTrainer):
