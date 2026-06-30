@@ -21,7 +21,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.framework.problem_params_provider import ProblemParamsProvider
 
 # cspell: ignore argmin contourf colorbar
 from qaoa_training_pipeline.training.extrema_location import Argmax, Argmin
@@ -35,14 +35,18 @@ from qaoa_training_pipeline.framework.param_result import ParamResult
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
-class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
+class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
     """Scan the param2 and param1 parameters of QAOA."""
+
+    requires_cost_op = True
 
     def __init__(
         self,
         evaluator: BaseEvaluator,
         energy_minimization: bool = False,
-        qaoa_angles_function: BaseAnglesFunction | None = None,
+        qaoa_angles_function: BaseAnglesFunction = IdentityFunction(),
+        parameter_ranges: list[tuple[float, float]] | None = None,
+        num_points: int = 15,
     ):
         """Initialize the class instance.
 
@@ -56,8 +60,13 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
                 an instance of `BaseAnglesFunction` but we allow any callable here that maps
                 optimization parameters to QAOA angles.
         """
-        BaseTrainer.__init__(self, evaluator=evaluator, qaoa_angles_function=qaoa_angles_function)
+        super().__init__(self, qaoa_angles_function=qaoa_angles_function)
         HistoryMixin.__init__(self)
+
+        # Parameters needed for energy evaluation during optimal search
+        self._evaluator = evaluator
+        self._parameter_ranges = parameter_ranges
+        self._num_points = num_points
 
         # Parameters that will be filled by the scanner.
         self._energies = None
@@ -81,15 +90,13 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         return isinstance(self._extrema_locator, Argmin)
 
     # pylint: disable=too-many-positional-arguments
-    def train(
+    # pylint: disable=arguments-differ
+    def provide_params(
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
-        params0: list[float] | None = None,
-        parameter_ranges: list[tuple[float, float]] | None = None,
-        num_points: int = 15,
     ) -> ParamResult:
         r"""Train the parameters by doing a 2D scan.
 
@@ -107,17 +114,20 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
             num_points: The number of points in the param2 and param1 ranges to take. This
                 method will thus evaluate the energy `num_points**2` times.
         """
-        self._warn_ignored_inputs(params0=params0)
         self.reset_history()
         start = time()
 
-        parameter_ranges = parameter_ranges or self._default_range
+        parameter_ranges = self._parameter_ranges or self._default_range
 
-        self._energies = np.zeros((num_points, num_points), dtype=float)
+        self._energies = np.zeros((self._num_points, self._num_points), dtype=float)
 
         # By default params1 scans beta and params2 scans gamma
-        self._params1 = np.linspace(parameter_ranges[0][0], parameter_ranges[0][1], num_points)
-        self._params2 = np.linspace(parameter_ranges[1][0], parameter_ranges[1][1], num_points)
+        self._params1 = np.linspace(
+            parameter_ranges[0][0], parameter_ranges[0][1], self._num_points
+        )
+        self._params2 = np.linspace(
+            parameter_ranges[1][0], parameter_ranges[1][1], self._num_points
+        )
 
         self._opt_param2, self._opt_param1 = None, None
 
@@ -142,14 +152,14 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
                 self._parameter_history.append([float(param1), float(param2)])
 
         min_idx, opt_energy = self._extrema_locator(self._energies)
-        min_idx_b, min_idx_g = min_idx // num_points, min_idx % num_points
+        min_idx_b, min_idx_g = min_idx // self._num_points, min_idx % self._num_points
         opt_param1, opt_param2 = self._params1[min_idx_b], self._params2[min_idx_g]
 
         self._opt_param2 = opt_param2
         self._opt_param1 = opt_param1
 
         opt_result = ParamResult([opt_param1, opt_param2], time() - start, self, opt_energy)
-        opt_result["num_points"] = num_points
+        opt_result["num_points"] = self._num_points
         opt_result["parameter_ranges"] = parameter_ranges
         opt_result.add_history(self)
 
@@ -210,7 +220,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
             qaoa_angles_function=function,
         )
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
+    def parse_runtime_kwargs(self, kwargs_str: str | None = None) -> dict:
         """Parse the training arguments.
 
         These are given in the form:
@@ -219,7 +229,7 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
         num_points:20:parameter_ranges:0/6.283185/0/6.283185.
         """
         train_kwargs = dict()
-        for key, val in self.extract_train_kwargs(args_str).items():
+        for key, val in super().parse_runtime_kwargs(kwargs_str).items():
             if key == "num_points":
                 train_kwargs[key] = int(val)
             elif key == "parameter_ranges":
@@ -231,6 +241,17 @@ class DepthOneScanTrainer(BaseTrainer, HistoryMixin):
                 raise ValueError("Unknown key in provided train_kwargs.")
 
         return train_kwargs
+
+    def to_config(self) -> dict:
+        """Creates a serializable dictionary to keep track of how results are created.
+
+        Note: This data structure is not intended for us to recreate the class instance.
+        """
+        return {
+            "trainer_name": self.__class__.__name__,
+            "evaluator": self._evaluator.to_config() if self._evaluator else None,
+            "qaoa_angles_function": self._qaoa_angles_function.to_config(),
+        }
 
 
 class DepthOneGammaScanTrainer(DepthOneScanTrainer):
@@ -270,7 +291,6 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
     def train(
         self,
         cost_op: SparsePauliOp,
-        mixer=None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
         params0: list[float] | None = None,

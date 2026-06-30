@@ -7,12 +7,6 @@
 # that they have been altered from the originals.
 
 """This module collects all the methods to train the parameters of a QAOA circuit."""
-
-from .functions import IdentityFunction
-from .functions import FourierFunction
-from .functions import FUNCTIONS
-
-from .fixed_angle_conjecture import FixedAngleConjecture
 from .models.random_regular_fit import RandomRegularDepthOneFit
 from .optimized_parameter_loader import OptimizedParametersLoader
 from .parameter_scanner import DepthOneScanTrainer, DepthOneGammaScanTrainer
@@ -22,24 +16,29 @@ from .recursion import RecursionTrainer
 from .recursive_transition_states import RecursiveTransitionStates
 from .reweighting import ReweightingTrainer
 from .scipy_trainer import ScipyTrainer
-from .tqa_trainer import TQATrainer
 from .transfer_trainer import TransferTrainer
 from .transition_states import TransitionStatesTrainer
 
 
-TRAINERS = {
-    "DepthOneScanTrainer": DepthOneScanTrainer,
-    "FixedAngleConjecture": FixedAngleConjecture,
+PARAMS_PROVIDERS = {
     "OptimizedParametersLoader": OptimizedParametersLoader,
-    "QAOAPCA": QAOAPCA,
-    "ScipyTrainer": ScipyTrainer,
     "RandomPoint": RandomPoint,
+    "TransferTrainer": TransferTrainer,
     "RandomRegularDepthOneFit": RandomRegularDepthOneFit,
+    "ScipyTrainer": ScipyTrainer,
+    "DepthOneGammaScanTrainer": DepthOneGammaScanTrainer,
+}
+
+PIPELINE_COMPONENTS = {
     "RecursionTrainer": RecursionTrainer,
     "RecursiveTransitionStates": RecursiveTransitionStates,
     "ReweightingTrainer": ReweightingTrainer,
-    "TQATrainer": TQATrainer,
-    "TransferTrainer": TransferTrainer,
+    "ScipyTrainer": ScipyTrainer,
     "TransitionStatesTrainer": TransitionStatesTrainer,
-    "DepthOneGammaScanTrainer": DepthOneGammaScanTrainer,
+    "QAOAPCA": QAOAPCA,
+}
+
+PROBLEM_PARAMS_PROVIDERS = {
+    "DepthOneScanTrainer": DepthOneScanTrainer,
+    "TransferTrainer": TransferTrainer,
 }

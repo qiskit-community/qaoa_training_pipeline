@@ -6,22 +6,22 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""A class that implements Trotterized Quantum Annealing"""
+"""A class that implements the Linear Ramp QAOA Protocol"""
 
 
 from qaoa_training_pipeline.training.functions import TQATrainerFunction
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
+class LRQAOATrainer(ScipyTrainer):
+    """A trainer that implements the Linear Ramp QAOA (LR-QAOA) protocol.
 
-class TQATrainer(ScipyTrainer):
-    """A trainer that implements the Trotterized Quantum Annealing (TQA) protocol.
+    LR-QAOA parameterizes the QAOA angles as two independent linear ramps — one
+    for the mixer angles ``beta`` and one for the cost angles ``gamma``, as
+    introduced by Montanez-Barrera and Michielsen, npj Quantum Information 11, 131 (2025)
 
-    TQA sets the QAOA angles as a function of a single annealing-time parameter ``dt` using
-    the schedule introduced in Sack and Serbyn, Quantum 5, 491 (2021).
-
-    Because the angles are fully determined by ``dt``, the optimization happens over a
-    one-dimensional space, which is performed via a ScipyTrainer with an underlying angle mapping
+    Because the angles are fully determined by the two linear ramps, the optimization happens over a
+    two-dimensional space, which is performed via a ScipyTrainer with an underlying angle mapping
     provided by TQATrainerFunction.
 
     """
@@ -32,7 +32,8 @@ class TQATrainer(ScipyTrainer):
         minimize_args: dict[str, object] | None = None,
         energy_minimization: bool = False,
     ):
-        """Initialize the TQA trainer.
+        """Initialize the Linear Ramp QAOA trainer.
+
 
         Args:
             evaluator: The energy evaluator to compute the energy at each optimization step
@@ -42,5 +43,5 @@ class TQATrainer(ScipyTrainer):
                 maximize the energy.
         """
         super().__init__(
-            evaluator, minimize_args, energy_minimization, TQATrainerFunction("tqa_schedule")
+            evaluator, minimize_args, energy_minimization, TQATrainerFunction("lr_schedule")
         )

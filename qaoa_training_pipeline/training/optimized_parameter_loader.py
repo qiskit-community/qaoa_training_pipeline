@@ -12,41 +12,29 @@ import glob
 import json
 
 import numpy as np
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.framework.params_provider import ParamsProvider
 from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
-class OptimizedParametersLoader(BaseTrainer):
-    """Class to load parameters from a file.
+class OptimizedParametersLoader(ParamsProvider):
+    """Class to load parameters from a file."""
 
-    In a slight abuse of notation, this class is not really a trainer. However,
-    having it inherit from the BaseTrainer ensures that it is usable in the
-    train pipeline.
-    """
-
-    def __init__(self):
-        """Initialize a class instance."""
-        super().__init__(None)
-
-    @property
-    def minimization(self):
-        """Raises a warning as a loader neither minimizes nor maximizes."""
-        raise ValueError(f"{self.__class__.__name__} neither minimizes nor maximizes.")
-
-    # pylint: disable=too-many-positional-arguments
-    def train(
+    def __init__(
         self,
-        cost_op: SparsePauliOp,
-        mixer: QuantumCircuit | None = None,
-        initial_state: QuantumCircuit | None = None,
-        ansatz_circuit: QuantumCircuit | None = None,
-        params0: list[float] | None = None,
         folder: str | None = None,
         file_pattern: str | None = None,
+    ):
+
+        super().__init__()
+
+        self._folder = folder
+        self._file_pattern = file_pattern
+
+    # pylint: disable=arguments-differ
+    def provide_params(
+        self,
     ) -> ParamResult:
         """Load from a file.
 
@@ -55,17 +43,12 @@ class OptimizedParametersLoader(BaseTrainer):
         the output of `train.py` in this package.
 
         Args:
-            cost_op: The operator for which we train. It is not needed here.
             folder: The folder where to find the parameters to load.
             file_pattern: The pattern to match to identify the file. This is a simple
                 if file_pattern in file_name then load the data in the file.
-            mixer: Not needed for now.
-            initial_state: Not needed for now.
-            ansatz_circuit: Not needed for now.
         """
-        folder = self._require(folder, "folder name")
-        file_pattern = self._require(file_pattern, "file pattern")
-        self._warn_ignored_inputs(params0=params0)
+        folder = self._require(self._folder, "folder name")
+        file_pattern = self._require(self._file_pattern, "file pattern")
 
         # 1. look for the file in the folder
         data, loaded_file_name = None, None
@@ -108,13 +91,13 @@ class OptimizedParametersLoader(BaseTrainer):
         """
         return {"trainer_name": self.__class__.__name__}
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
+    def parse_runtime_kwargs(self, kwargs_str: str | None = None) -> dict:
         """Parse the train args, i.e., get file and folder names.
 
         The string should have the format `folder:folder_name:file_pattern:pattern`.
         """
         train_kwargs = dict()
-        for key, val in self.extract_train_kwargs(args_str).items():
+        for key, val in super().parse_runtime_kwargs(kwargs_str).items():
             if key in ["folder", "file_pattern"]:
                 train_kwargs[key] = str(val)
             else:
