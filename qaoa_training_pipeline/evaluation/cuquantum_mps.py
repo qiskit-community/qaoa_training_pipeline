@@ -252,7 +252,7 @@ class CuQuantumMPSEvaluator(BaseEvaluator):
                 for layer_idx in layer_order:
                     permutation = self._swap_strategy.inverse_composed_permutation(layer_idx)
                     # 1. Apply the gates.
-                    for i, (node0, node1) in enumerate(self._swap_layer_pairs[layer_idx]):
+                    for _, (node0, node1) in enumerate(self._swap_layer_pairs[layer_idx]):
                         theta = (
                             2.0
                             * gamma
@@ -357,7 +357,8 @@ class CuQuantumMPSEvaluator(BaseEvaluator):
                             )
                         else:
                             raise NotImplementedError(
-                                "CuQuantumMPSEvaluator currently supports only one- and two-local Z terms."
+                                "CuQuantumMPSEvaluator currently supports "
+                                + "only one- and two-local Z terms."
                             )
             self._observable_terms = terms_observable
 
@@ -450,7 +451,7 @@ class CuQuantumMPSEvaluator(BaseEvaluator):
         terms: Sequence[_DiagonalZTerm],
     ) -> dict[str, float]:
         """Build cuQuantum mode-order Pauli strings from diagonal Z terms."""
-        if self._pauli_terms == None:
+        if self._pauli_terms is None:
             xp = self._backend()
             pauli_strings = {}
             for term in terms:
@@ -474,8 +475,9 @@ class CuQuantumMPSEvaluator(BaseEvaluator):
             self._xp = np
 
     def _backend(self):
-        """"""
+        """Returns the backend being used"""
         return self._xp
 
     def free_state(self):
+        """Free resources used by the state"""
         self._state.free()

@@ -59,6 +59,7 @@ def _require_cudaq():
     return cudaq
 
 
+# pylint: disable=undefined-variable
 def _cudaq_qaoa_kernel(cudaq):
     """Build the CUDA-Q QAOA kernel after CUDA-Q has been imported."""
 
@@ -71,6 +72,7 @@ def _cudaq_qaoa_kernel(cudaq):
         rz(2.0 * alpha, qubit_1)
         x.ctrl(qubit_0, qubit_1)
 
+    # pylint: disable=too-many-positional-arguments
     @cudaq.kernel
     def qaoa_kernel(
         qubit_count: int,
@@ -530,6 +532,7 @@ class CudaQMPSBenchmarkEvaluator(BaseEvaluator):
                     "but CUDA-Q reports zero available GPUs."
                 )
 
+    # pylint: disable=undefined-variable
     @staticmethod
     def _make_graph_qaoa_kernel(
         cudaq,
