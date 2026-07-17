@@ -35,7 +35,22 @@ setuptools.setup(
         include=["qaoa_training_pipeline", "qaoa_training_pipeline.*"]
     ),
     install_requires=REQUIREMENTS,
+    extras_require={
+        # Torch-free AI-inference runtime (default AIInference backend).
+        "inference": ["onnxruntime"],
+        # Torch/export path: training, ONNX export, and the torch predictor.
+        "inference-torch": ["torch", "torch_geometric"],
+    },
     include_package_data=True,
+    # Ship the exported ONNX model bundles with the wheel so the default
+    # AIInference("onnx") backend works without any external artifacts.
+    package_data={
+        "qaoa_training_pipeline": [
+            "inference/model_configs/*/model_config.json",
+            "inference/model_configs/*/model.onnx",
+            "inference/model_configs/*/model.onnx.data",
+        ],
+    },
     python_requires=">=3.10",
     zip_safe=False,
 )

@@ -1,2 +1,12 @@
 # needed for the PauliPropagation energy evaluation
 juliacall
+
+# needed for the torch-free AI-inference runtime (AIInference "onnx" backend).
+# Installed via the `inference` extra: pip install qaoa_training_pipeline[inference]
+onnxruntime
+
+# The torch/export path (AIInference "torch" backend, scripts/export_onnx.py)
+# additionally needs torch + torch_geometric. These are intentionally NOT base
+# runtime deps; install them via: pip install qaoa_training_pipeline[inference-torch]
+# torch
+# torch_geometric
