@@ -17,7 +17,7 @@ qaoa_training_pipeline package does not require CUDA-Q to be installed.
 import os
 from dataclasses import dataclass
 from numbers import Integral
-from typing import Iterable, List, Sequence
+from typing import Iterable, Sequence
 
 import networkx as nx
 import numpy as np
@@ -78,10 +78,10 @@ def _cudaq_qaoa_kernel(cudaq):
         qubit_count: int,
         layer_count: int,
         edge_count: int,
-        edges_src: List[int],
-        edges_tgt: List[int],
-        edge_coefficients: List[float],
-        params: List[float],
+        edges_src: list[int],
+        edges_tgt: list[int],
+        edge_coefficients: list[float],
+        params: list[float],
     ):
         """Apply standard QAOA with params ordered as [betas..., gammas...]."""
 
