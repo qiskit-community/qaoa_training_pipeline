@@ -1,2 +1,8 @@
 # needed for the PauliPropagation energy evaluation
 juliacall
+
+# optional CUDA-Q MPS benchmark backend; requires supported CUDA-Q platform/GPU
+cudaq
+
+# optional cuTensorNet MPS/MPO backend; choose the CUDA-version wheel for your system
+cuquantum-python-cu12
