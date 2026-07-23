@@ -104,7 +104,6 @@ class ReweightingTrainer(PipelineComponent):
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
         params0: list[float] | None = None,
-        trainer1_kwargs: dict | None = None,
     ) -> ParamResult:
         r"""Train by unweighting the cost_op and then reweighting it.
 
@@ -128,16 +127,14 @@ class ReweightingTrainer(PipelineComponent):
 
         unweighted_cost_op = self.unweight(cost_op)
 
-        trainer1_kwargs = trainer1_kwargs or {}
         result1 = self._trainer_unweighted.provide_params(
             unweighted_cost_op,
             mixer=mixer,
             initial_state=initial_state,
             ansatz_circuit=ansatz_circuit,
-            **trainer1_kwargs,
+            params0=params0,
         )
 
-        self._warn_ignored_inputs(params0=params0)
         params0 = self.scale_parameters(result1)
 
         result2 = self._trainer_weighted.provide_params(

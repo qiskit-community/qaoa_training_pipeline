@@ -67,7 +67,7 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
         HistoryMixin.__init__(self)
 
         # Parameters needed for energy evaluation during optimal search
-        self._evaluator = evaluator
+        self.evaluator = evaluator
         self._parameter_ranges = parameter_ranges or [(0.0, np.pi), (0.0, 2 * np.pi)]
         self._num_points = num_points
 
@@ -137,8 +137,8 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
 
                 qaoa_angles = self._qaoa_angles_function([param1, param2])
 
-                assert self._evaluator, "_evaluator must be defined before calling train()"
-                energy = self._evaluator.evaluate(
+                assert self.evaluator, "evaluator must be defined before calling train()"
+                energy = self.evaluator.evaluate(
                     cost_op=cost_op,
                     params=qaoa_angles,
                     mixer=mixer,  # type: ignore
@@ -250,7 +250,7 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
         """
         return {
             "trainer_name": self.__class__.__name__,
-            "evaluator": self._evaluator.to_config() if self._evaluator else None,
+            "evaluator": self.evaluator.to_config() if self.evaluator else None,
             "qaoa_angles_function": self._qaoa_angles_function.to_config(),
         }
 
@@ -335,9 +335,9 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
             qaoa_angles = [param1, param2]
             assert isinstance(
-                self._evaluator, BaseEvaluator
+                self.evaluator, BaseEvaluator
             ), "evaluator must be an initialized BaseEvaluator"
-            energy = self._evaluator.evaluate(
+            energy = self.evaluator.evaluate(
                 cost_op=cost_op,
                 params=qaoa_angles,
                 mixer=None,

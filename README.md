@@ -198,6 +198,10 @@ This repository is still in development: new functionality is being added and th
 |      38 | Introduce the framework module                               |          #72 |
 |      39 | Add framework imports in the main folder                     |          #73 |
 |      40 | Add FromConfigParamsProvider to set initial params.          |          #74 |
+|      41 | Implement new refactoring design in trainers.                |          #71 |
+|      42 | Refactor how_tos to new class design.                        |          #80 |
+|      43 | Update provide_params in reweighting                         |          #81 |
+
 
 ## IBM Public Repository Disclosure
 
