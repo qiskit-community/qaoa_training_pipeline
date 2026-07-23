@@ -12,7 +12,7 @@ from test import TrainingPipelineTestCase
 
 import networkx as nx
 
-from qaoa_training_pipeline.evaluation import StatevectorEvaluator
+
 from qaoa_training_pipeline.pre_processing.feature_extraction import GraphFeatureExtractor
 from qaoa_training_pipeline.pre_processing.feature_matching import TrivialFeatureMatcher
 from qaoa_training_pipeline.pre_processing.angle_aggregation import AverageAngleAggregator
@@ -47,7 +47,7 @@ class TestTransferTraininer(TrainingPipelineTestCase):
             feature_extractor=GraphFeatureExtractor(extract_standard_devs=False),
             feature_matcher=TrivialFeatureMatcher(),
             angle_aggregator=AverageAngleAggregator(),
-            evaluator=StatevectorEvaluator(),
+            reps=self._qaoa_depth,
         )
 
     def test_simple(self):
@@ -55,7 +55,7 @@ class TestTransferTraininer(TrainingPipelineTestCase):
         graph = nx.random_regular_graph(n=6, d=3, seed=123)
         cost_op = graph_to_operator(graph, pre_factor=-0.5)
 
-        result = self._trainer.train(cost_op, qaoa_depth=self._qaoa_depth)
+        result = self._trainer.provide_params(cost_op)
 
         self.assertEqual(len(result["optimized_qaoa_angles"]), 2 * self._qaoa_depth)
 
@@ -66,12 +66,12 @@ class TestTransferTraininer(TrainingPipelineTestCase):
             feature_extractor=GraphFeatureExtractor(extract_standard_devs=False),
             feature_matcher=TrivialFeatureMatcher(),
             angle_aggregator=AverageAngleAggregator(),
-            evaluator=StatevectorEvaluator(),
+            reps=self._qaoa_depth,
         )
 
         graph = nx.random_regular_graph(n=6, d=3, seed=123)
         cost_op = graph_to_operator(graph, pre_factor=-0.5)
-        result = load_trainer.train(cost_op, qaoa_depth=self._qaoa_depth)
+        result = load_trainer.provide_params(cost_op)
 
         self.assertEqual(len(result["optimized_qaoa_angles"]), 2 * self._qaoa_depth)
 
@@ -148,6 +148,7 @@ class TestTransferTraininer(TrainingPipelineTestCase):
             "angle_aggregator_init": {"angle_aggregator_name": "AverageAngleAggregator", "axis": 0},
             "evaluator": "StatevectorEvaluator",
             "evaluator_init": {"statevector_init_args": {}},
+            "reps": "2",
         }
 
         trainer = TransferTrainer.from_config(config)
@@ -162,9 +163,9 @@ class TestTransferTraininer(TrainingPipelineTestCase):
 
     def test_parse_train_kwargs(self):
         """Test the parsing of the train key word arguments."""
-        kwargs = self._trainer.parse_train_kwargs("qaoa_depth:3")
+        kwargs = self._trainer.parse_runtime_kwargs("reps:3")
 
-        self.assertDictEqual(kwargs, {"qaoa_depth": 3})
+        self.assertDictEqual(kwargs, {"reps": 3})
 
         with self.assertRaises(ValueError):
-            self._trainer.parse_train_kwargs("reps:3")
+            self._trainer.parse_runtime_kwargs("rep:3")

@@ -8,14 +8,16 @@
 
 """Class to store result data."""
 
+from __future__ import annotations
+
 import platform
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from qaoa_training_pipeline.training.history_mixin import HistoryMixin
-
 if TYPE_CHECKING:
-    from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+    from qaoa_training_pipeline.framework.params_provider import ParamsProvider
+    from qaoa_training_pipeline.training.history_mixin import HistoryMixin
+    from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 
 @dataclass
@@ -35,7 +37,7 @@ class ParamResult:
         self,
         optimized_params: list,
         duration: float,
-        trainer: "BaseTrainer",
+        trainer: "ParamsProvider",
         energy: float | None = None,
     ):
         """Initialize the data class."""
@@ -46,7 +48,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 40,
+            "qaoa_training_pipeline_version": 41,
         }
 
         # Convert, e.g., np.float to float
@@ -92,7 +94,9 @@ class ParamResult:
 
     # pylint: disable=(too-many-positional-arguments
     @classmethod
-    def from_scipy_result(cls, result, params0, train_duration, sign, trainer) -> "ParamResult":
+    def from_scipy_result(
+        cls, result, params0, train_duration, sign, trainer: ScipyTrainer
+    ) -> "ParamResult":
         """Standardizes results from SciPy such that it can be serialized."""
 
         param_result = cls(
@@ -108,7 +112,6 @@ class ParamResult:
             success = result["success"]
             param_result["success"] = f"{success}"
 
-        if isinstance(trainer, HistoryMixin):
-            param_result.add_history(trainer)
+        param_result.add_history(trainer)
 
         return param_result

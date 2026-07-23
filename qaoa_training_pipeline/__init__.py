@@ -8,16 +8,17 @@
 
 """Module level imports."""
 
-from qaoa_training_pipeline.training.parameter_scanner import (
-    DepthOneScanTrainer,
-    DepthOneGammaScanTrainer,
+from qaoa_training_pipeline.evaluation.efficient_depth_one import (
+    EfficientDepthOneEvaluator,
 )
-from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
-
 from qaoa_training_pipeline.framework import (
+    FromConfigParamsProvider,
     ParamResult,
     ParamsProvider,
-    ProblemParamsProvider,
     PipelineComponent,
-    FromConfigParamsProvider,
+    ProblemParamsProvider,
+)
+from qaoa_training_pipeline.training.parameter_scanner import (
+    DepthOneGammaScanTrainer,
+    DepthOneScanTrainer,
 )

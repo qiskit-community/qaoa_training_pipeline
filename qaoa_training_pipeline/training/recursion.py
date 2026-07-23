@@ -8,23 +8,28 @@
 
 """Class to recursively train QAOA parameters."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from time import time
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.framework.param_result import ParamResult
+from qaoa_training_pipeline.framework.pipeline_component import PipelineComponent
 from qaoa_training_pipeline.training.parameter_extenders import PARAMETEREXTENDERS
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
+if TYPE_CHECKING:
+    from qiskit import QuantumCircuit
+    from qiskit.quantum_info import SparsePauliOp
 
-class RecursionTrainer(BaseTrainer):
+
+class RecursionTrainer(PipelineComponent):
     """Recursively train QAOA by initializing level `p+1` with level `p`.
 
     This class uses a function, called the `parameter_extender` to ingest parameters
@@ -33,7 +38,12 @@ class RecursionTrainer(BaseTrainer):
     them.
     """
 
-    def __init__(self, trainer: ScipyTrainer, parameter_extender: Callable | None = None):
+    def __init__(
+        self,
+        trainer: ScipyTrainer,
+        parameter_extender: Callable | None = None,
+        reps: int | None = None,
+    ):
         """Initialize a recursion trainer.
 
         Args:
@@ -42,8 +52,12 @@ class RecursionTrainer(BaseTrainer):
                 optimized parameters values at depth `p` and the output are the initial
                 points for the parameter optimization at depth `p+1`.
             trainer: The trainer must be the ScipyTrainer.
+            reps: QAOA circuit depth
         """
-        super().__init__(trainer.evaluator, trainer.qaoa_angles_function)
+        super().__init__(
+            trainer.evaluator,
+            qaoa_angles_function=trainer.qaoa_angles_function,
+        )
 
         # Takes parameters from QAOA depth p to depth p+1.
         self._parameter_extender = parameter_extender or PARAMETEREXTENDERS["extend"]
@@ -54,20 +68,22 @@ class RecursionTrainer(BaseTrainer):
         # Store internally all the results that we obtained.
         self._all_results = None
 
+        # Initialize reps
+        self._reps = reps
+
     @property
     def minimization(self) -> bool:
         """Return True if the energy is minimized."""
         return self._trainer.minimization
 
     # pylint: disable=too-many-positional-arguments
-    def train(
+    def provide_params(
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
         params0: list[float] | None = None,
-        reps: int | None = None,
     ) -> ParamResult:
         """Perform the training.
 
@@ -82,7 +98,7 @@ class RecursionTrainer(BaseTrainer):
         """
 
         params0 = self._require(params0, "params0")
-        reps = self._require(reps, "reps")
+        reps = self._require(self._reps, "reps")
         start = time()
         current_reps = len(params0) // 2
 
@@ -102,7 +118,7 @@ class RecursionTrainer(BaseTrainer):
                     f"does not match the expected depth of {2*current_reps}. "
                 )
 
-            result = self._trainer.train(
+            result = self._trainer.provide_params(
                 cost_op,
                 params0=new_params0,
                 mixer=mixer,
@@ -135,7 +151,7 @@ class RecursionTrainer(BaseTrainer):
         trainer = ScipyTrainer.from_config(config["trainer_init"])
         parameter_extender = PARAMETEREXTENDERS[config["parameter_extender"]]
 
-        return cls(trainer, parameter_extender)
+        return cls(trainer, parameter_extender, reps=config["reps"])
 
     def to_config(self) -> dict:
         """Return the configuration of the trainer."""
@@ -146,14 +162,15 @@ class RecursionTrainer(BaseTrainer):
             "parameter_extender": self._parameter_extender.__name__,
         }
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
+    @classmethod
+    def parse_runtime_kwargs(cls, kwargs_str: str | None = None) -> dict:
         """Parse a string into the training kwargs."""
         train_kwargs = dict()
-        for key, val in self.extract_train_kwargs(args_str).items():
+        for key, val in super().parse_runtime_kwargs(kwargs_str).items():
             if key == "reps":
                 train_kwargs[key] = int(val)
             elif key == "params0":
-                train_kwargs[key] = self.extract_list(val, dtype=float)
+                train_kwargs[key] = cls.extract_list(val, dtype=float)
             else:
                 raise ValueError("Unknown key in provided train_kwargs.")
 

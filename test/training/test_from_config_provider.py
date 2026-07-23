@@ -11,6 +11,7 @@
 from qaoa_training_pipeline.framework.from_config_provider import (
     FromConfigParamsProvider,
 )
+from qaoa_training_pipeline.training.functions import IdentityFunction
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
 
@@ -20,7 +21,9 @@ class TestFromConfigParamsProvider(TrainingPipelineTestCase):
 
     def setUp(self):  # pylint: disable=invalid-name
         """Setup the class."""
-        self.params_provider = FromConfigParamsProvider([0.5, 0.5])
+        self.params_provider = FromConfigParamsProvider(
+            [0.5, 0.5], qaoa_angles_function=IdentityFunction()
+        )
 
     def test_parameter_pass(self):
         """Test that provider can provide params0"""
@@ -29,7 +32,9 @@ class TestFromConfigParamsProvider(TrainingPipelineTestCase):
 
     def test_from_config(self):
         """Test that we can build provider from config file"""
-        params_provider = FromConfigParamsProvider.from_config({"params0": [0.5, 0.5]})
+        params_provider = FromConfigParamsProvider.from_config(
+            {"params0": [0.5, 0.5], "qaoa_angles_function": "IdentityFunction"}
+        )
         params0 = params_provider.provide_params()
         self.assertEqual(params0["optimized_params"], [0.5, 0.5])
 

@@ -46,6 +46,6 @@ class TestReweightedTrainer(TrainingPipelineTestCase):
         # Setup the trainers.
         sub_trainer = ScipyTrainer(evaluator=EfficientDepthOneEvaluator())
         trainer = ReweightingTrainer(trainer1=sub_trainer)
-        result = trainer.train(cost_op=cost_op, trainer1_kwargs={"params0": [1, 1]})
+        result = trainer.provide_params(cost_op=cost_op, trainer1_kwargs={"params0": [1, 1]})
 
         self.assertTrue(result["success"])

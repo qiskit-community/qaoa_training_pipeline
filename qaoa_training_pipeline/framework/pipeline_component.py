@@ -9,26 +9,31 @@
 """Pipeline components for QAOA angles training.
 
 This module defines the PipelineComponent abstract class, which extends ProblemParamsProvider to
-support QAOA angles optimization. Pipeline components are the building blocks of QAOA 
+support QAOA angles optimization. Pipeline components are the building blocks of QAOA
 training pipelines. PipelineComponents can receive QAOA angles and improve them
 through various optimization or training methods found in the literature.
 
-Multiple instances of PipelineComponent can be chained together in a Pipeline to create 
+Multiple instances of PipelineComponent can be chained together in a Pipeline to create
 multi-stage optimization workflows, where each component refines the parameters produced by
 the previous stage.
 """
 
+from __future__ import annotations
+
 from abc import abstractmethod
+from typing import TYPE_CHECKING
 
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
-
-from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.framework.problem_params_provider import (
     ProblemParamsProvider,
 )
-from qaoa_training_pipeline.training.functions import BaseAnglesFunction
-from qaoa_training_pipeline.framework.param_result import ParamResult
+
+if TYPE_CHECKING:
+    from qiskit import QuantumCircuit
+    from qiskit.quantum_info import SparsePauliOp
+
+    from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+    from qaoa_training_pipeline.framework.param_result import ParamResult
+    from qaoa_training_pipeline.training.functions import BaseAnglesFunction
 
 
 class PipelineComponent(ProblemParamsProvider):
@@ -52,7 +57,7 @@ class PipelineComponent(ProblemParamsProvider):
         self,
         evaluator: BaseEvaluator | None = None,
         *,
-        qaoa_angles_function: BaseAnglesFunction | None = None,
+        qaoa_angles_function: BaseAnglesFunction,
     ):
         """Initialize the pipeline component.
 

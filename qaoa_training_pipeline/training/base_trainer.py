@@ -8,19 +8,23 @@
 
 """Base trainer interface."""
 
+from __future__ import annotations
+
 import warnings
 from abc import ABC, abstractmethod
-from typing import TypeVar
-
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
+from typing import TYPE_CHECKING, TypeVar
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.training.functions import (
     BaseAnglesFunction,
     IdentityFunction,
 )
-from qaoa_training_pipeline.framework.param_result import ParamResult
+
+if TYPE_CHECKING:
+    from qiskit import QuantumCircuit
+    from qiskit.quantum_info import SparsePauliOp
+
+    from qaoa_training_pipeline.framework.param_result import ParamResult
 
 T = TypeVar("T")
 

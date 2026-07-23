@@ -1,23 +1,19 @@
 {
-    "trainer_chain": [
+    "params_provider":
         {
-            "trainer": "RandomPoint",
-            "trainer_init": {},
-            "train_kwargs": {
+            "provider_name": "RandomPoint",
+            "provider_init": {
                 "reps": 1
             }
         },
+    "pipeline_components": [
+        
         {
-            "trainer": "ScipyTrainer",
-            "trainer_init": {
+            "component_name": "ScipyTrainer",
+            "component_init": {
                 "evaluator": "EfficientDepthOneEvaluator",
                 "evaluator_init": {},
                 "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
-            },
-            "train_kwargs": {
-                "result": {
-                    "optimized_params": "params0"
-                }
             },
             "save_file": "method_1.json"
         }

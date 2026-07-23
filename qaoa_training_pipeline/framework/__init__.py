@@ -8,16 +8,16 @@
 
 """Framework module: core abstract base classes for the QAOA training pipeline."""
 
+from .from_config_provider import FromConfigParamsProvider
 from .param_result import ParamResult
 from .params_provider import ParamsProvider
-from .problem_params_provider import ProblemParamsProvider
 from .pipeline_component import PipelineComponent
-from .from_config_provider import FromConfigParamsProvider
+from .problem_params_provider import ProblemParamsProvider
 
 __all__ = [
+    "FromConfigParamsProvider",
     "ParamResult",
     "ParamsProvider",
-    "ProblemParamsProvider",
     "PipelineComponent",
-    "FromConfigParamsProvider",
+    "ProblemParamsProvider",
 ]

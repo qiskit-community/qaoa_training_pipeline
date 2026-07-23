@@ -6,16 +6,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""A class that implements Trotterized Quantum Annealing"""
-
-
+"""A class that implements the Linear Ramp QAOA Protocol"""
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.functions import TQAFunction
+from qaoa_training_pipeline.training.functions import LRFunction
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
 if TYPE_CHECKING:
@@ -23,15 +21,16 @@ if TYPE_CHECKING:
     pass
 
 
-class TQATrainer(ScipyTrainer):
-    """A trainer that implements the Trotterized Quantum Annealing (TQA) protocol.
+class LRQAOATrainer(ScipyTrainer):
+    """A trainer that implements the Linear Ramp QAOA (LR-QAOA) protocol.
 
-    TQA sets the QAOA angles as a function of a single annealing-time parameter ``dt` using
-    the schedule introduced in Sack and Serbyn, Quantum 5, 491 (2021).
+    LR-QAOA parameterizes the QAOA angles as two independent linear ramps — one
+    for the mixer angles ``beta`` and one for the cost angles ``gamma``, as
+    introduced by Montanez-Barrera and Michielsen, npj Quantum Information 11, 131 (2025)
 
-    Because the angles are fully determined by ``dt``, the optimization happens over a
-    one-dimensional space, which is performed via a ScipyTrainer with an underlying angle mapping
-    provided by TQAFunction.
+    Because the angles are fully determined by the two linear ramps, the optimization happens over a
+    two-dimensional space, which is performed via a ScipyTrainer with an underlying angle mapping
+    provided by LRFunction.
 
     """
 
@@ -42,11 +41,11 @@ class TQATrainer(ScipyTrainer):
         minimize_args: dict[str, object] | None = None,
         energy_minimization: bool = False,
     ):
-        """Initialize the TQA trainer.
+        """Initialize the Linear Ramp QAOA trainer.
+
 
         Args:
             evaluator: The energy evaluator to compute the energy at each optimization step
-            reps: the QAOA circuit depth.
             minimize_args: Arguments that will be passed to SciPy's `minimize`.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
@@ -56,20 +55,18 @@ class TQATrainer(ScipyTrainer):
             evaluator,
             minimize_args,
             energy_minimization,
-            TQAFunction(
-                reps=reps,
-            ),
+            LRFunction(reps=reps),
         )
 
     @classmethod
-    def from_config(cls, config: dict) -> "TQATrainer":
+    def from_config(cls, config: dict) -> "LRQAOATrainer":
         """Create a scipy trainer based on a config."""
 
         evaluator_cls = EVALUATORS[config["evaluator"]]
 
         return cls(
             evaluator=evaluator_cls.from_config(config["evaluator_init"]),
-            reps=config["reps"],
+            reps=config.get("reps"),
             minimize_args=config.get("minimize_args", None),
             energy_minimization=config.get("energy_minimization", False),
         )
