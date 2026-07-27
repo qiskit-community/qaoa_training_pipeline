@@ -134,10 +134,7 @@ class QPUSampleEvaluator(BaseEvaluator):
             self.cost_op = cost_op
 
         # Avoid recreating the circuit all the time.
-        if self._ansatz is None:
-            self.prepare_ansatz(ansatz_op, len(params) // 2)
-
-        elif self._depth != len(params) // 2:
+        if self._ansatz is None or self._depth != len(params) // 2:
             self.prepare_ansatz(ansatz_op, len(params) // 2)
 
         # Time tracked QPU sample collection
