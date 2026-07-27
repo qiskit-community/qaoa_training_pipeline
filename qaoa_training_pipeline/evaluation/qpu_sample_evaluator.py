@@ -27,6 +27,8 @@ from qopt_best_practices.transpilation.annotated_transpilation_passes import (
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
+_DEFAULT_SHOTS = 20_000
+
 
 class QPUSampleEvaluator(BaseEvaluator):
     """Backend evaluator."""
@@ -35,7 +37,7 @@ class QPUSampleEvaluator(BaseEvaluator):
     def __init__(
         self,
         backend,
-        shots: int = 20000,
+        shots: int = _DEFAULT_SHOTS,
         cvar_alpha: float = 1.00,
         energy_minimization: bool = False,
         samples_folder=None,
@@ -55,7 +57,7 @@ class QPUSampleEvaluator(BaseEvaluator):
         else:
             self._sampler = sampler
 
-        self._shots = shots or 20000
+        self._shots = shots
 
         self._ansatz = None
         self._depth = None
