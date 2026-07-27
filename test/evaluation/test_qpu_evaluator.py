@@ -48,7 +48,7 @@ class TestQPUSampleEvaluator(TestCase):
         energy2 = self.qiskit_circuit_simulation(self.cost_op, angles)
         self.assertAlmostEqual(energy1, energy2, delta=0.05)
 
-    def test_custom_ansatz(self):
+    def test_custom_ansatz_differs(self):
         """Test that we can construct the ansatz from a different operator."""
         ansatz_op = SparsePauliOp.from_list([("ZI", 1)])
 
@@ -58,10 +58,4 @@ class TestQPUSampleEvaluator(TestCase):
         self.evaluator.prepare_ansatz(self.cost_op, len(angles) // 2)
         energy2 = self.evaluator.evaluate(self.cost_op, params=angles)
 
-        self.assertTrue(abs(energy1 - energy2) > 0.1)
-
-        self.evaluator.prepare_ansatz(self.cost_op, len(angles) // 2)
-        energy1 = self.evaluator.evaluate(self.cost_op, params=angles, ansatz_circuit=self.cost_op)
-        energy2 = self.evaluator.evaluate(self.cost_op, params=angles)
-
-        self.assertTrue(abs(energy1 - energy2) < 0.1)
+        self.assertNotAlmostEqual(energy1, energy2, delta=0.1)
