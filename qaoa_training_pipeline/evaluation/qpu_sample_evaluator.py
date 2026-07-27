@@ -90,19 +90,12 @@ class QPUSampleEvaluator(BaseEvaluator):
 
         energy = 0
         for aidx, val in enumerate(self._reals):
-            if len(self._ainds[aidx]) == 1:
-                if int(sample[self._ainds[aidx][0]]) == 1:
-                    energy -= val
-                else:
-                    energy += val
+            selected_bits = [sample[idx] for idx in self._ainds[aidx]]
 
-            if len(self._ainds[aidx]) == 2:
-                if sample[self._ainds[aidx][0]] == sample[self._ainds[aidx][1]]:
-                    energy += val
-                else:
-                    energy -= val
-            if len(self._ainds[aidx]) == 0:
-                energy += 1
+            if sum(selected_bits) % 2 == 0:
+                energy += val
+            else:
+                energy -= val
 
         return energy
 
