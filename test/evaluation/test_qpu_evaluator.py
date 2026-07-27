@@ -28,7 +28,7 @@ class TestQPUSampleEvaluator(TestCase):
             backend=AerSimulator(
                 method="matrix_product_state",
                 matrix_product_state_max_bond_dimension=20,
-                max_parallel_threads=10,
+                max_parallel_threads=1,
             )
         )
 
