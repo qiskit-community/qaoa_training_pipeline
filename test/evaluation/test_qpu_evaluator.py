@@ -44,9 +44,43 @@ class TestQPUSampleEvaluator(TestCase):
     def test_evaluate(self):
         """Basic test of the evaluator."""
         angles = [0.1, 0.3]
-        energy1 = self.evaluator.evaluate(self.cost_op, params=angles)
-        energy2 = self.qiskit_circuit_simulation(self.cost_op, angles)
-        self.assertAlmostEqual(energy1, energy2, delta=0.05)
+
+        cost_ops = [
+            SparsePauliOp.from_list([("II", 1.0), ("IZ", 1.0), ("ZZ", 1.0)]),
+            SparsePauliOp.from_list([("Z", 2)]),
+        ]
+
+        for cost_op in cost_ops:
+            with self.subTest(cost_op=cost_op):
+                evaluator = QPUSampleEvaluator(
+                    backend=AerSimulator(
+                        method="matrix_product_state",
+                        matrix_product_state_max_bond_dimension=64,
+                        max_parallel_threads=1,
+                    ),
+                    shots=80000,
+                )
+                energy1 = evaluator.evaluate(cost_op, params=angles)
+                energy2 = self.qiskit_circuit_simulation(cost_op, angles)
+                self.assertAlmostEqual(energy1, energy2, delta=0.05)
+
+        cost_ops_high_order = [
+            SparsePauliOp.from_list([("IZZ", 2.0), ("ZIZ", 3), ("ZZZ", 4)]),
+            SparsePauliOp.from_list([("ZZZ", 1.0)]),
+        ]
+
+        for cost_op in cost_ops_high_order:
+            with self.subTest(cost_op=cost_op):
+                evaluator = QPUSampleEvaluator(
+                    backend=AerSimulator(
+                        method="matrix_product_state",
+                        matrix_product_state_max_bond_dimension=64,
+                        max_parallel_threads=1,
+                    ),
+                    shots=80000,
+                )
+                with self.assertRaises(ValueError):
+                    evaluator.evaluate(cost_op, params=angles)
 
     def test_custom_ansatz_differs(self):
         """Test that we can construct the ansatz from a different operator."""
@@ -59,3 +93,36 @@ class TestQPUSampleEvaluator(TestCase):
         energy2 = self.evaluator.evaluate(self.cost_op, params=angles)
 
         self.assertNotAlmostEqual(energy1, energy2, delta=0.1)
+
+    def test_from_config(self):
+        """Test that we can create the evaluator from a config dictionary"""
+        config = {
+            "backend": "AerSimulator",
+            "backend_config": {
+                "method": "matrix_product_state",
+                "matrix_product_state_max_bond_dimension": 20,
+                "max_parallel_threads": 1,
+            },
+            "shots": 40000,
+        }
+        evaluator = QPUSampleEvaluator.from_config(config)
+
+        self.assertIsInstance(evaluator, QPUSampleEvaluator)
+        angles = [0.1, 0.3]
+        energy1 = self.evaluator.evaluate(self.cost_op, params=angles)
+        energy2 = evaluator.evaluate(self.cost_op, params=angles)
+        self.assertTrue(abs(energy1 - energy2) < 0.05)
+
+    def test_to_config(self):
+        """Test that we can serialize the evaluator to a config dictionary"""
+        config = self.evaluator.to_config()
+        self.assertIsInstance(config, dict)
+        self.assertEqual(
+            config,
+            {
+                "name": "QPUSampleEvaluator",
+                "backend": "aer_simulator_matrix_product_state",
+                "cvar_alpha": 1,
+                "energy_minimization": False,
+            },
+        )
