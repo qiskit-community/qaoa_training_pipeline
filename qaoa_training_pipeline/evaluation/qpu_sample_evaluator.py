@@ -67,6 +67,7 @@ class QPUSampleEvaluator(BaseEvaluator):
         self._time_history_qpu = []
         self._time_history_cpu = []
         self._samples_folder = samples_folder
+        self._ansatz_digest = None
 
     @property
     def cost_op(self):
@@ -116,7 +117,7 @@ class QPUSampleEvaluator(BaseEvaluator):
 
         return np.average(self.energies(counts))
 
-    def _ansatz_op_digest(op: SparsePauliOp) -> bytes:
+    def _ansatz_op_digest(self, op: SparsePauliOp) -> bytes:
         h = hashlib.sha256()
         h.update(str(op.paulis.to_labels()).encode())
         h.update(np.ascontiguousarray(op.coeffs.view(np.float64)).tobytes())
