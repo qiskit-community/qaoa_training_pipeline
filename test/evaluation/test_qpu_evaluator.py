@@ -95,7 +95,7 @@ class TestQPUSampleEvaluator(TestCase):
     def test_from_config(self):
         """Test that we can create the evaluator from a config dictionary"""
         config = {
-            "backend": "AerSimulator",
+            "backend": "aer_simulator_matrix_product_state",
             "backend_config": {
                 "method": "matrix_product_state",
                 "matrix_product_state_max_bond_dimension": 20,
@@ -115,12 +115,8 @@ class TestQPUSampleEvaluator(TestCase):
         """Test that we can serialize the evaluator to a config dictionary"""
         config = self.evaluator.to_config()
         self.assertIsInstance(config, dict)
-        self.assertEqual(
-            config,
-            {
-                "name": "QPUSampleEvaluator",
-                "backend": "aer_simulator_matrix_product_state",
-                "cvar_alpha": 1,
-                "energy_minimization": False,
-            },
-        )
+        self.assertEqual(config["name"], "QPUSampleEvaluator")
+        self.assertEqual(config["backend"], "aer_simulator_matrix_product_state")
+        self.assertEqual(config["cvar_alpha"], 1)
+        self.assertEqual(config["energy_minimization"], False)
+        self.assertEqual(config["backend_config"]["method"], "matrix_product_state")
