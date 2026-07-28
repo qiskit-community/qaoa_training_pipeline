@@ -78,6 +78,17 @@ class ParamResult:
     def __len__(self):
         return len(self.data)
 
+    def __repr__(self):
+        out = f"{self.__class__.__name__} with {self.data.keys()} entries.\n"
+
+        out += f"Obtained from training with {self.data['trainer']['trainer_name']}"
+        out += f" in {self.data['train_duration']} seconds \n"
+        out += "optimized_params:" + str(self.data["optimized_params"]) + "\n"
+        out += "optimized_qaoa_angles:" + str(self.data["optimized_qaoa_angles"]) + "\n"
+        out += "energy:" + str(self.data["energy"])
+
+        return out
+
     def keys(self):
         """Return the keys of the underlying dict"""
         return self.data.keys()
