@@ -19,6 +19,7 @@ from qiskit.primitives import BackendSamplerV2
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
+from qiskit_aer import AerSimulator
 from qopt_best_practices.circuit_library import annotated_qaoa_ansatz
 from qopt_best_practices.transpilation.annotated_transpilation_passes import (
     AnnotatedCommuting2qGateRouter,
@@ -214,6 +215,19 @@ class QPUSampleEvaluator(BaseEvaluator):
     def get_results_from_last_iteration(self):
         """Return the results from the last iteration."""
         return {"counts": self._counts}
+
+    @classmethod
+    def from_config(cls, config: dict):
+        if config["backend"] == "AerSimulator":
+            backend = AerSimulator(**config["backend_config"])
+        return cls(
+            backend,
+            config.get("shots", _DEFAULT_SHOTS),
+            config.get("cvar_alpha", 1.00),
+            config.get("energy_minimization", False),
+            config.get("samples_folder", None),
+            config.get("sampler", None),
+        )
 
     def to_config(self):
         config = super().to_config()
