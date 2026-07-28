@@ -8,6 +8,7 @@
 
 """Evaluator that retrieves samples from the quantum hardware"""
 
+import hashlib
 import json
 import time
 
@@ -115,6 +116,12 @@ class QPUSampleEvaluator(BaseEvaluator):
 
         return np.average(self.energies(counts))
 
+    def _ansatz_op_digest(op: SparsePauliOp) -> bytes:
+        h = hashlib.sha256()
+        h.update(str(op.paulis.to_labels()).encode())
+        h.update(np.ascontiguousarray(op.coeffs.view(np.float64)).tobytes())
+        return h.digest()
+
     # pylint: disable=too-many-positional-arguments
     def evaluate(self, cost_op, params, mixer=None, initial_state=None, ansatz_circuit=None):
         """Evaluate the energy."""
@@ -133,9 +140,15 @@ class QPUSampleEvaluator(BaseEvaluator):
         if self._cost_op is None:
             self.cost_op = cost_op
 
+        ansatz_digest = self._ansatz_op_digest(ansatz_op)
         # Avoid recreating the circuit all the time.
-        if self._ansatz is None or self._depth != len(params) // 2:
+        if (
+            self._ansatz is None
+            or self._depth != len(params) // 2
+            or self._ansatz_digest != ansatz_digest
+        ):
             self.prepare_ansatz(ansatz_op, len(params) // 2)
+            self._ansatz_digest = ansatz_digest
 
         # Time tracked QPU sample collection
         start = time.time()
