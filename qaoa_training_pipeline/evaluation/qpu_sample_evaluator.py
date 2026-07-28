@@ -14,6 +14,7 @@ import time
 
 import numpy as np
 from qiskit import transpile
+from qiskit.circuit import QuantumCircuit
 from qiskit.primitives import BackendSamplerV2
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler import PassManager
@@ -75,7 +76,7 @@ class QPUSampleEvaluator(BaseEvaluator):
         return self._cost_op
 
     @cost_op.setter
-    def cost_op(self, cost_op):
+    def cost_op(self, cost_op: SparsePauliOp):
         """Sets the cost operator"""
         self._cost_op = cost_op
         self._reals = []
@@ -88,7 +89,7 @@ class QPUSampleEvaluator(BaseEvaluator):
 
         self._init_time = time.time() - start
 
-    def energy(self, sample):
+    def energy(self, sample: str):
         """Compute the energy of a single sample."""
         sample = [val == "1" for val in sample[::-1]]
 
@@ -124,7 +125,14 @@ class QPUSampleEvaluator(BaseEvaluator):
         return hash_var.digest()
 
     # pylint: disable=too-many-positional-arguments
-    def evaluate(self, cost_op, params, mixer=None, initial_state=None, ansatz_circuit=None):
+    def evaluate(
+        self,
+        cost_op: SparsePauliOp,
+        params: list,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+    ):
         """Evaluate the energy."""
 
         if isinstance(ansatz_circuit, SparsePauliOp):
@@ -148,7 +156,9 @@ class QPUSampleEvaluator(BaseEvaluator):
             or self._depth != len(params) // 2
             or self._ansatz_digest != ansatz_digest
         ):
-            self.prepare_ansatz(ansatz_op, len(params) // 2)
+            self.prepare_ansatz(
+                ansatz_op, len(params) // 2, mixer=mixer, initial_state=initial_state
+            )
             self._ansatz_digest = ansatz_digest
 
         # Time tracked QPU sample collection
@@ -171,9 +181,17 @@ class QPUSampleEvaluator(BaseEvaluator):
 
         return energy
 
-    def prepare_ansatz(self, ansatz_circuit, depth):
+    def prepare_ansatz(
+        self,
+        ansatz_circuit: QuantumCircuit,
+        depth: int,
+        mixer: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+    ):
         """Prepare the circuit for hardware execution."""
-        ansatz = annotated_qaoa_ansatz(ansatz_circuit, reps=depth)
+        ansatz = annotated_qaoa_ansatz(
+            ansatz_circuit, reps=depth, mixer_operator=mixer, initial_state=initial_state
+        )
         ansatz.measure_all()
 
         has_two_qubit_terms = any(sum(pauli.paulis[0].z) > 1 for pauli in ansatz_circuit)
@@ -205,7 +223,7 @@ class QPUSampleEvaluator(BaseEvaluator):
 
         return config
 
-    def cvar(self, energies):
+    def cvar(self, energies: list):
         """Compute the CVAR energy."""
 
         if self._energy_minimization:
