@@ -218,8 +218,11 @@ class QPUSampleEvaluator(BaseEvaluator):
 
     @classmethod
     def from_config(cls, config: dict):
+        """Initialize class from config"""
         if config["backend"] == "AerSimulator":
             backend = AerSimulator(**config["backend_config"])
+        else:
+            raise ValueError(f"No backend {config['backend']} available")
         return cls(
             backend,
             config.get("shots", _DEFAULT_SHOTS),
