@@ -53,7 +53,6 @@ class QPUSampleEvaluator(BaseEvaluator):
         self._counts = []
 
         self._backend = backend
-        self._backend.options.use_fractional_gates = False
 
         if sampler is None:
             self._sampler = BackendSamplerV2(backend=self._backend)
@@ -219,7 +218,7 @@ class QPUSampleEvaluator(BaseEvaluator):
     @classmethod
     def from_config(cls, config: dict):
         """Initialize class from config"""
-        if config["backend"] == "AerSimulator":
+        if config["backend"] == "aer_simulator_matrix_product_state":
             backend = AerSimulator(**config["backend_config"])
         else:
             raise ValueError(f"No backend {config['backend']} available")
@@ -235,6 +234,7 @@ class QPUSampleEvaluator(BaseEvaluator):
     def to_config(self):
         config = super().to_config()
         config["backend"] = self._backend.name
+        config["backend_config"] = dict(self._backend.options.__dict__)
         config["cvar_alpha"] = self._cvar_alpha
         config["energy_minimization"] = self._energy_minimization
 
