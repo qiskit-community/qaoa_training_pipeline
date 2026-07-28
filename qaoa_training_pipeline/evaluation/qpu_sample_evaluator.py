@@ -118,10 +118,10 @@ class QPUSampleEvaluator(BaseEvaluator):
         return np.average(self.energies(counts))
 
     def _ansatz_op_digest(self, op: SparsePauliOp) -> bytes:
-        h = hashlib.sha256()
-        h.update(str(op.paulis.to_labels()).encode())
-        h.update(np.ascontiguousarray(op.coeffs.view(np.float64)).tobytes())
-        return h.digest()
+        hash_var = hashlib.sha256()
+        hash_var.update(str(op.paulis.to_labels()).encode())
+        hash_var.update(np.ascontiguousarray(op.coeffs.view(np.float64)).tobytes())
+        return hash_var.digest()
 
     # pylint: disable=too-many-positional-arguments
     def evaluate(self, cost_op, params, mixer=None, initial_state=None, ansatz_circuit=None):
