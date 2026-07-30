@@ -11,7 +11,7 @@
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
-from qiskit.primitives import BackendSamplerV2
+from qiskit.primitives import BackendSamplerV2, BitArray
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer import AerSimulator
 
@@ -42,7 +42,7 @@ class MPSSampleEvaluator(BaseEvaluator):
         super().__init__()
 
         self._cost_op = None
-        self._counts = []
+        self._counts = {}
 
         self.chi = chi or 20
         self.max_parallel_threads = max_parallel_threads or 10
@@ -141,7 +141,8 @@ class MPSSampleEvaluator(BaseEvaluator):
         pub = (ansatz, params, self._shots)
         result = self._sampler.run([pub]).result()
 
-        self._counts = result[0].data.meas.get_counts()
+        bitarray: BitArray = result[0].data["meas"]
+        self._counts = bitarray.get_counts()
 
         return self.total_energy(self._counts)
 
