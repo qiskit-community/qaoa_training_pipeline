@@ -91,7 +91,7 @@ class QPUSampleEvaluator(BaseEvaluator):
 
     def energy(self, sample: str):
         """Compute the energy of a single sample."""
-        bits= [val == "1" for val in sample[::-1]]
+        bits = [val == "1" for val in sample[::-1]]
 
         energy = 0
         for val, aind in zip(self._reals, self._ainds):
@@ -118,6 +118,7 @@ class QPUSampleEvaluator(BaseEvaluator):
 
         return np.average(self.energies(counts))
 
+    @staticmethod
     def _op_digest(self, op: SparsePauliOp) -> bytes:
         hash_var = hashlib.sha256()
         hash_var.update(str(op.paulis.to_labels()).encode())
