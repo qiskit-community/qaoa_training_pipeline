@@ -29,6 +29,7 @@ class TestQPUSampleEvaluator(TestCase):
                 method="matrix_product_state",
                 matrix_product_state_max_bond_dimension=20,
                 max_parallel_threads=1,
+                seed_simulator=35,
             )
         )
 
