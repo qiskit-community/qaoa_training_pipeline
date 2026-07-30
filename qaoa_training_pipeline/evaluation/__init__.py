@@ -13,8 +13,8 @@ from .light_cone import LightConeEvaluator
 from .mps_aer import MPSAerEvaluator
 from .mps_evaluator import MPSEvaluator
 from .pauli_propagation import PPEvaluator
+from .qpu_sample_evaluator import QPUSampleEvaluator
 from .statevector_evaluator import StatevectorEvaluator
-
 
 __all__ = [
     "EfficientDepthOneEvaluator",
@@ -33,4 +33,5 @@ EVALUATORS = {
     "StatevectorEvaluator": StatevectorEvaluator,
     "PPEvaluator": PPEvaluator,
     "MPSAerEvaluator": MPSAerEvaluator,
+    "QPUSampleEvaluator": QPUSampleEvaluator,
 }
