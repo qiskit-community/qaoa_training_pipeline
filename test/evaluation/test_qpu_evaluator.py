@@ -32,7 +32,8 @@ class TestQPUSampleEvaluator(TestCase):
             )
         )
 
-    def qiskit_circuit_simulation(self, cost_op, params):
+    @staticmethod
+    def qiskit_circuit_simulation(cost_op, params):
         """This is the baseline simulation based on Qiskit."""
 
         ansatz = qaoa_ansatz(cost_op, reps=len(params) // 2)

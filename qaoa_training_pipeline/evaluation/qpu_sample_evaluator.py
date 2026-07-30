@@ -11,6 +11,7 @@
 import hashlib
 import json
 import time
+from pathlib import Path
 
 import numpy as np
 from qiskit import transpile
@@ -43,7 +44,7 @@ class QPUSampleEvaluator(BaseEvaluator):
         shots: int = _DEFAULT_SHOTS,
         cvar_alpha: float = 1.00,
         energy_minimization: bool = False,
-        samples_folder=None,
+        samples_folder: str | Path | None = None,
         sampler=None,
     ):
         """Initialize the class."""
@@ -67,8 +68,9 @@ class QPUSampleEvaluator(BaseEvaluator):
         self._energy_minimization = energy_minimization
         self._time_history_qpu = []
         self._time_history_cpu = []
-        self._samples_folder = samples_folder
+        self._samples_folder = Path(samples_folder) if samples_folder is not None else None
         self._ansatz_digest = None
+        self._cost_op_digest = None
 
     @property
     def cost_op(self):
@@ -119,20 +121,19 @@ class QPUSampleEvaluator(BaseEvaluator):
         return np.average(self.energies(counts))
 
     @staticmethod
-    def _op_digest(self, op: SparsePauliOp) -> bytes:
+    def _op_digest(op: SparsePauliOp) -> bytes:
         hash_var = hashlib.sha256()
         hash_var.update(str(op.paulis.to_labels()).encode())
         hash_var.update(np.ascontiguousarray(op.coeffs.view(np.float64)).tobytes())
         return hash_var.digest()
 
-    # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
         cost_op: SparsePauliOp,
         params: list,
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
-        ansatz_circuit: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ):
         """Evaluate the energy."""
 
@@ -177,8 +178,7 @@ class QPUSampleEvaluator(BaseEvaluator):
 
         if self._samples_folder is not None:
             iteration = len(self._time_history_qpu)
-
-            with open(self._samples_folder + f"{iteration}.json", "w") as fout:
+            with (self._samples_folder / f"{iteration}.json").open("w") as fout:
                 json.dump(self._counts, fout, indent=4)
 
         return energy
