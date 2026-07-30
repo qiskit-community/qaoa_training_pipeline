@@ -80,7 +80,7 @@ class TestQPUSampleEvaluator(TestCase):
                     ),
                     shots=80000,
                 )
-                with self.assertRaises(ValueError):
+                with self.assertRaises(NotImplementedError):
                     evaluator.evaluate(cost_op, params=angles)
 
     def test_custom_ansatz_differs(self):
