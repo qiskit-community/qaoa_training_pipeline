@@ -8,6 +8,9 @@
 
 """Class to efficiently evaluate depth-one circuits."""
 
+import multiprocessing as mp
+from concurrent.futures import ThreadPoolExecutor
+
 import networkx as nx
 import numpy as np
 from qiskit import QuantumCircuit
@@ -36,11 +39,30 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
     The limitation to quadratic forms could be removed in the future.
     """
 
-    def __init__(self) -> None:
-        """Initialize the class."""
+    def __init__(self, use_parallel: bool = False, max_workers: int | None = None) -> None:
+        """Initialize the class.
+
+        Args:
+            use_parallel: If True, use parallel computation for correlators and single-qubit terms.
+                This can significantly speed up evaluation for large graphs. Default is False.
+            max_workers: Maximum number of worker threads for parallel computation. If None,
+                defaults to the number of CPU cores. Only used if use_parallel is True.
+        """
         super().__init__()
         self._mixers = None
         self._initial_states = None
+
+        # Variables for caching computations that are repeated often.
+        self._initial_prob_1 = []
+        self._circuit_row_sums = []
+        self._cost_edges = None
+        self._cost_diag_terms = None
+        self._circuit_neighbors = []
+        self._mixer_pairs = None
+
+        # Parallelization settings
+        self._use_parallel = use_parallel
+        self._max_workers = max_workers if max_workers is not None else mp.cpu_count()
 
     # pylint: disable=too-many-positional-arguments
     def evaluate(
@@ -105,22 +127,57 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
                 "Only QuantumCircuit is supported."
             )
 
-        # Compute the energy from the two-qubit correlators
-        energy = sum(
-            (
-                graph[i, j] * self.correlator(i, j, circuit_graph, params[1])
-                if graph[i, j] != 0.0
-                else 0.0
-            )
-            for i in range(len(graph))
-            for j in range(0, i)
-        )
+        self._prepare_evaluation_cache(graph, circuit_graph)
 
-        # Compute the energy from the single-qubit terms
-        energy += sum(
-            (graph[i, i] * self.single_z(i, circuit_graph, params[1]) if graph[i, i] != 0 else 0.0)
-            for i in range(len(graph))
-        )
+        # Compute the energy from the two-qubit correlators
+        assert self._cost_edges is not None, "_cost_edges must be initialized before evaluating"
+
+        if self._use_parallel:
+            # Parallel computation of correlators
+            with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+                # Submit all correlator computations
+                edge_futures = [
+                    executor.submit(self.correlator, i, j, circuit_graph, params[1])
+                    for i, j, _ in self._cost_edges
+                ]
+
+                # Collect results and compute weighted sum
+                energy = sum(
+                    weight * future.result()
+                    for (i, j, weight), future in zip(self._cost_edges, edge_futures)
+                )
+
+                # Compute the energy from the single-qubit terms
+                assert (
+                    self._cost_diag_terms is not None
+                ), "_cost_diag_terms must be initialized before evaluating"
+
+                # Submit all single-qubit computations
+                single_futures = [
+                    executor.submit(self.single_z, i, circuit_graph, params[1])
+                    for i, _ in self._cost_diag_terms
+                ]
+
+                # Collect results and add to energy
+                energy += sum(
+                    weight * future.result()
+                    for (i, weight), future in zip(self._cost_diag_terms, single_futures)
+                )
+        else:
+            # Sequential computation (original implementation)
+            energy = sum(
+                weight * self.correlator(i, j, circuit_graph, params[1])
+                for i, j, weight in self._cost_edges
+            )
+
+            # Compute the energy from the single-qubit terms
+            assert (
+                self._cost_diag_terms is not None
+            ), "_cost_diag_terms must be initialized before evaluating"
+            energy += sum(
+                weight * self.single_z(i, circuit_graph, params[1])
+                for i, weight in self._cost_diag_terms
+            )
 
         return np.real(energy)
 
@@ -180,6 +237,35 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
                 "Only QuantumCircuit mixers are supported."
             )
 
+    def _prepare_evaluation_cache(self, graph: np.ndarray, circuit_graph: np.ndarray) -> None:
+        """Prepare per-evaluation cached data structures."""
+        assert self._initial_states is not None, "_initial_states must be defined before evaluation"
+        assert self._mixers is not None, "_mixers must be defined before evaluation"
+
+        num_qubits = len(graph)
+
+        # Probability of |1> in initial state for each qubit
+        self._initial_prob_1 = np.array(
+            [float(np.abs(initial_state[1, 0]) ** 2) for initial_state in self._initial_states]
+        )
+
+        # This computes \sum_k w_ik that will be used in the Rz and Rzz rotations later on.
+        self._circuit_row_sums = np.sum(circuit_graph, axis=1)
+
+        # List of non-zero edges in the graph with their weights.
+        self._cost_edges = [
+            (i, j, graph[i, j]) for i in range(num_qubits) for j in range(i) if graph[i, j] != 0.0
+        ]
+
+        # Non-zero diagonal terms in the cost Hamiltonian.
+        self._cost_diag_terms = [(i, graph[i, i]) for i in range(num_qubits) if graph[i, i] != 0.0]
+
+        self._circuit_neighbors = [np.flatnonzero(circuit_graph[i]) for i in range(num_qubits)]
+
+        self._mixer_pairs = {
+            (i, j): np.kron(self._mixers[i], self._mixers[j]) for i, j, _ in self._cost_edges
+        }
+
     def single_z(self, idx, circuit_graph: np.ndarray, gamma: float):
         """Compute the energy of <Zi>"""
         n = len(circuit_graph)
@@ -191,7 +277,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         # (i) Apply the U1 gates of the Rzz gates that come from qubit k neq i
         # (ii) and the single-qubit Rz gate from the cost operator on qubit i
         # (i) and (ii) are conceptually different but code-wise it is more compact to combine.
-        wi = sum(circuit_graph[idx, k] for k in range(n))
+        wi = self._circuit_row_sums[idx]
 
         # Apply Rz(2 gamma \sum_k w_ik) to qubit i
         qi[0] *= np.exp(-1.0j * (2 * wi * gamma) / 2)
@@ -201,17 +287,15 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         # the two-qubit CP gate that comes from qubit k neq i,j
         rho_i = qi * qi.T.conj()
 
-        for k in range(n):
+        for k in self._circuit_neighbors[idx]:
             if k == idx:
                 continue
 
             phase_i = np.exp(-1.0j * 4 * gamma * circuit_graph[idx, k])
 
             u1 = np.diag([1.0, phase_i])
-            # info of the qubit k
-            qk = self._initial_states[k]
             # coefficient of the |1> state
-            ck = np.abs(qk[1]) ** 2
+            ck = self._initial_prob_1[k]
             rho_i = (1 - ck) * rho_i + ck * np.dot(u1, np.dot(rho_i, u1.conj().T))
 
         # Apply the mixer operator
@@ -260,12 +344,8 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         # Apply the U1 gates of the Rzz gates that come from qubit k neq i,j
         wi, wj = 0.0, 0.0
-        for k in range(n):
-            if k in {idx1, idx2}:
-                continue
-
-            wi += circuit_graph[idx1, k]
-            wj += circuit_graph[idx2, k]
+        wi = self._circuit_row_sums[idx1] - circuit_graph[idx1, idx2] - circuit_graph[idx1, idx1]
+        wj = self._circuit_row_sums[idx2] - circuit_graph[idx2, idx1] - circuit_graph[idx2, idx2]
 
         # Apply and single Rz terms to qubit i
         wi += circuit_graph[idx1, idx1]
@@ -284,8 +364,10 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         rho_i, rho_j = qi * qi.T.conj(), qj * qj.T.conj()
         rho_ij = np.kron(rho_i, rho_j)
 
-        for k in range(n):
-            if k in {idx1, idx2}:
+        active_neighbors = np.union1d(self._circuit_neighbors[idx1], self._circuit_neighbors[idx2])
+
+        for k in active_neighbors:
+            if k == idx1 or k == idx2:
                 continue
 
             if circuit_graph[idx1, k] == 0.0 and circuit_graph[idx2, k] == 0.0:
@@ -295,10 +377,8 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             phase_j = np.exp(-1.0j * 4 * gamma * circuit_graph[idx2, k])
             u1 = np.diag([1.0, phase_j, phase_i, phase_i * phase_j])
 
-            # info of the qubit k
-            qk = self._initial_states[k]
             # coefficient of the |1> state
-            ck = np.abs(qk[1]) ** 2
+            ck = self._initial_prob_1[k]
 
             rho_ij = (1 - ck) * rho_ij + ck * np.dot(u1, np.dot(rho_ij, u1.conj().T))
 
@@ -315,12 +395,25 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         mixer_j = self._mixers[idx2]
         assert isinstance(mixer_i, np.ndarray)
 
-        mixer_ij = np.kron(mixer_i, mixer_j)
+        mixer_ij = (
+            self._mixer_pairs[(idx1, idx2)]
+            if self._mixer_pairs is not None and (idx1, idx2) in self._mixer_pairs
+            else np.kron(mixer_i, mixer_j)
+        )
         rho_ij = np.dot(mixer_ij, np.dot(rho_ij, mixer_ij.conj().T))
 
         return np.real(rho_ij[0, 0] - rho_ij[1, 1] - rho_ij[2, 2] + rho_ij[3, 3])
 
     @classmethod
     def from_config(cls, config: dict) -> "EfficientDepthOneEvaluator":
-        """Create the evaluator."""
+        """Create the evaluator from a configuration dictionary.
+
+        Args:
+            config: Configuration dictionary that may contain:
+                - use_parallel (bool): Enable parallel computation
+                - max_workers (int): Maximum number of worker threads
+
+        Returns:
+            An instance of EfficientDepthOneEvaluator.
+        """
         return cls(**config)
