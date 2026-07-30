@@ -16,16 +16,16 @@ from qiskit.circuit.library import PauliEvolutionGate, qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp, Statevector
 
-from qaoa_training_pipeline.evaluation.mps_sample_evaluator import SampleEvaluator
+from qaoa_training_pipeline.evaluation.mps_sample_evaluator import MPSSampleEvaluator
 
 
-class TestSampleEvaluator(TestCase):
+class TestMPSSampleEvaluator(TestCase):
     """Test that the MPS evaluator from qiskit aer works."""
 
     def setUp(self):
         """Setup the variables."""
         self.cost_op = SparsePauliOp.from_list([("II", 1.0), ("IZ", 1.0), ("ZZ", 1.0)])
-        self.evaluator = SampleEvaluator(shots=40000, chi=32)
+        self.evaluator = MPSSampleEvaluator(shots=40000, chi=32)
 
     def qiskit_circuit_simulation(self, cost_op, params):
         """This is the baseline simulation based on Qiskit."""
@@ -49,7 +49,7 @@ class TestSampleEvaluator(TestCase):
 
         for cost_op in cost_ops:
             with self.subTest(cost_op=cost_op):
-                evaluator = SampleEvaluator(shots=80000, chi=64)
+                evaluator = MPSSampleEvaluator(shots=80000, chi=64)
                 energy1 = evaluator.evaluate(cost_op, params=angles)
                 energy2 = self.qiskit_circuit_simulation(cost_op, angles)
                 print(
@@ -77,9 +77,9 @@ class TestSampleEvaluator(TestCase):
     def test_from_config(self):
         """Test that we can create the evaluator from a config dictionary"""
         config = {"chi": 32, "max_parallel_threads": 10, "shots": 40000}
-        evaluator = SampleEvaluator.from_config(config)
+        evaluator = MPSSampleEvaluator.from_config(config)
 
-        self.assertIsInstance(evaluator, SampleEvaluator)
+        self.assertIsInstance(evaluator, MPSSampleEvaluator)
         angles = [0.1, 0.3]
         energy1 = self.evaluator.evaluate(self.cost_op, params=angles)
         energy2 = evaluator.evaluate(self.cost_op, params=angles)
@@ -91,7 +91,7 @@ class TestSampleEvaluator(TestCase):
         self.assertIsInstance(config, dict)
         self.assertEqual(
             config,
-            {"name": "SampleEvaluator", "chi": 32, "max_parallel_threads": 10, "shots": 40000},
+            {"name": "MPSSampleEvaluator", "chi": 32, "max_parallel_threads": 10, "shots": 40000},
         )
 
     def test_no_initial_state(self):

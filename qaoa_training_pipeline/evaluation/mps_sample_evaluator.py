@@ -20,7 +20,7 @@ from qiskit_aer import AerSimulator
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
 
-class SampleEvaluator(BaseEvaluator):
+class MPSSampleEvaluator(BaseEvaluator):
     """Approximate the energy by sampling from a MPS.
 
     This MPS-based energy evaluator does not contract the MPS to compute the value of
@@ -163,7 +163,7 @@ class SampleEvaluator(BaseEvaluator):
         return config
 
     @classmethod
-    def from_config(cls, config: dict) -> "SampleEvaluator":
+    def from_config(cls, config: dict) -> "MPSSampleEvaluator":
         """Initialize the evaluator from a configuration dictionary."""
         return cls(**config)
 
