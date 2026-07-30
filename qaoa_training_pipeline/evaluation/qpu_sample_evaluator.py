@@ -118,7 +118,7 @@ class QPUSampleEvaluator(BaseEvaluator):
 
         return np.average(self.energies(counts))
 
-    def _ansatz_op_digest(self, op: SparsePauliOp) -> bytes:
+    def _op_digest(self, op: SparsePauliOp) -> bytes:
         hash_var = hashlib.sha256()
         hash_var.update(str(op.paulis.to_labels()).encode())
         hash_var.update(np.ascontiguousarray(op.coeffs.view(np.float64)).tobytes())
@@ -144,12 +144,13 @@ class QPUSampleEvaluator(BaseEvaluator):
                 "Custom ansatz circuits in format"
                 f"{ansatz_circuit.__class__.__name__} are not yet supported."
             )
-        # Set the cost op. We do not validate that the existing cost op,
-        # if present, is the same as the given cost op.
-        if self._cost_op is None:
-            self.cost_op = cost_op
 
-        ansatz_digest = self._ansatz_op_digest(ansatz_op)
+        cost_op_digest = self._op_digest(cost_op)
+        if self._cost_op is None or self._cost_op_digest != cost_op_digest:
+            self.cost_op = cost_op
+            self._cost_op_digest = cost_op_digest
+
+        ansatz_digest = self._op_digest(ansatz_op)
         # Avoid recreating the circuit all the time.
         if (
             self._ansatz is None
