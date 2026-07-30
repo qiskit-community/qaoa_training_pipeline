@@ -8,8 +8,6 @@
 
 """Sample-based MPS evaluator"""
 
-import time
-
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
@@ -75,13 +73,10 @@ class MPSSampleEvaluator(BaseEvaluator):
         self._cost_op = cost_op
         self._reals = []
         self._ainds = []
-        start = time.time()
         for pauli in self._cost_op:
             indices = tuple(idx for idx, val in enumerate(pauli.paulis[0].z) if val)
             self._ainds.append(indices)
             self._reals.append(np.real(pauli.coeffs[0]))
-
-        self._init_time = time.time() - start
 
     def energy(self, sample: str) -> float:
         """Computes the energy for a given sample"""
@@ -116,7 +111,7 @@ class MPSSampleEvaluator(BaseEvaluator):
         params: list,
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
-        ansatz_circuit: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ):
         """Evaluate the energy."""
 
