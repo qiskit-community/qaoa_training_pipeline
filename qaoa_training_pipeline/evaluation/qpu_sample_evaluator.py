@@ -91,11 +91,11 @@ class QPUSampleEvaluator(BaseEvaluator):
 
     def energy(self, sample: str):
         """Compute the energy of a single sample."""
-        sample = [val == "1" for val in sample[::-1]]
+        bits= [val == "1" for val in sample[::-1]]
 
         energy = 0
-        for aidx, val in enumerate(self._reals):
-            selected_bits = [sample[idx] for idx in self._ainds[aidx]]
+        for val, aind in zip(self._reals, self._ainds):
+            selected_bits = [bits[idx] for idx in aind]
 
             if sum(selected_bits) % 2 == 0:
                 energy += val
