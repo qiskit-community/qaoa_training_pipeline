@@ -8,14 +8,16 @@
 
 """Tests for the reweighted trainer."""
 
-from test import TrainingPipelineTestCase
-
 import networkx as nx
 
-from qaoa_training_pipeline.evaluation.efficient_depth_one import EfficientDepthOneEvaluator
+from qaoa_training_pipeline.evaluation.efficient_depth_one import (
+    EfficientDepthOneEvaluator,
+)
 from qaoa_training_pipeline.training.reweighting import ReweightingTrainer
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
+
+from ..training_pipeline_test_case import TrainingPipelineTestCase
 
 
 class TestReweightedTrainer(TrainingPipelineTestCase):
@@ -46,6 +48,6 @@ class TestReweightedTrainer(TrainingPipelineTestCase):
         # Setup the trainers.
         sub_trainer = ScipyTrainer(evaluator=EfficientDepthOneEvaluator())
         trainer = ReweightingTrainer(trainer1=sub_trainer)
-        result = trainer.provide_params(cost_op=cost_op, trainer1_kwargs={"params0": [1, 1]})
+        result = trainer.provide_params(cost_op=cost_op, params0=[1, 1])
 
         self.assertTrue(result["success"])
