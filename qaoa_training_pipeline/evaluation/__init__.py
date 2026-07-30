@@ -24,6 +24,7 @@ __all__ = [
     "PPEvaluator",
     "StatevectorEvaluator",
     "EVALUATORS",
+    "QPUSampleEvaluator",
 ]
 
 EVALUATORS = {
