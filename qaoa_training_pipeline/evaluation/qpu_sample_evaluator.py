@@ -159,6 +159,10 @@ class QPUSampleEvaluator(BaseEvaluator):
             or self._depth != len(params) // 2
             or self._ansatz_digest != ansatz_digest
         ):
+            if any(sum(pauli.paulis[0].z) > 2 for pauli in ansatz_op):
+                raise NotImplementedError(
+                    f"{self.__class__.__name__} only supporst Pauli terms up to order 2 "
+                )
             self.prepare_ansatz(
                 ansatz_op, len(params) // 2, mixer=mixer, initial_state=initial_state
             )
