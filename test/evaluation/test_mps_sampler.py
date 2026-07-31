@@ -52,11 +52,11 @@ class TestMPSSampleEvaluator(TestCase):
                 evaluator = MPSSampleEvaluator(shots=80000, chi=64)
                 energy1 = evaluator.evaluate(cost_op, params=angles)
                 energy2 = self.qiskit_circuit_simulation(cost_op, angles)
-                print(
+                self.assertTrue(
+                    abs(energy1 - energy2) < 0.05,
                     f"{cost_op.paulis}: mps={energy1:.4f} statevector={energy2:.4f} "
-                    f"diff={abs(energy1 - energy2):.4f}"
+                    f"diff={abs(energy1 - energy2):.4f}",
                 )
-                self.assertTrue(abs(energy1 - energy2) < 0.05)
 
     def test_custom_ansatz(self):
         """Test that we can construct the ansatz from a different operator."""
