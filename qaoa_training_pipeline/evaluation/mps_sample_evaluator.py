@@ -58,7 +58,6 @@ class MPSSampleEvaluator(BaseEvaluator):
         self._sampler = BackendSamplerV2(backend=self._backend)
 
         self._shots = shots or 1000
-        self.energies = []
         self._cost_op_digest = None
 
     @property
@@ -81,13 +80,13 @@ class MPSSampleEvaluator(BaseEvaluator):
             self._ainds.append(indices)
             self._reals.append(np.real(pauli.coeffs[0]))
 
-    def energy(self, sample: str) -> float:
-        """Computes the energy for a given sample"""
-        sample = [val == "1" for val in sample[::-1]]
+    def energy(self, sample: str):
+        """Compute the energy of a single sample."""
+        bits = [val == "1" for val in sample[::-1]]
 
         energy = 0
-        for aidx, val in enumerate(self._reals):
-            selected_bits = [sample[idx] for idx in self._ainds[aidx]]
+        for val, aind in zip(self._reals, self._ainds):
+            selected_bits = [bits[idx] for idx in aind]
 
             if sum(selected_bits) % 2 == 0:
                 energy += val
@@ -96,16 +95,14 @@ class MPSSampleEvaluator(BaseEvaluator):
 
         return energy
 
-    def total_energy(self, counts: dict) -> float:
-        """Compute the energy of the counts."""
-        tot_energy = 0
-        self.energies = []
-        shots = sum(counts.values())
-        for sample, count in counts.items():
-            self.energies.append(self.energy(sample))
-            tot_energy += self.energies[-1] * count / shots
+    def energies(self, counts: dict):
+        """Make a list of the energies for the counts."""
+        energies = []
 
-        return tot_energy
+        for sample, count in counts.items():
+            energies += [self.energy(sample)] * count
+
+        return energies
 
     @staticmethod
     def _op_digest(op: SparsePauliOp) -> bytes:
@@ -154,7 +151,7 @@ class MPSSampleEvaluator(BaseEvaluator):
         bitarray: BitArray = result[0].data["meas"]
         self._counts = bitarray.get_counts()
 
-        return self.total_energy(self._counts)
+        return self.cvar(self.energies(self._counts))
 
     def get_results_from_last_iteration(self):
         """Return the results from the last iteration."""
@@ -173,7 +170,8 @@ class MPSSampleEvaluator(BaseEvaluator):
         """Initialize the evaluator from a configuration dictionary."""
         return cls(**config)
 
-    def cvar(self, energies: list, alpha=1.00) -> float:
+    @staticmethod
+    def cvar(energies: list, alpha=1.00) -> float:
         """Compute the CVaR for given energies."""
         sorted_energies = sorted(energies)
         end_idx = max(int(alpha * len(energies)), 1)
