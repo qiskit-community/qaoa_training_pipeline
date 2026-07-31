@@ -8,6 +8,8 @@
 
 """Sample-based MPS evaluator"""
 
+import hashlib
+
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
@@ -57,6 +59,7 @@ class MPSSampleEvaluator(BaseEvaluator):
 
         self._shots = shots or 1000
         self.energies = []
+        self._cost_op_digest = None
 
     @property
     def cost_op(self):
@@ -104,6 +107,13 @@ class MPSSampleEvaluator(BaseEvaluator):
 
         return tot_energy
 
+    @staticmethod
+    def _op_digest(op: SparsePauliOp) -> bytes:
+        hash_var = hashlib.sha256()
+        hash_var.update(str(op.paulis.to_labels()).encode())
+        hash_var.update(np.ascontiguousarray(op.coeffs.view(np.float64)).tobytes())
+        return hash_var.digest()
+
     # pylint: disable=too-many-positional-arguments
     def evaluate(
         self,
@@ -124,10 +134,10 @@ class MPSSampleEvaluator(BaseEvaluator):
                 "Custom ansatz circuits in format"
                 f"{ansatz_circuit.__class__.__name__} are not yet supported."
             )
-        # Set the cost op. We do not validate that the existing cost op,
-        # if present, is the same as the given cost op.
-        if self._cost_op is None:
+        cost_op_digest = self._op_digest(cost_op)
+        if self._cost_op is None or self._cost_op_digest != cost_op_digest:
             self.cost_op = cost_op
+            self._cost_op_digest = cost_op_digest
 
         ansatz = qaoa_ansatz(
             cost_operator=ansatz_op,

@@ -174,13 +174,7 @@ class TestMPSSampleEvaluator(TestCase):
         self.assertAlmostEqual(float(energy), expected_energy, delta=0.05)
 
     def test_custom_ansatz_nodelist(self):
-        """Test that we get the correct result when running with a custom ansatz.
-
-        This test is specifically designed to check that the adjacency matrix is
-        properly constructed when an Ansatz is given. This is because
-        `nx.adjacency_matrix` works both with and without the `nodelist` argument.
-        When `nodelist` is not given random behaviour can occure.
-        """
+        """Test that we get the correct result when running with a custom ansatz."""
         cost_op = SparsePauliOp.from_list(
             [
                 ("IIZZ", -1),
@@ -192,8 +186,6 @@ class TestMPSSampleEvaluator(TestCase):
             ]
         )
 
-        # Construct an ansatz. The gate order (3, 0) and (2, 1) is specifically designed to trigger
-        # wrong behaviour in `nx.adjacency_matrix` in the absence of nodelist.
         ansatz = SparsePauliOp.from_list([("ZIIZ", 1), ("IZZI", 1)])
 
         # Construct the QAOA circuit corresponding to the ansatz.
