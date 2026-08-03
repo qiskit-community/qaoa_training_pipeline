@@ -243,6 +243,7 @@ class QPUSampleEvaluator(BaseEvaluator):
         config["backend_config"] = dict(self._backend.options.__dict__)
         config["cvar_alpha"] = self._cvar_alpha
         config["energy_minimization"] = self._energy_minimization
+        config["shots"] = self._shots
 
         return config
 

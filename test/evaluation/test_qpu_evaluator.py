@@ -122,3 +122,4 @@ class TestQPUSampleEvaluator(TestCase):
         self.assertEqual(config["cvar_alpha"], 1)
         self.assertEqual(config["energy_minimization"], False)
         self.assertEqual(config["backend_config"]["method"], "matrix_product_state")
+        self.assertEqual(config["shots"], 20_000)
