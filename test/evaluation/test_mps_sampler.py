@@ -27,10 +27,10 @@ class TestMPSSampleEvaluator(TestCase):
         self.cost_op = SparsePauliOp.from_list([("II", 1.0), ("IZ", 1.0), ("ZZ", 1.0)])
         self.evaluator = MPSSampleEvaluator(shots=40000, chi=32)
 
-    def qiskit_circuit_simulation(self, cost_op, params):
+    def qiskit_circuit_simulation(self, cost_op, params, initial_state=None):
         """This is the baseline simulation based on Qiskit."""
 
-        ansatz = qaoa_ansatz(cost_op, reps=len(params) // 2)
+        ansatz = qaoa_ansatz(cost_op, reps=len(params) // 2, initial_state=initial_state)
         estimator = StatevectorEstimator()
         ansatz.assign_parameters(params, inplace=True)
         result = estimator.run([(ansatz, cost_op, [])]).result()
@@ -94,18 +94,28 @@ class TestMPSSampleEvaluator(TestCase):
             {"name": "MPSSampleEvaluator", "chi": 32, "max_parallel_threads": 10, "shots": 40000},
         )
 
-    def test_no_initial_state(self):
-        """Test that we get the correct energy when the initial state is a product state |111...>."""
-        cost_op = SparsePauliOp.from_list([("IIZZ", -0.5), ("ZIIZ", -0.5), ("IZIZ", -0.5)])
+    def test_explicit_initial_state(self):
+        """Test that we get the correct energy when the initial state is prepared to be a product state |111...>."""
+        cost_op = SparsePauliOp.from_list([("IIZZ", 1), ("ZIIZ", 2), ("IZII", 4)])
+
+        angles = [np.pi / 2, 4.56]
+        initial_state = QuantumCircuit(4)
+        initial_state.x([0, 1, 2, 3])
 
         energy = self.evaluator.evaluate(
             cost_op,
-            [np.pi / 2, 4.56],  # beta, gamma
-            initial_state=QuantumCircuit(4),
+            angles,  # beta, gamma
+            initial_state=initial_state,
         )
 
-        # Prepares the |1111> state which has energy -3/2. Gamma is irrelevant.
-        self.assertAlmostEqual(energy, -1.5)
+        energy_benchmark = self.qiskit_circuit_simulation(
+            cost_op, angles, initial_state=initial_state
+        )
+        # The energy of the state produced by the QAOA circuit with initial state
+        # |111...> for this cost_op and beta pi/2 is 7, but the value is still checked
+        # against a Statevector simulation
+        self.assertAlmostEqual(energy, 7.0)
+        self.assertAlmostEqual(energy, energy_benchmark)
 
     def test_trivial_warm_start(self):
         r"""Test a warm-start like QAOA. We start in 0001.
