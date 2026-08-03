@@ -131,7 +131,7 @@ class QPUSampleEvaluator(BaseEvaluator):
         self,
         cost_op: SparsePauliOp,
         params: list,
-        mixer: QuantumCircuit | None = None,
+        mixer: SparsePauliOp | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | SparsePauliOp | None = None,
     ):
@@ -189,9 +189,9 @@ class QPUSampleEvaluator(BaseEvaluator):
 
     def prepare_ansatz(
         self,
-        ansatz_circuit: QuantumCircuit,
+        ansatz_circuit: SparsePauliOp,
         depth: int,
-        mixer: QuantumCircuit | None = None,
+        mixer: SparsePauliOp | None = None,
         initial_state: QuantumCircuit | None = None,
     ):
         """Prepare the circuit for hardware execution."""
