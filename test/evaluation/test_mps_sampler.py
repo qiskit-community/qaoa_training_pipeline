@@ -95,7 +95,8 @@ class TestMPSSampleEvaluator(TestCase):
         )
 
     def test_explicit_initial_state(self):
-        """Test that we get the correct energy when the initial state is prepared to be a product state |111...>."""
+        """Test that we get the correct energy when the initial state is prepared to
+        be a product state |111...>."""
         cost_op = SparsePauliOp.from_list([("IIZZ", 1), ("ZIIZ", 2), ("IZII", 4)])
 
         angles = [np.pi / 2, 4.56]
