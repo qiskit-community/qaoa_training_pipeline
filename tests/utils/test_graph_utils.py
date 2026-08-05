@@ -147,7 +147,7 @@ class TestGraphUtils(TrainingPipelineTestCase):
         with self.assertRaises(ValueError):
             circuit_to_graph(circuit)
 
-        # Same as before ut ensuring symmetry is not an issue.
+        # Same as before but ensuring symmetry is not an issue.
         circuit = QuantumCircuit(2)
         circuit.rzz(2 * gamma, 0, 1)
         circuit.rzz(2 * gamma, 1, 0)
@@ -189,7 +189,7 @@ class TestGraphUtils(TrainingPipelineTestCase):
         self.assertEqual(paulis.paulis, expected.paulis)
 
     def test_graph_to_operator_with_partial_assignment(self):
-        """Test the convertion to hamiltonian with a partial assignment"""
+        """Test the conversion to Hamiltonian with a partial assignment"""
         graph = nx.from_edgelist([(0, 1), (0, 2), (1, 2), (0, 3), (1, 4)])
         assignment = {1: 1, 2: -1, 4: -1}
         paulis, free_nodes, fixed_nodes = graph_to_operator_with_partial_assignment(

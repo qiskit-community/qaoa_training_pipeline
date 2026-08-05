@@ -144,7 +144,7 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         This test is specifically designed to check that the adjacency matrix is
         properly constructed when an Ansatz is given. This is because
         `nx.adjacency_matrix` works both with and without the `nodelist` argument.
-        When `nodelist` is not given random behaviour can occure.
+        When `nodelist` is not given random behaviour can occur.
         """
         cost_op = SparsePauliOp.from_list(
             [
