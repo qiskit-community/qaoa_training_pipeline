@@ -8,6 +8,7 @@
 
 """Tests for parameter loading."""
 
+from qaoa_training_pipeline.exceptions import TrainingError
 from qaoa_training_pipeline.training.optimized_parameter_loader import (
     OptimizedParametersLoader,
 )
@@ -31,6 +32,13 @@ class TestOptimizedParameterLoader(TrainingPipelineTestCase):
             result["optimized_params"],
             [0.44901865190957657, 0.19974528971646474],
         )
+
+        with self.assertRaises(TrainingError):
+            kwargs = OptimizedParametersLoader.parse_runtime_kwargs(
+                "folder:tests/does_not_exist/:file_pattern:20nodes_random7regular"
+            )
+            loader = OptimizedParametersLoader(**kwargs)
+            result = loader.provide_params()
 
     def test_parse_train_kwargs(self):
         """Test parsing of training args."""
