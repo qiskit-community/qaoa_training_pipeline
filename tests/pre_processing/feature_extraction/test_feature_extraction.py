@@ -35,13 +35,13 @@ class TestFeatureExtractor(TrainingPipelineTestCase):
         self.assertTupleEqual(features, self.ref_graph_20_3)
 
     def test_turn_off_stds(self):
-        """Test dict extraction."""
+        """Test feature extraction without standard deviations."""
         extractor = GraphFeatureExtractor(extract_standard_devs=False)
         features = extractor(self.cost_op, None)
         self.assertTupleEqual(features, self.ref_graph_20_3_nostd)
 
     def test_keys(self):
-        """Test density extraction."""
+        """Test feature extraction with extra features such as problem class."""
         extra_features = {"class": "mis"}
 
         extractor = GraphFeatureExtractor(extra_features=extra_features)
