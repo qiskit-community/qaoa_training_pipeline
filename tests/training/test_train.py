@@ -287,7 +287,6 @@ class TestTrain(TrainingPipelineTestCase):
             result = train(args)
 
             cost_op = SparsePauliOp.from_list(result["cost_operator"])
-            print(result.keys())
             self.assertEqual(result["args"]["problem_class"], "maxcut")
             self.assertEqual(cost_op, expected)
             self.assertEqual(result[0]["x0"], [0.5, 0.5])

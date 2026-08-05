@@ -8,17 +8,17 @@
 
 """Qiskit Aer MPS-based QAOA evaluator tests."""
 
-from unittest import TestCase
 
 from qiskit.circuit.library import qaoa_ansatz
-from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import StatevectorEstimator
+from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.mps_aer import MPSAerEvaluator
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
+from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 
-class TestAerMPSEvaluator(TestCase):
+class TestAerMPSEvaluator(TrainingPipelineTestCase):
     """Test that the MPS evaluator from qiskit aer works."""
 
     def setUp(self):

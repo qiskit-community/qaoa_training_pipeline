@@ -8,7 +8,6 @@
 
 """Statevector-based QAOA evaluator tests."""
 
-from unittest import TestCase
 
 from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
@@ -16,9 +15,10 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.statevector_evaluator import StatevectorEvaluator
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
+from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 
-class TestStatevectorEvaluator(TestCase):
+class TestStatevectorEvaluator(TrainingPipelineTestCase):
     """Test that the state vector evaluator works."""
 
     def setUp(self):

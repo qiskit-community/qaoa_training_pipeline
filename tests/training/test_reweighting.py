@@ -23,7 +23,7 @@ class TestReweightedTrainer(TrainingPipelineTestCase):
     """Methods to test the reweighted trainer."""
 
     def test_train(self):
-        """Simple trainig test."""
+        """Simple training test."""
 
         edges = [
             (0, 1, 3),

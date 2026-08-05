@@ -8,7 +8,6 @@
 
 """Pauli Propagation-based QAOA evaluator tests."""
 
-from unittest import TestCase
 
 import numpy as np
 from ddt import data, ddt, unpack
@@ -20,6 +19,7 @@ from qiskit_aer import Aer
 from qaoa_training_pipeline.evaluation.pauli_propagation import PPEvaluator
 from qaoa_training_pipeline.evaluation.statevector_evaluator import StatevectorEvaluator
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
+from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 TEST_CASES = [
     (SparsePauliOp.from_list([("II", 1.0), ("IZ", 1.0), ("ZZ", 1.0)]), [0.2, 0.3]),
@@ -30,7 +30,7 @@ TEST_CASES = [
 
 
 @ddt
-class TestPPEvaluator(TestCase):
+class TestPPEvaluator(TrainingPipelineTestCase):
     """Test that the state vector evaluator works."""
 
     def setUp(self):
