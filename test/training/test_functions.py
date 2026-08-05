@@ -8,11 +8,10 @@
 
 """Tests for the QAOA angles functions."""
 
-from test import TrainingPipelineTestCase
-
 import numpy as np
 
-from qaoa_training_pipeline.training.functions import IdentityFunction, FourierFunction
+from qaoa_training_pipeline.training.functions import FourierFunction, IdentityFunction
+from test import TrainingPipelineTestCase
 
 
 class TestFunctions(TrainingPipelineTestCase):
@@ -44,4 +43,4 @@ class TestFunctions(TrainingPipelineTestCase):
 
         function = FourierFunction.from_config(config)
 
-        self.assertTrue(function._depth, 2)
+        self.assertEqual(function._depth, 2)
