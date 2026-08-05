@@ -40,7 +40,7 @@ class TestAerMPSEvaluator(TrainingPipelineTestCase):
         angles = [0.1, 0.3]
         energy1 = self.evaluator.evaluate(self.cost_op, params=angles)
         energy2 = self.qiskit_circuit_simulation(self.cost_op, angles)
-        self.assertTrue(abs(energy1 - energy2) < 0.1)
+        self.assertAlmostEqual(energy1, energy2, delta=0.05)
 
     def test_optimize(self):
         """Test that we can use this in a scipy optimization."""
