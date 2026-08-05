@@ -12,13 +12,13 @@ import glob
 import json
 import os
 import sys
-from test import TrainingPipelineTestCase
 from unittest.mock import patch
 
 from ddt import data, ddt, unpack
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.train import get_script_args, train
+from test import TrainingPipelineTestCase
 
 
 @ddt
@@ -123,7 +123,7 @@ class TestTrain(TrainingPipelineTestCase):
 
             with self.assertRaises(ValueError) as error:
                 train(args)
-                self.assertTrue("cannott be used together" in error.exception.args[0])
+            self.assertIn("cannot be used together", str(error.exception))
 
     def test_call_train_schmidt(self):
         """Test that the Schmidt values are returned with an MPS-based training."""
