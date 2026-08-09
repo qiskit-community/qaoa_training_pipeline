@@ -2,9 +2,89 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "qaoa_training_pipeline"
+dynamic = ["version"]
+description = "QAOA training pipeline"
+readme = "README.md"
+license = { text = "Apache 2.0" }
+authors = [
+    { name = "Daniel Egger" },
+    { name = "Elena Pena Tapia" },
+    { name = "Alberto Baiardi" },
+]
+keywords = ["qaoa"]
+classifiers = [
+    "Environment :: Console",
+    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "networkx",
+    "numpy>=1.22.0",
+    "scipy",
+    "qiskit",
+    "scikit-learn",
+    "matplotlib>=3.3",
+    "qiskit-optimization",
+]
+
+[project.optional-dependencies]
+cplex = [
+    "qiskit-optimization[cplex]",
+]
+tns = [
+    "quimb>=1.8.2",
+    "juliacall",
+]
+sat = [
+    "python-sat",
+]
+notebooks = [
+    "qiskit-aer",
+    "qiskit-ibm-runtime",
+]
+test = [
+    "ddt",
+]
+ci = [
+    "stestr>=2.0.0",
+    "coverage>=4.4.0",
+]
+lint = [
+    "black[jupyter]~=24.1",
+    "ruff",
+]
+dev = [
+    "qaoa_training_pipeline[tns,sat,cplex,notebooks,test,lint]",
+]
+
+[tool.setuptools.dynamic]
+version = { file = "qaoa_training_pipeline/VERSION.txt" }
+
+[tool.setuptools.packages.find]
+include = ["qaoa_training_pipeline", "qaoa_training_pipeline.*"]
+
 [tool.black]
 line-length = 100
 target-version = ['py310', 'py311', 'py312', 'py313']
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",  # line too long — handled by formatter
+]
 
 [tool.pylint.main]
 py-version = "3.12"  # update it when bumping minimum supported python version

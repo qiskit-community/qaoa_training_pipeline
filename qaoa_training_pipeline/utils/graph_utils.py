@@ -20,10 +20,6 @@ from qiskit.circuit import ParameterExpression
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler import CouplingMap
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
-from qiskit_optimization.algorithms import CplexOptimizer
-from qiskit_optimization.applications import Maxcut
-from qiskit_optimization.problems.quadratic_objective import ObjSense
-
 
 # cspell: ignore cmap qreg qregs solcplex strat
 def operator_to_graph(
@@ -319,6 +315,10 @@ def solve_max_cut(cost_op: SparsePauliOp, energy: Optional[float] = None):
         energy: An energy to compare to the minimum and maximum cuts found by CPLEX. If
             this quantity is given then we will convert it to an approximation ratio.
     """
+    from qiskit_optimization.algorithms import CplexOptimizer
+    from qiskit_optimization.applications import Maxcut
+    from qiskit_optimization.problems.quadratic_objective import ObjSense
+
     graph = operator_to_graph(cost_op, pre_factor=-2)
 
     opt_problem = Maxcut(nx.adjacency_matrix(graph, nodelist=range(graph.order())).toarray())
