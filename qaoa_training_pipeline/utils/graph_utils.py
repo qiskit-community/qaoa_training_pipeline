@@ -10,9 +10,9 @@
 
 import copy
 import json
-from typing import Optional, List, Tuple
-from collections.abc import Mapping
 from collections import defaultdict
+from collections.abc import Mapping
+
 import networkx as nx
 import numpy as np
 from qiskit import QuantumCircuit
@@ -20,6 +20,7 @@ from qiskit.circuit import ParameterExpression
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler import CouplingMap
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
+
 
 # cspell: ignore cmap qreg qregs solcplex strat
 def operator_to_graph(
@@ -83,7 +84,6 @@ def operator_to_list_of_hyper_edges(
     Returns:
         List[Tuple[List[int], float]]: list of edges and the corresponding weight
     """
-
     edges = []
     for pauli_str, weight in operator.to_list():
         edge = [idx for idx, char in enumerate(pauli_str[::-1]) if char == "Z"]
@@ -210,7 +210,7 @@ def graph_to_operator(graph: nx.Graph, pre_factor: float = 1.0) -> SparsePauliOp
     return SparsePauliOp.from_list(pauli_list)
 
 
-def graph_to_dict(graph: nx.Graph, description: Optional[str] = None) -> dict:
+def graph_to_dict(graph: nx.Graph, description: str | None = None) -> dict:
     """Create a json exportable dict for the graph."""
     edge_list = []
     for node1, node2, data in graph.edges(data=True):
@@ -297,13 +297,13 @@ def circuit_to_graph(circuit: QuantumCircuit) -> nx.Graph:
 
 def load_graph(file_name: str) -> nx.Graph:
     """Load a graph from a json file."""
-    with open(file_name, "r") as fin:
+    with open(file_name) as fin:
         data = json.load(fin)
 
     return dict_to_graph(data)
 
 
-def solve_max_cut(cost_op: SparsePauliOp, energy: Optional[float] = None):
+def solve_max_cut(cost_op: SparsePauliOp, energy: float | None = None):
     """Solve the MaximumCut problem for the given cost op.
 
     This method allows us to benchmark performance. It requires CPLEX to solve to optimality
@@ -344,7 +344,7 @@ def solve_max_cut(cost_op: SparsePauliOp, energy: Optional[float] = None):
     return max_cut, min_cut, approximation_ratio
 
 
-def make_swap_strategy(edges: List[Tuple[int, ...]], num_qubits: int) -> SwapStrategy:
+def make_swap_strategy(edges: list[tuple[int, ...]], num_qubits: int) -> SwapStrategy:
     """Create the SWAP strategy that implements the graph.
 
     Create a SWAP strategy for a line that reaches full connectivity and then simplify it.
