@@ -405,14 +405,14 @@ wheels = [
 
 [[package]]
 name = "cotengra"
-version = "0.8.2"
+version = "0.8.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "autoray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/61/55/867bfde1fd7d91b79fd1ee23468f034fc5afb6da620124e43a1a004d3a05/cotengra-0.8.2.tar.gz", hash = "sha256:3040ec6cbcc5b3c5d0388444a97cef02dc5963c6a222106e669db0e586369da9", size = 2502794, upload-time = "2026-06-22T19:49:42.698Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ee/5b/6bf6d614ac5499417843fe9b288d4ad93b7af92b5dd1c57ebd6f8ae93942/cotengra-0.8.1.tar.gz", hash = "sha256:4a94f3288a2a7bbc4bebb82f43984695385abd3f9130558b5a5d7f89d39c7b38", size = 2491311, upload-time = "2026-06-08T18:00:48.07Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f6/27/157df41828f9d3ea3db17b1d299c900e7faa84e14fc0cf32ded39e87b7e8/cotengra-0.8.2-py3-none-any.whl", hash = "sha256:f8c636bb392aa17e463c979d186a76c6220da7a98fdf6a252e02122a726009e2", size = 254409, upload-time = "2026-06-22T19:49:41.353Z" },
+    { url = "https://files.pythonhosted.org/packages/33/58/6c663b9f21e38c5f944eabe540050b316c61551f116dfeac344b5c61982d/cotengra-0.8.1-py3-none-any.whl", hash = "sha256:11d02e88fa23047375f2d93a19a3f3d3c8b5cb2f1754f19703f6444545b3711b", size = 254371, upload-time = "2026-06-08T18:00:46.638Z" },
 ]
 
 [[package]]
@@ -2162,6 +2162,7 @@ cplex = [
 ]
 dev = [
     { name = "black", extra = ["jupyter"] },
+    { name = "cotengra" },
     { name = "ddt" },
     { name = "juliacall" },
     { name = "python-sat" },
@@ -2186,6 +2187,7 @@ test = [
     { name = "ddt" },
 ]
 tns = [
+    { name = "cotengra" },
     { name = "juliacall" },
     { name = "quimb" },
 ]
@@ -2193,6 +2195,7 @@ tns = [
 [package.metadata]
 requires-dist = [
     { name = "black", extras = ["jupyter"], marker = "extra == 'lint'", specifier = "~=24.1" },
+    { name = "cotengra", marker = "extra == 'tns'", specifier = "<=0.8.1" },
     { name = "coverage", marker = "extra == 'ci'", specifier = ">=4.4.0" },
     { name = "ddt", marker = "extra == 'test'" },
     { name = "juliacall", marker = "extra == 'tns'" },

@@ -42,6 +42,7 @@ cplex = [
 ]
 tns = [
     "quimb>=1.8.2",
+    "cotengra<=0.8.1",
     "juliacall",
 ]
 sat = [
