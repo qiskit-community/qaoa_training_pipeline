@@ -48,9 +48,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
           cache-dependency-path: |
-            setup.py
-            requirements.txt
-            requirements-dev.txt
+            pyproject.toml
       - name: Setup Julia
         uses: julia-actions/setup-julia@v1
         with:
@@ -103,10 +101,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
           cache-dependency-path: |
-            setup.py
-            requirements.txt
-            requirements-optional.txt
-            requirements-dev.txt
+            pyproject.toml
       - uses: ./.github/actions/install-main-dependencies
         with:
           os: ${{ matrix.os }}

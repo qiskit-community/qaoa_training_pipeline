@@ -14,7 +14,5 @@ description: 'Installs qaoa_training_pipeline'
 runs:
   using: "composite"
   steps:
-    - run : |
-        pip install -U -c constraints.txt -r requirements-dev.txt -r requirements-optional.txt
-        pip install -e .
+    - run: pip install -e ".[sat,tns,notebooks,test,ci]"
       shell: bash
