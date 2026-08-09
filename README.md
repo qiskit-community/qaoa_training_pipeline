@@ -232,6 +232,7 @@ This repository is still in development: new functionality is being added and th
 |      41 | Implement new refactoring design in trainers.                |          #71 |
 |      42 | Refactor how_tos to new class design.                        |          #80 |
 |      43 | Update provide_params in reweighting                         |          #81 |
+|      44 | Update dependencies to pyproject.toml with optional groups   |          #88 |
 
 
 ## IBM Public Repository Disclosure

@@ -37,7 +37,7 @@ class ParamResult:
         self,
         optimized_params: list,
         duration: float,
-        trainer: "ParamsProvider",
+        trainer: ParamsProvider,
         energy: float | None = None,
     ):
         """Initialize the data class."""
@@ -48,7 +48,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 43,
+            "qaoa_training_pipeline_version": 44,
         }
 
         # Convert, e.g., np.float to float
@@ -96,9 +96,8 @@ class ParamResult:
     @classmethod
     def from_scipy_result(
         cls, result, params0, train_duration, sign, trainer: ScipyTrainer
-    ) -> "ParamResult":
+    ) -> ParamResult:
         """Standardizes results from SciPy such that it can be serialized."""
-
         param_result = cls(
             result.pop("x").tolist(), train_duration, trainer, sign * result.pop("fun")
         )
