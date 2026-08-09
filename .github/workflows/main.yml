@@ -25,6 +25,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  uv-install:
+    if: github.repository_owner == 'qiskit-community'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Verify uv sync installs cleanly from lock file
+        run: uv sync --extra dev --frozen
+
   Checks:
     if: github.repository_owner == 'qiskit-community'
     runs-on: ${{ matrix.os }}
