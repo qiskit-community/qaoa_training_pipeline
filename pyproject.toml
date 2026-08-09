@@ -25,7 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "networkx",
     "numpy>=1.22.0",
@@ -66,6 +66,10 @@ dev = [
     "qaoa_training_pipeline[tns,sat,cplex,notebooks,test,lint]",
 ]
 
+[tool.uv]
+# numba<0.54 has requires-python <3.10 and no wheels for 3.11+; force a modern version.
+constraint-dependencies = ["numba>=0.60"]
+
 [tool.setuptools.dynamic]
 version = { file = "qaoa_training_pipeline/VERSION.txt" }
 
@@ -74,11 +78,11 @@ include = ["qaoa_training_pipeline", "qaoa_training_pipeline.*"]
 
 [tool.black]
 line-length = 100
-target-version = ['py310', 'py311', 'py312', 'py313']
+target-version = ['py311', 'py312', 'py313']
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B", "I", "C90", "UP", "SIM", "N", "ANN", "D", "ARG", "RUF"]
@@ -97,9 +101,9 @@ ignore = [
     # TODO: pre-existing violations — fix incrementally
     "ANN002", "ANN003", "ANN401",
     "ARG002", "ARG003",
-    "B008", "B018", "B028",
+    "B008", "B009", "B018", "B028",
     "C901",
-    "D102", "D105", "D200", "D209", "D210", "D301", "D400", "D404", "D411",
+    "D102", "D105", "D200", "D202", "D209", "D210", "D301", "D400", "D401", "D404", "D411",
     "I001",
     "N806", "N813",
     "RUF002", "RUF003", "RUF005", "RUF013", "RUF021", "RUF022",
