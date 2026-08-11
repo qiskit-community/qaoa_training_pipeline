@@ -65,6 +65,7 @@ lint = [
 ]
 dev = [
     "qaoa_training_pipeline[tns,sat,cplex,notebooks,test,lint]",
+    "pre-commit",
 ]
 
 [tool.uv]
