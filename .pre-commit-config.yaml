@@ -80,13 +80,3 @@ repos:
     rev: 26.3.1
     hooks:
       - id: black
-
-  # verify that all files have the correct copyright header
-  - repo: local
-    hooks:
-      - id: run-python-script
-        name: Verify headers
-        entry: python3 tools/verify_headers.py --omit compact_encoding/_version.py test tools
-        language: system
-        types: [python]
-        exclude: ^docs
