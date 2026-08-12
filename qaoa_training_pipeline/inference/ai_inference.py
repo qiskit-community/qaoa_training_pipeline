@@ -19,6 +19,10 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.framework import ProblemParamsProvider
 from qaoa_training_pipeline.framework import ParamResult
+from qaoa_training_pipeline.training.functions import (
+    BaseAnglesFunction,
+    IdentityFunction,
+)
 
 
 class AIInference(ProblemParamsProvider):
@@ -48,6 +52,7 @@ class AIInference(ProblemParamsProvider):
         validate_input_operator: bool = True,
         rescale: Callable[[Sequence[float]], Sequence[float]] | None = None,
         backend: str = "onnx",
+        qaoa_angles_function: BaseAnglesFunction | None = None,
     ) -> None:
         """Initialize the AI inference trainer.
 
@@ -66,8 +71,11 @@ class AIInference(ProblemParamsProvider):
                 pass ``None`` (default) to keep only the config's rescaling.
             backend: Prediction backend, ``"onnx"`` (default, torch-free) or
                 ``"torch"``.
+            qaoa_angles_function: Function transforming the predicted angles to
+                a different basis before use. Defaults to
+                :class:`IdentityFunction` (no transformation).
         """
-        super().__init__()
+        super().__init__(qaoa_angles_function=qaoa_angles_function or IdentityFunction())
         self.config_path = config_path
         self.device = str(device)
         self.strict = bool(strict)
@@ -157,6 +165,16 @@ class AIInference(ProblemParamsProvider):
         if config_path is None:
             raise ValueError("AIInference requires 'config_path' in config.")
 
+        # Rebuild the angles function from its config when serialized; default
+        # to the identity transformation otherwise.
+        angles_function = None
+        if "qaoa_angles_function" in config:
+            from qaoa_training_pipeline.training.functions import FUNCTIONS
+
+            angles_function = FUNCTIONS[config["qaoa_angles_function"]](
+                **config.get("qaoa_angles_function_init", {})
+            )
+
         return cls(
             config_path=config_path,
             device=str(config.get("device", "cpu")),
@@ -164,6 +182,7 @@ class AIInference(ProblemParamsProvider):
             validate_input_operator=bool(config.get("validate_input_operator", True)),
             rescale=config.get("rescale"),
             backend=str(config.get("backend", "onnx")),
+            qaoa_angles_function=angles_function,
         )
 
     def to_config(self) -> dict:
@@ -174,6 +193,7 @@ class AIInference(ProblemParamsProvider):
             "strict": self.strict,
             "validate_input_operator": self.validate_input_operator,
             "backend": self.backend,
+            "qaoa_angles_function": self.qaoa_angles_function.__class__.__name__,
         }
 
         if self.model is not None:
