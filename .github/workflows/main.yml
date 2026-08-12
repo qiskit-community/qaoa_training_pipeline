@@ -31,8 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Verify uv sync installs cleanly from lock file
-        run: uv sync --extra dev --frozen
+      - name: Verify uv installation
+        run: uv sync --extra dev --locked
 
   Checks:
     if: github.repository_owner == 'qiskit-community'
