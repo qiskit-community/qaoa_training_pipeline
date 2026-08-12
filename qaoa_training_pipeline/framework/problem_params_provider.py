@@ -9,21 +9,27 @@
 
 """
 This module defines the ProblemParamsProvider abstract base class, which serves as the foundation
-for QAOA parameter providers that need the cost operator to generate/retrieve the angles. 
+for QAOA parameter providers that need the cost operator to generate/retrieve the angles.
 
 
 Subclasses implement the abstract class to provide QAOA angles in different ways,
-such as by database look-up, or diverse QAOA angles training methods, all using the problem 
+such as by database look-up, or diverse QAOA angles training methods, all using the problem
 cost operator.
 """
 
 
+from __future__ import annotations
+
 from abc import abstractmethod
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
+from typing import TYPE_CHECKING
 
 from qaoa_training_pipeline.framework.params_provider import ParamsProvider
-from qaoa_training_pipeline.framework.param_result import ParamResult
+
+if TYPE_CHECKING:
+    from qiskit import QuantumCircuit
+    from qiskit.quantum_info import SparsePauliOp
+
+    from qaoa_training_pipeline.framework.param_result import ParamResult
 
 
 class ProblemParamsProvider(ParamsProvider):

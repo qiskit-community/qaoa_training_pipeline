@@ -31,11 +31,14 @@ class TestRecursion(TrainingPipelineTestCase):
         """Test a simple recursion training."""
 
         scipy_trainer = ScipyTrainer(MPSEvaluator())
-        trainer = RecursionTrainer(scipy_trainer, interpolate)
+        trainer = RecursionTrainer(scipy_trainer, interpolate, reps=3)
 
-        result_pre = scipy_trainer.train(self.cost_op, params0=[0.1, 0.1])
+        result_pre = scipy_trainer.provide_params(self.cost_op, params0=[0.1, 0.1])
 
-        result = trainer.train(self.cost_op, params0=result_pre["optimized_params"], reps=3)
+        result = trainer.provide_params(
+            self.cost_op,
+            params0=result_pre["optimized_params"],
+        )
 
         self.assertTrue(result[2]["energy"] < result[3]["energy"])
         self.assertEqual(len(result["optimized_params"]), 6)
@@ -54,6 +57,7 @@ class TestRecursion(TrainingPipelineTestCase):
                 "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}},
             },
             "parameter_extender": "interpolate",
+            "reps": 3,
         }
 
         trainer = RecursionTrainer.from_config(config)
@@ -64,7 +68,7 @@ class TestRecursion(TrainingPipelineTestCase):
         scipy_trainer = ScipyTrainer(MPSEvaluator())
         trainer = RecursionTrainer(scipy_trainer, interpolate)
 
-        kwargs = trainer.parse_train_kwargs("reps:8:params0:1/2")
+        kwargs = trainer.parse_runtime_kwargs("reps:8:params0:1/2")
         self.assertDictEqual(kwargs, {"reps": 8, "params0": [1.0, 2.0]})
 
     @data(2, None)
@@ -86,11 +90,15 @@ class TestRecursion(TrainingPipelineTestCase):
                 "qaoa_angles_function_init": {"depth": qaoa_reps},  # p is defined by this number
             },
             "parameter_extender": "interpolate",
+            "reps": 4,
         }
 
         trainer = RecursionTrainer.from_config(config)
 
-        result = trainer.train(self.cost_op, params0=[1, 1, 0, 0], reps=4)
+        result = trainer.provide_params(
+            self.cost_op,
+            params0=[1, 1, 0, 0],
+        )
 
         expected_len = 4 if qaoa_reps is None else qaoa_reps
 

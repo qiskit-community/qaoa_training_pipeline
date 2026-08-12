@@ -10,7 +10,7 @@
 """
 This module defines the ParamsProvider abstract base class, which serves as the foundation
 for all QAOA parameter providers in the training pipeline. Parameter providers are responsible
-for supplying QAOA angles that define the QAOA circuit. 
+for supplying QAOA angles that define the QAOA circuit.
 
 The ParamsProvider class defines an interface for performing the following tasks:
     - Providing QAOA angles through provide_params
@@ -21,17 +21,17 @@ The ParamsProvider class defines an interface for performing the following tasks
 Subclasses implement the abstract class to provide QAOA angles in different ways,
 such as by database look-up, or diverse QAOA angles training methods.
 """
+from __future__ import annotations
 
-
-from abc import ABC, abstractmethod
 import warnings
-from typing import TypeVar
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, TypeVar
 
-from qaoa_training_pipeline.framework.param_result import ParamResult
-from qaoa_training_pipeline.training.functions import (
-    BaseAnglesFunction,
-    IdentityFunction,
-)
+if TYPE_CHECKING:
+    from qaoa_training_pipeline.framework.param_result import ParamResult
+    from qaoa_training_pipeline.training.functions import (
+        BaseAnglesFunction,
+    )
 
 T = TypeVar("T")
 
@@ -45,8 +45,7 @@ class ParamsProvider(ABC):
 
     Attributes:
         _qaoa_angles_function: Function that transforms QAOA angles to a different basis
-        before they are used, e.g. the Fourier basis. Defaults to IdentityFunction
-        (no transformation).
+        before they are used, e.g. the Fourier basis.
 
     Abstract methods that sub-classes implement:
         - provide_params: Provides QAOA angles to the next element of the pipeline.
@@ -57,15 +56,15 @@ class ParamsProvider(ABC):
     def __init__(
         self,
         *,
-        qaoa_angles_function: BaseAnglesFunction | None = None,
+        qaoa_angles_function: BaseAnglesFunction,
     ):
         """Initialize the parameter provider.
 
         Args:
-            qaoa_angles_function: Optional function to transform QAOA angles to a different
-            basis, e.g. Fourier. If None, uses IdentityFunction (no transformation).
+            qaoa_angles_function: Function to transform QAOA angles to a different
+            basis, e.g. Fourier.
         """
-        self._qaoa_angles_function = qaoa_angles_function or IdentityFunction()
+        self._qaoa_angles_function = qaoa_angles_function
 
     @property
     def qaoa_angles_function(self) -> BaseAnglesFunction:
@@ -182,7 +181,8 @@ class ParamsProvider(ABC):
             raise ValueError(f"{self.__class__.__name__} requires {name} to be defined")
         return arg
 
-    def parse_runtime_kwargs(self, kwargs_str: str | None = None) -> dict:
+    @classmethod
+    def parse_runtime_kwargs(cls, kwargs_str: str | None = None) -> dict:
         """Parse keyword arguments, usually provided via command-line, from a colon-separated
         string format, "k1:v1:k2:v2:...", and returns the arguments in a dictionary format.
         This enables dynamic parameter passing when running the pipeline from the command line.

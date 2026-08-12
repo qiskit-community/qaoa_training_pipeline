@@ -8,15 +8,20 @@
 
 """Classes to test the TQA trainer."""
 
+# Disable import order for this line. Python has a stdlib test module, but this
+# is our own one. Therefore, it is imported with third-party libraries.
+
+from test import TrainingPipelineTestCase  # pylint: disable=wrong-import-order
+
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
+from qaoa_training_pipeline.framework.from_config_provider import (
+    FromConfigParamsProvider,
+)
 from qaoa_training_pipeline.framework.param_result import ParamResult
+from qaoa_training_pipeline.training.lrqaoa_trainer import LRQAOATrainer
 from qaoa_training_pipeline.training.tqa_trainer import TQATrainer
-
-# Disable import order for this line. Python has a stdlib test module, but this
-# is our own one. Therefore, it is imported with third-party libraries.
-from test import TrainingPipelineTestCase  # pylint: disable=wrong-import-order
 
 
 class TestTQA(TrainingPipelineTestCase):
@@ -25,22 +30,26 @@ class TestTQA(TrainingPipelineTestCase):
     def test_no_optim(self):
         """ "Test that we can run without doing any optimization."""
         reps = 3
-        trainer = TQATrainer()
 
         with self.assertRaises(
             ValueError,
-            msg="Calling qaoa_angles_function without reps=... "
+            msg="Creating TQATrainer without reps=... "
             + "on untrained TQATrainer should raise an error.",
         ):
-            _ = trainer.qaoa_angles_function([0.2])
+            trainer = TQATrainer(reps=None, evaluator=None)
 
+        trainer = TQATrainer(evaluator=None, reps=reps)
         self.assertTrue(
-            len(trainer.qaoa_angles_function([0.2], reps=reps)) == 2 * reps,
+            len(trainer.qaoa_angles_function([0.2])) == 2 * reps,
             msg="Calling qaoa_angles_function with reps=... on untrained "
             + "TQATrainer should return list of angles.",
         )
 
-        result = trainer.train(None, reps=reps)
+        params_provider = FromConfigParamsProvider.from_config(
+            {"params0": [0.75], "qaoa_angles_function": "IdentityFunction"}
+        )
+        params = params_provider.provide_params()["optimized_params"]
+        result = trainer.provide_params(None, params0=params)
 
         self.assertListEqual(
             result["optimized_qaoa_angles"],
@@ -64,8 +73,8 @@ class TestTQA(TrainingPipelineTestCase):
             msg="Calling qaoa_angles_function without reps=... "
             + "on trained TQATrainer should return list of angles.",
         )
-
-        result = trainer.train(None, reps=reps + 1)
+        trainer = TQATrainer(evaluator=None, reps=reps + 1)
+        result = trainer.provide_params(None, params0=params)
         self.assertTrue(
             len(trainer.qaoa_angles_function(result["optimized_params"])) == 2 * (reps + 1),
             msg="Calling qaoa_angles_function without reps=... "
@@ -81,20 +90,21 @@ class TestTQA(TrainingPipelineTestCase):
 
         with self.assertRaises(
             ValueError,
-            msg="Calling qaoa_angles_function without reps=... "
+            msg="Calling qaoa_angles_function/Using TQA without reps=... "
             + "on untrained TQATrainer should raise an error.",
         ):
+            trainer = TQATrainer(evaluator=evaluator, reps=None)
             _ = trainer.qaoa_angles_function([0.2])
-
+        trainer = TQATrainer(evaluator=evaluator, reps=reps)
         self.assertTrue(
-            len(trainer.qaoa_angles_function([0.2], reps=reps)) == 2 * reps,
+            len(trainer.qaoa_angles_function([0.2])) == 2 * reps,
             msg="Calling qaoa_angles_function with reps=... "
             + "on untrained TQATrainer should return list of angles.",
         )
 
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
 
-        result: ParamResult = trainer.train(cost_op, reps=reps)
+        result: ParamResult = trainer.provide_params(cost_op, params0=[0.2])
 
         self.assertEqual(
             result["success"],
@@ -130,26 +140,16 @@ class TestTQA(TrainingPipelineTestCase):
 
     def test_from_config(self):
         """Test that we can create TQA trainers from configs."""
-        config = {}
+        config = {"evaluator": "StatevectorEvaluator", "evaluator_init": {}, "reps": 1}
 
         trainer = TQATrainer.from_config(config)
-        self.assertIsNone(trainer._evaluator)
 
-        config = {
-            "evaluator": "MPSEvaluator",
-            "evaluator_init": {"bond_dim_circuit": 2},
-        }
-
-        trainer = TQATrainer.from_config(config)
-        self.assertTrue(isinstance(trainer.evaluator, MPSEvaluator))
-
-        self.assertEqual(trainer.evaluator.to_config()["bond_dim_circuit"], 2)
+        self.assertIsInstance(trainer, TQATrainer)
 
     def test_parse_train_kwargs(self):
         """Test parsing of training args."""
         kwargs_str = "reps:3"
-        kwargs = TQATrainer().parse_train_kwargs(kwargs_str)
-
+        kwargs = TQATrainer.parse_runtime_kwargs(kwargs_str)
         self.assertDictEqual(kwargs, {"reps": 3})
 
     def test_lr_schedule(self):
@@ -157,11 +157,11 @@ class TestTQA(TrainingPipelineTestCase):
         evaluator = MPSEvaluator()
 
         reps = 4
-        trainer = TQATrainer(evaluator, initial_dt=(0.5, 0.5))
+        trainer = LRQAOATrainer(reps=reps, evaluator=evaluator)
 
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
 
-        result: ParamResult = trainer.train(cost_op, reps=reps)
+        result: ParamResult = trainer.provide_params(cost_op, params0=[0.5, 0.5])
 
         self.assertEqual(
             len(result["optimized_params"]),
@@ -183,4 +183,3 @@ class TestTQA(TrainingPipelineTestCase):
         self.assertTrue(len(result["energy_history"]) > 0)
         self.assertTrue(len(result["parameter_history"]) > 0)
         self.assertTrue(len(result["energy_evaluation_time"]) > 0)
-        self.assertEqual(trainer.qaoa_angles_function._tqa_schedule.__name__, "lr_schedule")

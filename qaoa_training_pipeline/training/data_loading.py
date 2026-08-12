@@ -75,7 +75,6 @@ class LoadFromJson(BaseDataLoader):
         for key, val in json_data.items():
             tuple_key = tuple(float(val) for val in key.split(","))
             data[tuple_key] = val
-
         return data
 
     def to_config(self):

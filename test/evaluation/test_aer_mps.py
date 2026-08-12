@@ -45,7 +45,7 @@ class TestAerMPSEvaluator(TestCase):
     def test_optimize(self):
         """Test that we can use this in a scipy optimization."""
         trainer = ScipyTrainer(self.evaluator, {"options": {"maxiter": 3, "rhobeg": 0.2}})
-        result = trainer.train(cost_op=self.cost_op, params0=[0.2, 0.3])
+        result = trainer.provide_params(cost_op=self.cost_op, params0=[0.2, 0.3])
 
         self.assertGreaterEqual(len(result["energy_history"]), 3)
 

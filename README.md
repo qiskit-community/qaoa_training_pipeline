@@ -220,7 +220,7 @@ This repository is still in development: new functionality is being added and th
 |      27 | Add LABS with GPU support                                    |          #50 |
 |      28 | Add a trainer that computes optimal beta per gamma           |          #49 |
 |      29 | Bug fix - Add vertices to the graph in operator_to_graph     |          #52 |
-|      30 | Convert a graph with partial assignment to a hamiltonian     |          #53 | 
+|      30 | Convert a graph with partial assignment to a hamiltonian     |          #53 |
 |      31 | Refactor linear angle interpolation (increase QAOA depth)    |          #55 |
 |      32 | Standardize the inheritance of evaluators and trainers       |          #57 |
 |      33 | Allow Pauli propagation to accept a custom circuit ansatz    |          #60 |
@@ -231,6 +231,11 @@ This repository is still in development: new functionality is being added and th
 |      38 | Introduce the framework module                               |          #72 |
 |      39 | Add framework imports in the main folder                     |          #73 |
 |      40 | Add FromConfigParamsProvider to set initial params.          |          #74 |
+|      41 | Implement new refactoring design in trainers.                |          #71 |
+|      42 | Refactor how_tos to new class design.                        |          #80 |
+|      43 | Update provide_params in reweighting                         |          #81 |
+|      44 | Streamline MPSAerEvaluator by using native Aer backend       |          #78 |
+
 
 ## IBM Public Repository Disclosure
 

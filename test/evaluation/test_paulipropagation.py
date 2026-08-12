@@ -78,7 +78,7 @@ class TestPPEvaluator(TestCase):
     def test_optimize(self, cost_op, params0):
         """Data-driven test of optimization."""
         trainer = ScipyTrainer(self.evaluator, {"options": {"maxiter": 3, "rhobeg": 0.2}})
-        result = trainer.train(cost_op=cost_op, params0=params0)
+        result = trainer.provide_params(cost_op=cost_op, params0=params0)
         self.assertGreaterEqual(len(result["energy_history"]), 3)
 
     def test_from_config(self):

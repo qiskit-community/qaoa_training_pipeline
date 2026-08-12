@@ -8,23 +8,28 @@
 
 """Transition states trainer."""
 
+from __future__ import annotations
+
 from time import time
+from typing import TYPE_CHECKING
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.framework.param_result import ParamResult
-from qaoa_training_pipeline.training.parameter_scanner import DepthOneScanTrainer
+from qaoa_training_pipeline.framework.pipeline_component import PipelineComponent
+from qaoa_training_pipeline.training.functions import IdentityFunction
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 
+if TYPE_CHECKING:
+    from qiskit import QuantumCircuit
+    from qiskit.quantum_info import SparsePauliOp
 
-class TransitionStatesTrainer(BaseTrainer):
+
+class TransitionStatesTrainer(PipelineComponent):
     """A trainer that leverages transition states.
 
     The approach to training QAOA with transition states is described in Sack et al.
@@ -36,14 +41,17 @@ class TransitionStatesTrainer(BaseTrainer):
     improved local extrema.
     """
 
-    def __init__(self, trainer: BaseTrainer):
+    def __init__(
+        self,
+        trainer: PipelineComponent,
+    ):
         """Initialize the Transition state trainer.
 
         Args:
             trainer: The trainer, with the evaluator inside of it, to optimize
                 the parameters starting from the right initial points.
         """
-        super().__init__(trainer.evaluator)
+        super().__init__(trainer.evaluator, qaoa_angles_function=IdentityFunction())
         self._trainer = trainer
         self._all_ts = None
 
@@ -63,14 +71,13 @@ class TransitionStatesTrainer(BaseTrainer):
         return self._trainer
 
     # pylint: disable=too-many-positional-arguments
-    def train(
+    def provide_params(
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
         params0: list[float] | None = None,
-        previous_optimal_point: list[float] | None = None,
     ) -> ParamResult:
         r"""Train the parameters based on a previous optimal point.
 
@@ -90,14 +97,13 @@ class TransitionStatesTrainer(BaseTrainer):
         Returns:
             A dictionary with optimization results.
         """
-        previous_optimal_point = self._require(previous_optimal_point, "a previous optimal point")
-        self._warn_ignored_inputs(params0=params0)
+        params0 = self._require(params0, "a previous optimal point")
         start = time()
 
         result, self._all_ts = dict(), dict()
 
-        for idx, ts_state in enumerate(self.make_ts(previous_optimal_point)):
-            res = self.trainer.train(
+        for idx, ts_state in enumerate(self.make_ts(params0)):
+            res = self.trainer.provide_params(
                 cost_op, mixer, initial_state, ansatz_circuit, params0=ts_state
             )
             res.update({"ts": ts_state})
@@ -251,20 +257,19 @@ class TransitionStatesTrainer(BaseTrainer):
         # Note: we cannot user the TRAINERS mapping otherwise we will circular import ourselves.
         if trainer_name == "ScipyTrainer":
             return cls(ScipyTrainer.from_config(config["trainer_init"]))
-        elif trainer_name == "DepthOneScanTrainer":
-            return cls(DepthOneScanTrainer.from_config(config["trainer_init"]))
         else:
             raise ValueError(f"Unrecognized trainer {trainer_name}")
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
+    @classmethod
+    def parse_runtime_kwargs(cls, kwargs_str: str | None = None) -> dict:
         """Parse a string into the training kwargs.
 
         The string is of the form `previous_optimal_point:v1/v2/v3/v4...`.
         """
         train_kwargs = dict()
-        for key, val in self.extract_train_kwargs(args_str).items():
+        for key, val in super().parse_runtime_kwargs(kwargs_str).items():
             if key == "previous_optimal_point":
-                train_kwargs[key] = self.extract_list(val)
+                train_kwargs[key] = cls.extract_list(val)
             else:
                 raise ValueError("Unknown key in provided train_kwargs.")
 

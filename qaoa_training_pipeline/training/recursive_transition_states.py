@@ -1,21 +1,27 @@
 """Recursive transition states trainer."""
 
+from __future__ import annotations
+
 from time import time
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.exceptions import TrainingError
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
 from qaoa_training_pipeline.framework.param_result import ParamResult
+from qaoa_training_pipeline.framework.pipeline_component import PipelineComponent
+from qaoa_training_pipeline.training.functions import IdentityFunction
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
 from qaoa_training_pipeline.training.transition_states import TransitionStatesTrainer
 
+if TYPE_CHECKING:
+    from qiskit import QuantumCircuit
+    from qiskit.quantum_info import SparsePauliOp
 
-class RecursiveTransitionStates(BaseTrainer):
+
+class RecursiveTransitionStates(PipelineComponent):
     """Recursively train QAOA by constructing transition states.
 
     This class uses an initial set of parameters for depth `p` QAOA to construct transition states
@@ -23,16 +29,22 @@ class RecursiveTransitionStates(BaseTrainer):
     states at the next depth `p+2`. This process continues until the specified depth is reached.
     """
 
-    def __init__(self, trainer: ScipyTrainer):
+    def __init__(
+        self,
+        trainer: ScipyTrainer,
+        reps: int | None = None,
+    ):
         """Initialize a recursion trainer.
 
         Args:
             trainer: The trainer must be the ScipyTrainer.
+            reps: QAOA depth
         """
-        super().__init__(trainer.evaluator)
+        super().__init__(trainer.evaluator, qaoa_angles_function=IdentityFunction())
 
         self._trainer = trainer
         self._all_results = None
+        self._reps = reps
 
     @property
     def minimization(self) -> bool:
@@ -40,20 +52,18 @@ class RecursiveTransitionStates(BaseTrainer):
         return self._trainer.minimization
 
     # pylint: disable=too-many-positional-arguments
-    def train(
+    def provide_params(
         self,
         cost_op: SparsePauliOp,
         mixer: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
         params0: list[float] | None = None,
-        previous_optimal_point: list[float] | None = None,
-        reps: int | None = None,
     ) -> ParamResult:
         """
         Args:
             cost_op: The cost operator of the problem we want to solve.
-            previous_optimal_point: A local minima in beta and gamma from which to start
+            params0: A local minima in beta and gamma from which to start
                 the transition states recursion.
             reps: The number of QAOA layers we want to reach.
             mixer: A quantum circuit representing the mixer of QAOA. This allows us to
@@ -67,11 +77,11 @@ class RecursiveTransitionStates(BaseTrainer):
         Returns:
             A `ParamResult` with optimization results.
         """
-        previous_optimal_point = self._require(previous_optimal_point, "a previous_optimal_point.")
-        reps = self._require(reps, "reps")
+        params0 = self._require(params0, "a params0.")
+        reps = self._require(self._reps, "reps")
         start = time()
-        current_reps = len(previous_optimal_point) // 2
-        ts_state = previous_optimal_point
+        current_reps = len(params0) // 2
+        ts_state = params0
         self._all_results, energy = dict(), None
 
         if current_reps >= reps:
@@ -81,12 +91,12 @@ class RecursiveTransitionStates(BaseTrainer):
 
         while current_reps < reps:
             ts_trainer = TransitionStatesTrainer(self._trainer)
-            result = ts_trainer.train(
+            result = ts_trainer.provide_params(
                 cost_op,
                 mixer,
                 initial_state,
                 ansatz_circuit,
-                previous_optimal_point=ts_state,
+                params0=ts_state,
             )
             ts_state = result["optimized_params"]
             energy = result["energy"]
@@ -109,7 +119,7 @@ class RecursiveTransitionStates(BaseTrainer):
 
         trainer = ScipyTrainer.from_config(config["trainer_init"])
 
-        return cls(trainer)
+        return cls(trainer, reps=config["reps"])
 
     def to_config(self) -> dict:
         """Return the configuration of the trainer."""
@@ -119,14 +129,15 @@ class RecursiveTransitionStates(BaseTrainer):
             "trainer": self._trainer.to_config(),
         }
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
+    @classmethod
+    def parse_runtime_kwargs(cls, kwargs_str: str | None = None) -> dict:
         """Parse a string into the training kwargs."""
         train_kwargs = dict()
-        for key, val in self.extract_train_kwargs(args_str).items():
+        for key, val in super().parse_runtime_kwargs(kwargs_str).items():
             if key == "reps":
                 train_kwargs[key] = int(val)
-            elif key == "previous_optimal_point":
-                train_kwargs[key] = self.extract_list(val, dtype=float)
+            elif key == "params0":
+                train_kwargs[key] = cls.extract_list(val, dtype=float)
             else:
                 raise ValueError("Unknown key in provided train_kwargs.")
 

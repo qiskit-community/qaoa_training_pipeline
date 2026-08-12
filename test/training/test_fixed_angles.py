@@ -7,16 +7,12 @@
 # that they have been altered from the originals.
 
 """Classes to test the fixed-angles trainer."""
-
 from importlib import import_module
-
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.evaluation.mps_evaluator import MPSEvaluator
-from qaoa_training_pipeline.evaluation.statevector_evaluator import StatevectorEvaluator
 from qaoa_training_pipeline.training.fixed_angle_conjecture import FixedAngleConjecture
+from qaoa_training_pipeline.evaluation.statevector_evaluator import StatevectorEvaluator
 from qaoa_training_pipeline.utils.graph_utils import solve_max_cut
-
 from ..training_pipeline_test_case import TrainingPipelineTestCase
 
 
@@ -39,9 +35,9 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
     def test_train(self):
         """Test the we can get angles."""
 
-        trainer = FixedAngleConjecture()
+        trainer = FixedAngleConjecture(reps=2)
 
-        result = trainer.train(self.cost_op, reps=2)
+        result = trainer.provide_params(self.cost_op)
 
         self.assertListEqual(
             result["optimized_params"],
@@ -65,14 +61,18 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
             ]
         )
 
-        result = FixedAngleConjecture().train(one_local_op, reps=2)
-        self.assertEqual(int(result["degree"]), 3)
+        result = FixedAngleConjecture(reps=2).provide_params(
+            one_local_op,
+        )
+        self.assertEqual(result["data_key"], (2, 3))
 
     def test_energy(self):
         """Test the we can get the energy."""
-        trainer = FixedAngleConjecture(StatevectorEvaluator())
+        trainer = FixedAngleConjecture(reps=2)
+        evaluator = StatevectorEvaluator()
 
-        result = trainer.train(self.cost_op, reps=2)
+        result = trainer.provide_params(self.cost_op)
+        energy = evaluator.evaluate(cost_op=self.cost_op, params=result["optimized_qaoa_angles"])
 
         # CPLEX installation can be unreliable in CI.
         try:
@@ -82,29 +82,22 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
             has_cplex = False
 
         if has_cplex:
-            _, _, aprrox_ratio = solve_max_cut(self.cost_op, result["energy"])
+            _, _, aprrox_ratio = solve_max_cut(self.cost_op, energy)
         else:
             aprrox_ratio = 0.86081  # This is the value that the line above yields.
 
-        self.assertGreater(aprrox_ratio, result["approximation ratio"])
-
-    def test_from_config(self):
-        """Test that we can create fixed angle trainers from configs."""
-        config = {}
-
-        trainer = FixedAngleConjecture.from_config(config)
-        self.assertIsNone(trainer._evaluator)
-
-        config = {"evaluator": "MPSEvaluator", "evaluator_init": {"bond_dim_circuit": 2}}
-
-        trainer = FixedAngleConjecture.from_config(config)
-        self.assertTrue(isinstance(trainer.evaluator, MPSEvaluator))
-
-        self.assertEqual(trainer.evaluator.to_config()["bond_dim_circuit"], 2)
+        self.assertGreater(aprrox_ratio, result["metadata"]["approximation_ratio"])
 
     def test_parse_train_args(self):
         """Test the parsing of the training arguments."""
-        trainer = FixedAngleConjecture.from_config({})
-        train_args = trainer.parse_train_kwargs("reps:2")
+        train_args = FixedAngleConjecture.parse_runtime_kwargs("reps:2")
 
         self.assertDictEqual(train_args, {"reps": 2})
+
+    def test_from_config(self):
+        """Test that we can create fixed angle trainers from configs."""
+        config = {"reps": 2}
+
+        trainer = FixedAngleConjecture.from_config(config)
+        self.assertIsInstance(trainer, FixedAngleConjecture)
+        self.assertEqual(trainer._qaoa_depth, 2)

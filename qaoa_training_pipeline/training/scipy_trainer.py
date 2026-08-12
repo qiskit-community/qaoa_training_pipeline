@@ -8,37 +8,44 @@
 
 """This module is an interface to SciPy's minimize function."""
 
+from __future__ import annotations
+
 from time import time
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import SparsePauliOp
 from scipy.optimize import minimize
 
 from qaoa_training_pipeline.evaluation import EVALUATORS
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
-from qaoa_training_pipeline.training.base_trainer import BaseTrainer
+from qaoa_training_pipeline.framework.param_result import ParamResult
+from qaoa_training_pipeline.framework.pipeline_component import PipelineComponent
 from qaoa_training_pipeline.training.functions import (
     FUNCTIONS,
     BaseAnglesFunction,
     IdentityFunction,
 )
 from qaoa_training_pipeline.training.history_mixin import HistoryMixin
-from qaoa_training_pipeline.framework.param_result import ParamResult
+
+if TYPE_CHECKING:
+    from qiskit import QuantumCircuit
+    from qiskit.quantum_info import SparsePauliOp
 
 
-class ScipyTrainer(BaseTrainer, HistoryMixin):
+class ScipyTrainer(PipelineComponent, HistoryMixin):
     """A trainer that wraps SciPy's minimize function."""
+
+    requires_cost_op = True
 
     def __init__(
         self,
-        evaluator: BaseEvaluator,
+        evaluator: BaseEvaluator | None = None,
         minimize_args: dict[str, object] | None = None,
         energy_minimization: bool = False,
-        qaoa_angles_function: BaseAnglesFunction | None = None,
+        qaoa_angles_function: BaseAnglesFunction = IdentityFunction(),
     ):
         """Initialize the trainer.
 
@@ -54,7 +61,11 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
                 an instance of `BaseAnglesFunction` but we allow any callable here that maps
                 optimization parameters to QAOA angles.
         """
-        BaseTrainer.__init__(self, evaluator, qaoa_angles_function)
+        PipelineComponent.__init__(
+            self,
+            evaluator,
+            qaoa_angles_function=qaoa_angles_function,
+        )
         HistoryMixin.__init__(self)
 
         self._minimize_args: dict[str, object] = {"method": "COBYLA"}
@@ -72,7 +83,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         return self._sign == 1
 
     # pylint: disable=too-many-positional-arguments
-    def train(
+    def provide_params(
         self,
         cost_op: SparsePauliOp | None = None,
         mixer: QuantumCircuit | None = None,
@@ -98,11 +109,11 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
         start = time()
 
-        def _energy(x):
+        def _energy(x) -> float:
             """Maximize the energy by minimizing the negative energy."""
             estart = time()
 
-            qaoa_angles = self._qaoa_angles_function(x)
+            qaoa_angles = self._qaoa_angles_function(list(x))
 
             if cost_op is None:
                 raise ValueError("cost_op must be set.")
@@ -122,14 +133,19 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
 
             return energy
 
-        result = minimize(_energy, np.array(params0), **self._minimize_args)
+        if self._evaluator is None:
+            param_result = ParamResult(list(params0), time() - start, self, None)
+        else:
+            result = minimize(_energy, np.array(params0), **self._minimize_args)
 
-        param_result = ParamResult.from_scipy_result(
-            result, params0, time() - start, self._sign, self
-        )
+            param_result = ParamResult.from_scipy_result(
+                result, params0, time() - start, self._sign, self
+            )
 
-        assert self._evaluator, "_evaluator must be defined before calling train()"
-        param_result.update(self._evaluator.get_results_from_last_iteration())
+            assert self._evaluator, "_evaluator must be defined before calling train()"
+            param_result.update(self._evaluator.get_results_from_last_iteration())
+
+        param_result.add_history(self)
 
         return param_result
 
@@ -138,7 +154,7 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         axis: Axes | None = None,
         fig: Figure | None = None,
         **plot_args,
-    ):
+    ) -> tuple[Figure, Axes]:
         """Plot the energy history.
 
         Args:
@@ -189,7 +205,8 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
             qaoa_angles_function=function,
         )
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
+    @classmethod
+    def parse_runtime_kwargs(cls, kwargs_str: str | None = None) -> dict:
         """Parse any train arguments from a string.
 
         The only argument that can be contained here is params0. It is the values
@@ -197,9 +214,11 @@ class ScipyTrainer(BaseTrainer, HistoryMixin):
         minimize function. We give this as a string in the format `params0:v1/v2/v3/v4...`.
         """
         train_kwargs = dict()
-        for key, val in self.extract_train_kwargs(args_str).items():
+        for key, val in super().parse_runtime_kwargs(kwargs_str).items():
             if key == "params0":
-                train_kwargs[key] = self.extract_list(val, dtype=float)
+                train_kwargs[key] = cls.extract_list(val, dtype=float)
+            elif key == "reps":
+                train_kwargs[key] = int(val)
             else:
                 raise ValueError("Unknown key in provided train_kwargs.")
 
