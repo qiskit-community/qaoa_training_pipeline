@@ -1,0 +1,41 @@
+{
+  "description": "GCN for p=4 QAOA (trained across topologies, seed 43)",
+  "checkpoint": "../../../../../../quantum_ai_parameter_prediction_checkpoints/multi_topology_checkpoints_new/p_4/gcn/gcn_p4_alltopo_seed43/gcn-p4-20260710_031926-77-0.0006.ckpt",
+  "model_init": {
+    "model_type": "gcn",
+    "input_dim": 5,
+    "output_dim": 8,
+    "hidden_dim": 64,
+    "in_features": [
+      "num_nodes",
+      "num_edges",
+      "edges_per_node",
+      "mean_degree",
+      "std_degree"
+    ]
+  },
+  "feature_normalization": {
+    "num_nodes": {
+      "mean": 62.18659973144531,
+      "std": 32.22047805786133
+    },
+    "num_edges": {
+      "mean": 117.89532470703125,
+      "std": 102.7215805053711
+    },
+    "edges_per_node": {
+      "mean": 1.8432713747024536,
+      "std": 1.1763566732406616
+    },
+    "mean_degree": {
+      "mean": 3.6865427494049072,
+      "std": 2.3527133464813232
+    },
+    "std_degree": {
+      "mean": 0.6305044889450073,
+      "std": 0.748920202255249
+    }
+  },
+  "denormalize_output": true,
+  "output_scale": 1.5707963267948966
+}

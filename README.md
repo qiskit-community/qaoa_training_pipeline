@@ -139,8 +139,10 @@ cost operator using pre-trained models, without training. `AIInference` is a
 
 The default backend is **torch-free**: it runs an exported ONNX graph with
 `onnxruntime` + numpy and needs neither PyTorch nor the original training
-checkpoint. Exported models for seven architectures ship with the package under
-`qaoa_training_pipeline/inference/model_configs/`.
+checkpoint. Exported models for seven architectures, each at QAOA depths
+`p = 1, 2, 3, 4`, ship with the package under
+`qaoa_training_pipeline/inference/model_configs/<model>/p<p>/` (every bundle is
+the best-test-seed checkpoint for that architecture and depth).
 
 Install the (optional) runtime dependency and predict:
 
@@ -154,7 +156,7 @@ from qaoa_training_pipeline.inference import AIInference
 
 cost_op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
 ai = AIInference(  # backend="onnx" by default
-    config_path="qaoa_training_pipeline/inference/model_configs/graph_neural_network/model_config.json",
+    config_path="qaoa_training_pipeline/inference/model_configs/graph_neural_network/p1/model_config.json",
 )
 angles = ai.provide_params(cost_op)["optimized_params"]  # p=1 -> [beta, gamma]
 ```

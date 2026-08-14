@@ -8,8 +8,9 @@ whose inputs match the numpy input builders in ``onnx_inputs.py``, exports to
 write unless the ONNX output matches the torch output within tolerance.
 
 Usage:
-    python scripts/export_onnx.py --model agg_transformer --check-parity
-    python scripts/export_onnx.py --model all
+    python tools/inference/export_onnx.py --model mlp/p1 --check-parity
+    python tools/inference/export_onnx.py --model gcn          # every p for gcn
+    python tools/inference/export_onnx.py --model all
 """
 
 from __future__ import annotations
@@ -43,6 +44,7 @@ from qaoa_training_pipeline.inference.torch_backend.model_loader import (
 from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor  # noqa: E402
 from qaoa_training_pipeline.inference.torch_backend.models import predictors  # noqa: E402
 from qaoa_training_pipeline.inference.onnx_inputs import numpy_input_builders  # noqa: E402
+from model_keys import resolve_model_keys  # noqa: E402
 
 MODEL_CONFIGS_DIR = REPO_ROOT / "qaoa_training_pipeline" / "inference" / "model_configs"
 DEFAULT_ONNX_FILENAME = "model.onnx"
@@ -355,17 +357,16 @@ def export_model(model_name: str, opset: int, check_parity: bool) -> Path:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Export QAOA models to ONNX.")
-    ap.add_argument("--model", default="all", help="model_config name, or 'all'")
+    ap.add_argument(
+        "--model",
+        default="all",
+        help="bundle key '<model>/p<p>', a bare model name (all its p), or 'all'",
+    )
     ap.add_argument("--opset", type=int, default=18)
     ap.add_argument("--check-parity", action="store_true")
     args = ap.parse_args()
 
-    if args.model == "all":
-        names = sorted(
-            p.name for p in MODEL_CONFIGS_DIR.iterdir() if (p / "model_config.json").exists()
-        )
-    else:
-        names = [args.model]
+    names = resolve_model_keys(args.model, MODEL_CONFIGS_DIR)
 
     for name in names:
         print(f"[{name}]")

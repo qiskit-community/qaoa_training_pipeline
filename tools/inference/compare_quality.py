@@ -8,8 +8,8 @@ state with each predictor's angles, evaluates the exact expected cost with the
 repo's StatevectorEvaluator, and reports the approximation ratio against the
 brute-force optimum.
 
-    python scripts/compare_quality.py
-    python scripts/compare_quality.py --model graph_transformer
+    python tools/inference/compare_quality.py
+    python tools/inference/compare_quality.py --model graph_transformer/p2
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from bench_ops import BENCH_OPS  # noqa: E402
+from model_keys import resolve_model_keys  # noqa: E402
 from qaoa_training_pipeline.inference.config_io import load_config  # noqa: E402
 
 MODEL_CONFIGS_DIR = REPO_ROOT / "qaoa_training_pipeline" / "inference" / "model_configs"
@@ -112,19 +113,18 @@ def compare_model(model_name: str, evaluator) -> dict | None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Compare torch vs ONNX QAOA solution quality.")
-    ap.add_argument("--model", default="all", help="model_config name, or 'all'")
+    ap.add_argument(
+        "--model",
+        default="all",
+        help="bundle key '<model>/p<p>', a bare model name (all its p), or 'all'",
+    )
     args = ap.parse_args()
 
     from qaoa_training_pipeline.evaluation import EVALUATORS
 
     evaluator = EVALUATORS["StatevectorEvaluator"]()
 
-    if args.model == "all":
-        names = sorted(
-            p.name for p in MODEL_CONFIGS_DIR.iterdir() if (p / "model_config.json").exists()
-        )
-    else:
-        names = [args.model]
+    names = resolve_model_keys(args.model, MODEL_CONFIGS_DIR)
 
     print(f"evaluator=StatevectorEvaluator ops={len(BENCH_OPS)}\n")
     results = [r for r in (compare_model(n, evaluator) for n in names) if r]

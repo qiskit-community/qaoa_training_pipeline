@@ -55,7 +55,7 @@ used only in the training/export path.
 
 | Model | ONNX exported | Angle parity vs torch | QAOA approx-ratio (torch → onnx) | Baseline test |
 |---|---|---|---|---|
-| agg_transformer | ✅ | 5.96e-08 | 0.2674 → 0.2674 | ✅ |
+| mlp (agg_transformer) | ✅ | 5.96e-08 | 0.2674 → 0.2674 | ✅ |
 | diffusion_transformer | ✅ | 0.00 | 0.2609 → 0.2609 | ✅ |
 | edge_transformer | ✅ | 8.94e-08 | 0.2568 → 0.2568 | ✅ |
 | gcn | ✅ (fixed) | 0.00 | 0.2683 → 0.2683 | ✅ |
@@ -64,6 +64,14 @@ used only in the training/export path.
 | graph_transformer | ✅ (added) | ≤ 6e-4 | 0.2633 → 0.2633 | ✅ |
 
 All exports use clean external-data sidecars: `model.onnx` + `model.onnx.data`.
+
+**Update (best-seed, p=1..4):** the shipped set has since been regenerated from
+the best-test-seed checkpoint per `(architecture, p)` and now covers QAOA depths
+`p = 1, 2, 3, 4` for all 7 architectures (28 bundles) under
+`model_configs/<model>/p<p>/` (MLP dir is `mlp/`). All 28 pass ONNX-vs-torch
+parity (max abs diff ≤ 1.2e-07; graph_transformer under its looser Laplacian-PE
+tolerance) and the regenerated `<model>_p<p>.json` baselines. The numbers in the
+tables above are the original p=1 / seed-42 measurements.
 
 ## ML performance (solution quality) — preserved
 
@@ -90,7 +98,7 @@ Conclusion: **the ONNX port gives the same ML-based performance as torch.**
 | edge_transformer | 1.57 ms | 0.52 ms | 3.01x |
 | graph_isomorphism_network | 0.97 ms | 0.36 ms | 2.74x |
 | graph_neural_network | 0.79 ms | 0.33 ms | 2.39x |
-| agg_transformer | 0.39 ms | 0.25 ms | 1.57x |
+| mlp (agg_transformer) | 0.39 ms | 0.25 ms | 1.57x |
 
 **Geo-mean speedup: 2.92x.** Max angle diff ≤ 5.8e-4 across all architectures.
 (Numbers are machine-specific; regenerate locally.)

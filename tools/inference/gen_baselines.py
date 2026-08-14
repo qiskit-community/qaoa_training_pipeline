@@ -3,14 +3,15 @@
 
 For every model architecture and every operator in ``scripts/bench_ops.py``,
 this runs the *torch* ``LightweightQAOAPredictor`` and records the predicted
-angles. The resulting ``tests/baselines/<model>.json`` files let the ONNX suite
-regression-test against a fixed reference WITHOUT torch or the checkpoints being
-present — which is the whole point of the port.
+angles. The resulting ``test/inference/baselines/<model>_p<p>.json`` files let the
+ONNX suite regression-test against a fixed reference WITHOUT torch or the
+checkpoints being present — which is the whole point of the port.
 
 Regenerate only when the checkpoints or the model code intentionally change:
 
-    python scripts/gen_baselines.py            # all models present on disk
-    python scripts/gen_baselines.py --model gcn
+    python tools/inference/gen_baselines.py            # all bundles present on disk
+    python tools/inference/gen_baselines.py --model gcn      # every p for gcn
+    python tools/inference/gen_baselines.py --model gcn/p3
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from bench_ops import BENCH_OPS  # noqa: E402
+from model_keys import baseline_filename, resolve_model_keys  # noqa: E402
 from qaoa_training_pipeline.inference.config_io import load_config  # noqa: E402
 
 MODEL_CONFIGS_DIR = REPO_ROOT / "qaoa_training_pipeline" / "inference" / "model_configs"
@@ -57,7 +59,7 @@ def generate(model_name: str) -> Path | None:
     cases = {name: predictor.predict(op) for name, op in BENCH_OPS.items()}
 
     BASELINE_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = BASELINE_DIR / f"{model_name}.json"
+    out_path = BASELINE_DIR / baseline_filename(model_name)
     payload = {
         "model": model_name,
         "predictor": "LightweightQAOAPredictor",
@@ -71,15 +73,14 @@ def generate(model_name: str) -> Path | None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Generate torch prediction baselines.")
-    ap.add_argument("--model", default="all", help="model_config name, or 'all'")
+    ap.add_argument(
+        "--model",
+        default="all",
+        help="bundle key '<model>/p<p>', a bare model name (all its p), or 'all'",
+    )
     args = ap.parse_args()
 
-    if args.model == "all":
-        names = sorted(
-            p.name for p in MODEL_CONFIGS_DIR.iterdir() if (p / "model_config.json").exists()
-        )
-    else:
-        names = [args.model]
+    names = resolve_model_keys(args.model, MODEL_CONFIGS_DIR)
 
     for name in names:
         generate(name)

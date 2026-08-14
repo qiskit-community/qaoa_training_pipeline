@@ -7,9 +7,9 @@ shared operator set in ``bench_ops.py``, reports median/mean/p95 and the
 speedup, and prints the max angle difference between the two so a performance
 run doubles as a correctness spot-check.
 
-    python scripts/bench_onnx_vs_torch.py
-    python scripts/bench_onnx_vs_torch.py --model gcn --repeats 200 --warmup 20
-    python scripts/bench_onnx_vs_torch.py --json bench_results.json
+    python tools/inference/bench_onnx_vs_torch.py
+    python tools/inference/bench_onnx_vs_torch.py --model gcn/p1 --repeats 200 --warmup 20
+    python tools/inference/bench_onnx_vs_torch.py --json bench_results.json
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from bench_ops import BENCH_OPS  # noqa: E402
+from model_keys import resolve_model_keys  # noqa: E402
 from qaoa_training_pipeline.inference.config_io import load_config  # noqa: E402
 
 MODEL_CONFIGS_DIR = REPO_ROOT / "qaoa_training_pipeline" / "inference" / "model_configs"
@@ -118,18 +119,17 @@ def bench_model(model_name, repeats, warmup):
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Benchmark torch vs ONNX inference.")
-    ap.add_argument("--model", default="all", help="model_config name, or 'all'")
+    ap.add_argument(
+        "--model",
+        default="all",
+        help="bundle key '<model>/p<p>', a bare model name (all its p), or 'all'",
+    )
     ap.add_argument("--repeats", type=int, default=100, help="timed predictions per predictor")
     ap.add_argument("--warmup", type=int, default=10, help="untimed warmup predictions")
     ap.add_argument("--json", type=str, default=None, help="write results to this JSON path")
     args = ap.parse_args()
 
-    if args.model == "all":
-        names = sorted(
-            p.name for p in MODEL_CONFIGS_DIR.iterdir() if (p / "model_config.json").exists()
-        )
-    else:
-        names = [args.model]
+    names = resolve_model_keys(args.model, MODEL_CONFIGS_DIR)
 
     print(f"repeats={args.repeats} warmup={args.warmup} device=cpu ops={len(BENCH_OPS)}\n")
     results = [r for r in (bench_model(n, args.repeats, args.warmup) for n in names) if r]

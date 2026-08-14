@@ -38,19 +38,26 @@ MODEL_CONFIGS_DIR = (
 )
 BASELINE_DIR = Path(__file__).resolve().parent / "baselines"
 
+# Model architectures shipped as ONNX bundles. The MLP bundle dir is ``mlp``
+# (its ``model_type`` inside the config is still ``agg_transformer``).
 MODEL_NAMES = [
-    "agg_transformer",
     "diffusion_transformer",
     "edge_transformer",
     "gcn",
     "graph_isomorphism_network",
     "graph_neural_network",
     "graph_transformer",
+    "mlp",
 ]
 
+# QAOA depths shipped per architecture; bundle keys are ``<model>/p<p>``.
+P_VALUES = [1, 2, 3, 4]
+MODEL_KEYS = [f"{model}/p{p}" for model in MODEL_NAMES for p in P_VALUES]
+
 # Graph-consuming model exercised by the behavioral tests alongside the
-# scalar-only agg_transformer.
-BEHAVIORAL_MODELS = ["agg_transformer", "graph_neural_network"]
+# scalar-only mlp; each across all shipped depths.
+BEHAVIORAL_MODELS = ["mlp", "graph_neural_network"]
+BEHAVIORAL_KEYS = [f"{model}/p{p}" for model in BEHAVIORAL_MODELS for p in P_VALUES]
 
 # The graph_transformer's Laplacian positional encoding uses a different
 # eigensolver (numpy vs torch); its eigenvectors are sign-ambiguous, so the
@@ -100,66 +107,71 @@ BENCH_OPS = {
 }
 
 
-def config_path(model_name):
-    """Path to a model's config bundle."""
-    return MODEL_CONFIGS_DIR / model_name / "model_config.json"
+def config_path(model_key):
+    """Path to a bundle's config, given its ``<model>/p<p>`` key."""
+    return MODEL_CONFIGS_DIR / model_key / "model_config.json"
 
 
-def onnx_exists(model_name):
-    """True if the exported ONNX artifact for a model is present on disk."""
-    return (MODEL_CONFIGS_DIR / model_name / "model.onnx").is_file()
+def onnx_exists(model_key):
+    """True if the exported ONNX artifact for a bundle is present on disk."""
+    return (MODEL_CONFIGS_DIR / model_key / "model.onnx").is_file()
+
+
+def _p_of(model_key):
+    """QAOA depth encoded in a bundle key, e.g. ``gcn/p3`` -> 3."""
+    return int(model_key.rsplit("/p", 1)[1])
 
 
 @unittest.skipUnless(HAS_ONNXRUNTIME, "onnxruntime not installed (install the 'inference' extra)")
 class TestOnnxInference(TrainingPipelineTestCase):
     """Torch-free ONNX predictor tests. Skip per-model when artifacts absent."""
 
-    def _predictor(self, model_name):
+    def _predictor(self, model_key):
         from qaoa_training_pipeline.inference.onnx_predictor import OnnxQAOAPredictor
 
-        return OnnxQAOAPredictor(config_path=config_path(model_name), device="cpu")
+        return OnnxQAOAPredictor(config_path=config_path(model_key), device="cpu")
 
     def test_onnx_predictor_loads_and_predicts(self):
-        """Every exported model loads via onnxruntime and produces p=1 angles."""
+        """Every exported bundle loads via onnxruntime and produces 2*p angles."""
         op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
-        for model_name in MODEL_NAMES:
-            with self.subTest(model=model_name):
-                if not onnx_exists(model_name):
-                    self.skipTest(f"model.onnx for {model_name!r} not present")
-                angles = self._predictor(model_name).predict(op)
+        for model_key in MODEL_KEYS:
+            with self.subTest(model=model_key):
+                if not onnx_exists(model_key):
+                    self.skipTest(f"model.onnx for {model_key!r} not present")
+                angles = self._predictor(model_key).predict(op)
                 self.assertIsInstance(angles, list)
-                self.assertEqual(len(angles), 2)  # p=1 -> [beta, gamma]
+                self.assertEqual(len(angles), 2 * _p_of(model_key))  # [betas..., gammas...]
                 self.assertTrue(all(isinstance(a, float) and math.isfinite(a) for a in angles))
 
     def test_onnx_predictor_is_deterministic(self):
         """Inference is deterministic: same input -> identical output."""
         op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
-        for model_name in BEHAVIORAL_MODELS:
-            with self.subTest(model=model_name):
-                if not onnx_exists(model_name):
-                    self.skipTest(f"model.onnx for {model_name!r} not present")
-                predictor = self._predictor(model_name)
+        for model_key in BEHAVIORAL_KEYS:
+            with self.subTest(model=model_key):
+                if not onnx_exists(model_key):
+                    self.skipTest(f"model.onnx for {model_key!r} not present")
+                predictor = self._predictor(model_key)
                 self.assertEqual(predictor.predict(op), predictor.predict(op))
 
     def test_onnx_predictor_reacts_to_input(self):
         """Different problem graphs yield different predicted angles."""
         op_triangle = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
         op_line4 = SparsePauliOp.from_list([("ZZII", 1.0), ("IZZI", 1.0), ("IIZZ", 1.0)])
-        for model_name in BEHAVIORAL_MODELS:
-            with self.subTest(model=model_name):
-                if not onnx_exists(model_name):
-                    self.skipTest(f"model.onnx for {model_name!r} not present")
-                predictor = self._predictor(model_name)
+        for model_key in BEHAVIORAL_KEYS:
+            with self.subTest(model=model_key):
+                if not onnx_exists(model_key):
+                    self.skipTest(f"model.onnx for {model_key!r} not present")
+                predictor = self._predictor(model_key)
                 self.assertNotEqual(predictor.predict(op_triangle), predictor.predict(op_line4))
 
     def test_onnx_predictor_raw_vs_denormalized_differ(self):
         """denormalize=False returns the raw (unscaled) model output."""
         op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
-        for model_name in BEHAVIORAL_MODELS:
-            with self.subTest(model=model_name):
-                if not onnx_exists(model_name):
-                    self.skipTest(f"model.onnx for {model_name!r} not present")
-                predictor = self._predictor(model_name)
+        for model_key in BEHAVIORAL_KEYS:
+            with self.subTest(model=model_key):
+                if not onnx_exists(model_key):
+                    self.skipTest(f"model.onnx for {model_key!r} not present")
+                predictor = self._predictor(model_key)
                 raw = predictor.predict(op, denormalize=False)
                 scaled = predictor.predict(op, denormalize=True)
                 # config output_scale = pi/2, so scaled == raw * pi/2 for the betas
@@ -175,17 +187,17 @@ class TestOnnxInference(TrainingPipelineTestCase):
         Baselines are generated by tools/inference/gen_baselines.py from the torch
         predictor; regenerate them when the checkpoints or model code change.
         """
-        for model_name in MODEL_NAMES:
-            with self.subTest(model=model_name):
-                if not onnx_exists(model_name):
-                    self.skipTest(f"model.onnx for {model_name!r} not present")
-                baseline_file = BASELINE_DIR / f"{model_name}.json"
+        for model_key in MODEL_KEYS:
+            with self.subTest(model=model_key):
+                if not onnx_exists(model_key):
+                    self.skipTest(f"model.onnx for {model_key!r} not present")
+                baseline_file = BASELINE_DIR / f"{model_key.replace('/', '_')}.json"
                 if not baseline_file.is_file():
-                    self.skipTest(f"no baseline for {model_name!r}")
+                    self.skipTest(f"no baseline for {model_key!r}")
 
                 baseline = json.loads(baseline_file.read_text())
-                predictor = self._predictor(model_name)
-                atol = PARITY_ATOL.get(model_name, DEFAULT_PARITY_ATOL)
+                predictor = self._predictor(model_key)
+                atol = PARITY_ATOL.get(model_key.split("/", 1)[0], DEFAULT_PARITY_ATOL)
 
                 for case_name, expected in baseline["cases"].items():
                     got = predictor.predict(BENCH_OPS[case_name])
@@ -194,5 +206,5 @@ class TestOnnxInference(TrainingPipelineTestCase):
                             got_angle,
                             expected_angle,
                             delta=atol,
-                            msg=f"{model_name}/{case_name}: ONNX drifted from baseline",
+                            msg=f"{model_key}/{case_name}: ONNX drifted from baseline",
                         )

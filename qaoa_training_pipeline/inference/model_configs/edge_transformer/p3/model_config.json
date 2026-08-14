@@ -1,0 +1,44 @@
+{
+  "description": "Edge Transformer for p=3 QAOA (trained across topologies, seed 46)",
+  "checkpoint": "../../../../../../quantum_ai_parameter_prediction_checkpoints/multi_topology_checkpoints_new/p_3/edge_transformer/edge_transformer_p3_alltopo_seed46/edge_transformer-p3-20260709_024556-85-0.0004.ckpt",
+  "model_init": {
+    "model_type": "edge_transformer",
+    "input_dim": 5,
+    "output_dim": 6,
+    "embed_dim": 64,
+    "num_layers": 4,
+    "edge_embed_dim": 32,
+    "dim_feedforward": 256,
+    "in_features": [
+      "num_nodes",
+      "num_edges",
+      "edges_per_node",
+      "mean_degree",
+      "std_degree"
+    ]
+  },
+  "feature_normalization": {
+    "num_nodes": {
+      "mean": 62.29204177856445,
+      "std": 32.23573303222656
+    },
+    "num_edges": {
+      "mean": 119.22310638427734,
+      "std": 105.56423950195312
+    },
+    "edges_per_node": {
+      "mean": 1.8547663688659668,
+      "std": 1.1943466663360596
+    },
+    "mean_degree": {
+      "mean": 3.7095327377319336,
+      "std": 2.388693332672119
+    },
+    "std_degree": {
+      "mean": 0.6378712058067322,
+      "std": 0.7605785727500916
+    }
+  },
+  "denormalize_output": true,
+  "output_scale": 1.5707963267948966
+}

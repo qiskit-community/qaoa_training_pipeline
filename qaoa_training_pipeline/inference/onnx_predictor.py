@@ -43,7 +43,7 @@ class OnnxQAOAPredictor:
     """Torch-free predictor backed by an exported ONNX model.
 
     Example:
-        bundle = "qaoa_training_pipeline/inference/model_configs/agg_transformer"
+        bundle = "qaoa_training_pipeline/inference/model_configs/gcn/p1"
         predictor = OnnxQAOAPredictor(config_path=f"{bundle}/model_config.json")
         angles = predictor.predict(cost_op)
     """

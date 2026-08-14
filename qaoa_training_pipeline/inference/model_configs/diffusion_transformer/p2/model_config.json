@@ -1,0 +1,45 @@
+{
+  "description": "Diffusion Transformer (DDPM) for p=2 QAOA (trained across topologies, seed 42)",
+  "checkpoint": "../../../../../../quantum_ai_parameter_prediction_checkpoints/multi_topology_checkpoints_new/p_2/diffusion_transformer/diffusion_transformer_p2_alltopo_seed42/diffusion_transformer-p2-20260709_193221-89-0.0001.ckpt",
+  "model_init": {
+    "model_type": "diffusion_transformer",
+    "input_dim": 5,
+    "output_dim": 4,
+    "embed_dim": 64,
+    "num_layers": 4,
+    "edge_embed_dim": 32,
+    "dim_feedforward": 256,
+    "timesteps": 100,
+    "in_features": [
+      "num_nodes",
+      "num_edges",
+      "edges_per_node",
+      "mean_degree",
+      "std_degree"
+    ]
+  },
+  "feature_normalization": {
+    "num_nodes": {
+      "mean": 60.52080535888672,
+      "std": 30.66391372680664
+    },
+    "num_edges": {
+      "mean": 140.7550811767578,
+      "std": 125.28363800048828
+    },
+    "edges_per_node": {
+      "mean": 2.1157314777374268,
+      "std": 1.2562190294265747
+    },
+    "mean_degree": {
+      "mean": 4.2314629554748535,
+      "std": 2.5124380588531494
+    },
+    "std_degree": {
+      "mean": 1.1465468406677246,
+      "std": 0.9555841684341431
+    }
+  },
+  "denormalize_output": true,
+  "output_scale": 1.5707963267948966
+}

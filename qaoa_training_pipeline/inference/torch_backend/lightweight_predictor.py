@@ -48,7 +48,7 @@ class LightweightQAOAPredictor:
 
     Example:
         predictor = LightweightQAOAPredictor(
-            config_path=Path("model_configs/graph_neural_network/model_config.json"),
+            config_path=Path("model_configs/graph_neural_network/p1/model_config.json"),
             device="cpu",
         )
         params = predictor.predict(cost_op)

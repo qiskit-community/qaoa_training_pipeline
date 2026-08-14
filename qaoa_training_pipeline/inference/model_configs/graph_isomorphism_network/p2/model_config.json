@@ -1,0 +1,44 @@
+{
+  "description": "Graph Isomorphism Network for p=2 QAOA (trained across topologies, seed 44)",
+  "checkpoint": "../../../../../../quantum_ai_parameter_prediction_checkpoints/multi_topology_checkpoints_new/p_2/graph_isomorphism_network/graph_isomorphism_network_p2_alltopo_seed44/graph_isomorphism_network-p2-20260708_194450-94-0.0000.ckpt",
+  "model_init": {
+    "model_type": "graph_isomorphism_network",
+    "input_dim": 5,
+    "output_dim": 4,
+    "embed_dim": 64,
+    "num_layers": 4,
+    "edge_dim": 1,
+    "node_input_dim": 144,
+    "in_features": [
+      "num_nodes",
+      "num_edges",
+      "edges_per_node",
+      "mean_degree",
+      "std_degree"
+    ]
+  },
+  "feature_normalization": {
+    "num_nodes": {
+      "mean": 60.52080535888672,
+      "std": 30.66391372680664
+    },
+    "num_edges": {
+      "mean": 140.7550811767578,
+      "std": 125.28363800048828
+    },
+    "edges_per_node": {
+      "mean": 2.1157314777374268,
+      "std": 1.2562190294265747
+    },
+    "mean_degree": {
+      "mean": 4.2314629554748535,
+      "std": 2.5124380588531494
+    },
+    "std_degree": {
+      "mean": 1.1465468406677246,
+      "std": 0.9555841684341431
+    }
+  },
+  "denormalize_output": true,
+  "output_scale": 1.5707963267948966
+}
