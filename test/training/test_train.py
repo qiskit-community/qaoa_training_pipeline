@@ -5,30 +5,34 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-
 """Tests of the train.py script."""
 
 import glob
 import json
 import os
 import sys
-from test import TrainingPipelineTestCase
+import tempfile
 from unittest.mock import patch
 
 from ddt import data, ddt, unpack
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.train import get_script_args, train
+from test import TrainingPipelineTestCase
 
 
 @ddt
 class TestTrain(TrainingPipelineTestCase):
     """Test the train.py script."""
 
+    def setUp(self) -> None:
+        super().setUp()
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.save_dir = self.temp_dir.name + os.sep
+
     def tearDown(self) -> None:
-        """Removes the created temporary data"""
-        for file_name in glob.glob("*dmp_file*"):
-            os.remove(file_name)
+        self.temp_dir.cleanup()
+        super().tearDown()
 
     def test_call_train(self):
         """Test that we can call train.py."""
@@ -44,6 +48,8 @@ class TestTrain(TrainingPipelineTestCase):
             "--provider_kwargs",
             "num_points:10:parameter_ranges:3/6/3/6",
             "--save",
+            "--save_dir",
+            self.save_dir,
             "--save_file",
             file_name,
             False,
@@ -60,7 +66,7 @@ class TestTrain(TrainingPipelineTestCase):
 
         # Load from the saved file
         labels_to_test = ["pre_processing", "cost_operator", "params_provider", "args"]
-        for file_name in glob.glob("*dmp_file*"):
+        for file_name in glob.glob(os.path.join(self.temp_dir.name, "*dmp_file_test_call_train*")):
             with open(file_name, "r") as fin:
                 ld_data = json.load(fin)
 
@@ -139,6 +145,8 @@ class TestTrain(TrainingPipelineTestCase):
             "--evaluator_init_kwargs0",
             "True_None_4_None_4_False_True",
             "--save",
+            "--save_dir",
+            self.save_dir,
             "--save_file",
             file_name,
             False,
@@ -168,7 +176,7 @@ class TestTrain(TrainingPipelineTestCase):
             8: ("params_provider", 4),  # The data in test/data/qaoa_angles.json is for p=2.
         }
 
-        file_name = "dmp_file_test_methods_" + str(method_idx)
+        file_name = f"dmp_file_test_methods_{method_idx}"
 
         test_args = [
             "prog",
@@ -177,6 +185,8 @@ class TestTrain(TrainingPipelineTestCase):
             "--config",
             f"data/methods/train_method_{method_idx}.json",
             "--save",
+            "--save_dir",
+            self.save_dir,
             "--save_file",
             file_name,
             False,
@@ -193,7 +203,8 @@ class TestTrain(TrainingPipelineTestCase):
     @unpack
     @data((6, "reps:2", 4, 0), (6, "reps:3", 6, 0))
     def test_change_reps(self, method_idx: int, trainer_kwars: str, exp_len: int, trainer_idx: int):
-        """Test that we can change the number of reps.
+        """
+        Test that we can change the number of reps.
 
         Args:
             method_idx: The index of the method in data/methods/.
@@ -222,7 +233,8 @@ class TestTrain(TrainingPipelineTestCase):
             self.assertEqual(len(opt_params), exp_len)
 
     def test_sat_integration(self):
-        """Test that the pipeline can call the SATMApper.
+        """
+        Test that the pipeline can call the SATMApper.
 
         The graph that we load has edges {(0, 1), (0, 2)}.
         The hardcoded SAT mapping returns the edges `{(1, 2), (1, 0)}`,
