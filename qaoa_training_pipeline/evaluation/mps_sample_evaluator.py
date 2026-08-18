@@ -13,9 +13,10 @@ import hashlib
 import numpy as np
 from qiskit.circuit import QuantumCircuit
 from qiskit.circuit.library import qaoa_ansatz
-from qiskit.primitives import BackendSamplerV2, BitArray
+from qiskit.primitives import BitArray
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer import AerSimulator
+from qiskit_aer.primitives import SamplerV2
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
@@ -57,7 +58,7 @@ class MPSSampleEvaluator(BaseEvaluator):
             max_parallel_threads=self.max_parallel_threads,
         )
 
-        self._sampler = BackendSamplerV2(backend=self._backend)
+        self._sampler = SamplerV2.from_backend(backend=self._backend)
 
         self._shots = shots or 1000
         self._cost_op_digest = None
