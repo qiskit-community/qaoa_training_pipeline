@@ -5,7 +5,6 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-
 """Class to store result data."""
 
 from __future__ import annotations
@@ -22,7 +21,8 @@ if TYPE_CHECKING:
 
 @dataclass
 class ParamResult:
-    """A class to store the results of a parameter optimization.
+    """
+    A class to store the results of a parameter optimization.
 
     This class ensures that we have elementary information such as information on the
     platform in addition to training duration and parameters. The class includes a
@@ -48,7 +48,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 45,
+            "qaoa_training_pipeline_version": 46,
         }
 
         # Convert, e.g., np.float to float
@@ -79,7 +79,7 @@ class ParamResult:
         return len(self.data)
 
     def keys(self):
-        """Return the keys of the underlying dict"""
+        """Return the keys of the underlying dict."""
         return self.data.keys()
 
     def update(self, other: dict):

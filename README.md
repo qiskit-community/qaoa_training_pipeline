@@ -24,14 +24,14 @@ Here, we carefully outline the conventions used by this API.
 This repository assumes that standard QAOA applies the variational circuit
 
 $$\prod_{k=1}^p \exp{(-i\beta_k H_M)}\exp{(-i\gamma_k H_C)}\left\vert+\right\rangle^{\otimes n}$$
-    
+
 This definition follows the [original QAOA paper](https://arxiv.org/pdf/1411.4028) by Fahri et al. in which the energy of the cost function is **maximized**.
 This definition also aligns with the `QAOAAnsatz` class in Qiskit up to the mixer operator.
 Here, the important convention is in the exponential functions, i.e., $-i\beta_k H_M$ and $-i\gamma_k H_C$.
 By default, i.e., when not otherwise explicitly specified, we assume that the mixer Hamiltonian is defined by
 
 $$H_M = \sum_{i=0}^{n-1} X_i$$
-    
+
 This mixer has $\left\vert+\right\rangle^{\otimes n}$ as the highest excited state.
 We thus assume that we are **maximizing** the energy of the cost operator $H_C$.
 The users of this repository can interact with the trainers by calling their `train` method.
@@ -114,7 +114,7 @@ In addition we can specify run-time arguments under `train_kwargs`.
                 },
                 "minimize_args": {
                     "options": {
-                        "maxiter": 20, 
+                        "maxiter": 20,
                         "rhobeg": 0.2
                     }
                 }
@@ -234,9 +234,10 @@ This repository is still in development: new functionality is being added and th
 |      43 | Update provide_params in reweighting                         |          #81 |
 |      44 | Streamline MPSAerEvaluator by using native Aer backend       |          #78 |
 |      45 | Update dependencies to pyproject.toml with optional groups   |          #88 |
+|      46 | Add QPU evaluator to draw samples from HW backend.           |          #76 |
 
 
 ## IBM Public Repository Disclosure
 
-All content in these repositories including code has been provided by IBM under the associated open source software license and IBM is under no obligation to provide enhancements, updates, or support. 
+All content in these repositories including code has been provided by IBM under the associated open source software license and IBM is under no obligation to provide enhancements, updates, or support.
 IBM developers produced this code as an open source project (not as an IBM product), and IBM makes no assertions as to the level of quality nor security, and will not be maintaining this code going forward.
