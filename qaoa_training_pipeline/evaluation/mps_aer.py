@@ -8,8 +8,7 @@
 
 """Evaluator based on Qiskit Aer's MPS."""
 
-from qiskit_aer import AerSimulator
-from qiskit_ibm_runtime import EstimatorV2
+from qiskit_aer.primitives import EstimatorV2
 
 from qaoa_training_pipeline.evaluation.aer_interface import AerEvaluator
 
@@ -40,7 +39,7 @@ class MPSAerEvaluator(AerEvaluator):
         if "method" not in self._init_args:
             self._init_args["method"] = "matrix_product_state"
 
-        estimator = EstimatorV2(mode=AerSimulator(**self._init_args))
+        estimator = EstimatorV2(options={"backend_options": self._init_args})
         super().__init__(estimator)
 
     def to_config(self) -> dict:
