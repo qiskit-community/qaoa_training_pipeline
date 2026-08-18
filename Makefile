@@ -25,13 +25,14 @@ endif
 all_check: style lint
 
 lint:
-	pylint -rn qaoa_training_pipeline test
+	python -m ruff check qaoa_training_pipeline test
 
 black:
 	python -m black qaoa_training_pipeline test
 
 style:
 	python -m black --check qaoa_training_pipeline test
+	python -m ruff check qaoa_training_pipeline test
 
 test:
 	python -m unittest discover -v test

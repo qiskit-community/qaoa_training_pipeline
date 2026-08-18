@@ -133,19 +133,50 @@ This file will contain information on the training history and the method employ
 
 ## Installation
 
-You can install this repository by running `pip install .` after cloning from Github. 
-If you are planning to contribute to the repository, you can have an editable install by running `pip install -e .`
+Install from a clone of the repository with:
 
-The training pipeline relies mostly on Python.
-However, the Pauli propagation evaluator `PPEvaluator` requires the `PauliPropagation` Julia library which integrates with python through the `juliacall` package.
-These are optional dependencies.
-If you want to use Pauli propagation you must run `pip install juliacall` or see the `requirements-optional.txt` file.
-Then, the first time you use the `PPEvaluator` the code in `pauli_propagation.py` will install `PauliPropagation.jl` for you in the Julia installation of your Python environment.
-Be aware that `juliacall` sets up its own Julia environment located at `name-venv/julia_env`, where `name-venv` is the name of the original python environment.
-Pauli Propagation is built on top of the `PauliPropagation.jl` Julia library, which is currently under active development. Please note that future updates to this library may introduce breaking changes.
-To update the Julia packages within this environment, you can run the following command from your Python environment:
-
+```bash
+pip install .
 ```
+
+For a development install (editable, with all optional dependencies a contributor would need):
+
+```bash
+pip install -e ".[dev]"
+```
+
+A `uv.lock` file is provided for reproducible installs. If you have [`uv`](https://docs.astral.sh/uv/) available, `uv sync --extra dev` will create a virtual environment and install all development dependencies pinned to the exact versions in the lock file.
+
+### Optional dependency groups
+
+The package declares several optional groups that can be combined as needed:
+
+| Extra | Contents | When you need it |
+|-------|----------|-----------------|
+| `tns` | `quimb`, `juliacall` | Tensor-network evaluators (`MPSEvaluator`) and Pauli propagation (`PPEvaluator`) |
+| `sat` | `python-sat` | SAT-based qubit-mapping pre-processor (`SATMapper`) |
+| `cplex` | `qiskit-optimization[cplex]` | Exact MaxCut solver via CPLEX (`solve_max_cut`) |
+| `notebooks` | `qiskit-aer`, `qiskit-ibm-runtime` | Running the `how_tos` notebooks |
+| `test` | `ddt` | Running the test suite |
+| `ci` | `stestr`, `coverage` | CI-only test runner and coverage tooling |
+| `lint` | `black`, `ruff` | Code formatting and linting |
+| `dev` | all of the above except `ci` | Local development |
+
+Install one or more extras with e.g.:
+
+```bash
+pip install -e ".[tns,notebooks]"
+```
+
+### Pauli propagation (Julia)
+
+`PPEvaluator` requires the `PauliPropagation` Julia library, which integrates with Python through `juliacall` (included in the `tns` extra).
+The first time `PPEvaluator` is used, `pauli_propagation.py` will automatically install `PauliPropagation.jl` into the Julia environment that `juliacall` maintains at `<venv>/julia_env/`.
+Note that `PauliPropagation.jl` is under active development and future updates may introduce breaking changes.
+
+To update Julia packages within that environment:
+
+```python
 from juliacall import Main as jl
 jl.seval("using Pkg; Pkg.update()")
 ```
@@ -187,7 +218,7 @@ This repository is still in development: new functionality is being added and th
 |      27 | Add LABS with GPU support                                    |          #50 |
 |      28 | Add a trainer that computes optimal beta per gamma           |          #49 |
 |      29 | Bug fix - Add vertices to the graph in operator_to_graph     |          #52 |
-|      30 | Convert a graph with partial assignment to a hamiltonian     |          #53 | 
+|      30 | Convert a graph with partial assignment to a hamiltonian     |          #53 |
 |      31 | Refactor linear angle interpolation (increase QAOA depth)    |          #55 |
 |      32 | Standardize the inheritance of evaluators and trainers       |          #57 |
 |      33 | Allow Pauli propagation to accept a custom circuit ansatz    |          #60 |
@@ -201,6 +232,8 @@ This repository is still in development: new functionality is being added and th
 |      41 | Implement new refactoring design in trainers.                |          #71 |
 |      42 | Refactor how_tos to new class design.                        |          #80 |
 |      43 | Update provide_params in reweighting                         |          #81 |
+|      44 | Streamline MPSAerEvaluator by using native Aer backend       |          #78 |
+|      45 | Update dependencies to pyproject.toml with optional groups   |          #88 |
 
 
 ## IBM Public Repository Disclosure
