@@ -12,7 +12,6 @@ from .base_processing import BasePreprocessor
 from .angle_aggregation import BaseAngleAggregator, TrivialAngleAggregator, AverageAngleAggregator
 from .feature_extraction import BaseFeatureExtractor, GraphFeatureExtractor
 from .feature_matching import BaseFeatureMatcher, TrivialFeatureMatcher, MinimumNormFeatureMatcher
-from .sat_mapping import SATMapper, SATResult
 
 __all__ = [
     "BasePreprocessor",
@@ -24,11 +23,15 @@ __all__ = [
     "BaseFeatureMatcher",
     "TrivialFeatureMatcher",
     "MinimumNormFeatureMatcher",
-    "SATMapper",
-    "SATResult",
     "PREPROCESSORS",
 ]
 
-PREPROCESSORS = {
-    "sat": SATMapper,
-}
+PREPROCESSORS = {}
+
+try:
+    from .sat_mapping import SATMapper, SATResult
+
+    __all__ += ["SATMapper", "SATResult"]
+    PREPROCESSORS["sat"] = SATMapper
+except ImportError:
+    pass
