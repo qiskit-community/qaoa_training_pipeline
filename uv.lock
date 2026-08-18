@@ -2211,6 +2211,7 @@ dependencies = [
     { name = "numpy" },
     { name = "qiskit" },
     { name = "qiskit-optimization" },
+    { name = "qopt-best-practices" },
     { name = "scikit-learn" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -2275,6 +2276,7 @@ requires-dist = [
     { name = "qiskit-ibm-runtime", marker = "extra == 'notebooks'" },
     { name = "qiskit-optimization" },
     { name = "qiskit-optimization", extras = ["cplex"], marker = "extra == 'cplex'" },
+    { name = "qopt-best-practices", git = "https://github.com/qiskit-community/qopt-best-practices.git?rev=a861d46e6d77c64b87124a50216995d2d2d6d5fe" },
     { name = "quimb", marker = "extra == 'tns'", specifier = ">=1.8.2" },
     { name = "ruff", marker = "extra == 'lint'" },
     { name = "scikit-learn" },
@@ -2408,6 +2410,17 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ea/e4/0229893ae295763a9273e47a7b1a8f10599ee49c2963750440d56a4b0023/qiskit_qasm3_import-0.6.0.tar.gz", hash = "sha256:6b763ee58538b33eaf5aaa8126b687f3c03f26c4d28e6a4f04f9be24a6b184ff", size = 37141, upload-time = "2025-06-10T16:34:11.287Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3e/7e/b8bbfbf1acfe0b40872727ef4741b54794beb65da34c4c327dc31a73d35d/qiskit_qasm3_import-0.6.0-py3-none-any.whl", hash = "sha256:2109b65a6859bec4a51e7b61bd525365f298f67f19b3952bf602423c6d21d697", size = 29490, upload-time = "2025-06-10T16:34:10.035Z" },
+]
+
+[[package]]
+name = "qopt-best-practices"
+version = "0.1.0"
+source = { git = "https://github.com/qiskit-community/qopt-best-practices.git?rev=a861d46e6d77c64b87124a50216995d2d2d6d5fe#a861d46e6d77c64b87124a50216995d2d2d6d5fe" }
+dependencies = [
+    { name = "networkx" },
+    { name = "python-sat" },
+    { name = "qiskit" },
+    { name = "qiskit-ibm-runtime" },
 ]
 
 [[package]]
@@ -2608,7 +2621,7 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version < '3.12'" },
+    { name = "numpy" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7a/97/5a3609c4f8d58b039179648e62dd220f89864f56f7357f5d4f45c29eb2cc/scipy-1.17.1.tar.gz", hash = "sha256:95d8e012d8cb8816c226aef832200b1d45109ed4464303e997c5b13122b297c0", size = 30573822, upload-time = "2026-02-23T00:26:24.851Z" }
 wheels = [
@@ -2682,7 +2695,7 @@ resolution-markers = [
     "python_full_version >= '3.12'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version >= '3.12'" },
+    { name = "numpy" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a7/25/c2700dfaf6442b4effaa91af24ebce5dc9d31bb4a69706313aae70d72cd0/scipy-1.18.0.tar.gz", hash = "sha256:67b2ad2ad54c72ca6d04975a9b2df8c3638c34ddd5b28738e94fc2b57929d378", size = 30774447, upload-time = "2026-06-19T15:01:43.456Z" }
 wheels = [

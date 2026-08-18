@@ -234,7 +234,8 @@ This repository is still in development: new functionality is being added and th
 |      43 | Update provide_params in reweighting                         |          #81 |
 |      44 | Streamline MPSAerEvaluator by using native Aer backend       |          #78 |
 |      45 | Update dependencies to pyproject.toml with optional groups   |          #88 |
-|      46 | Add MPS sampling based energy estimation.                    |          #75 |
+|      46 | Add QPU evaluator to draw samples from HW backend.           |          #76 |
+|      47 | Add MPS sampling based energy estimation.                    |          #75 |
 
 
 ## IBM Public Repository Disclosure
