@@ -5,7 +5,6 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-
 """Qiskit Aer MPS-based QAOA evaluator tests."""
 
 from unittest import TestCase
@@ -75,7 +74,7 @@ class TestMPSSampleEvaluator(TestCase):
         self.assertTrue(abs(energy1 - energy2) < 0.05)
 
     def test_from_config(self):
-        """Test that we can create the evaluator from a config dictionary"""
+        """Test that we can create the evaluator from a config dictionary."""
         config = {"chi": 32, "max_parallel_threads": 10, "shots": 40000}
         evaluator = MPSSampleEvaluator.from_config(config)
 
@@ -86,7 +85,7 @@ class TestMPSSampleEvaluator(TestCase):
         self.assertTrue(abs(energy1 - energy2) < 0.05)
 
     def test_to_config(self):
-        """Test that we can serialize the evaluator to a config dictionary"""
+        """Test that we can serialize the evaluator to a config dictionary."""
         config = self.evaluator.to_config()
         self.assertIsInstance(config, dict)
         self.assertEqual(
@@ -94,9 +93,19 @@ class TestMPSSampleEvaluator(TestCase):
             {"name": "MPSSampleEvaluator", "chi": 32, "max_parallel_threads": 10, "shots": 40000},
         )
 
+    def test_roundtrip_from_to_config(self):
+        """Test that we can perform a rountrip, i.e., get an already initialized
+        evaluator, perform to_config, and initialize a new one with from_config.
+        """
+        config = MPSSampleEvaluator(shots=40000, chi=32).to_config()
+        self.assertIsInstance(config, dict)
+        new_evaluator = MPSSampleEvaluator.from_config(config.copy())
+        self.assertEqual(config, new_evaluator.to_config())
+
     def test_explicit_initial_state(self):
-        """Test that we get the correct energy when the initial state is prepared to
-        be a product state |111...>."""
+        """Test that we get the correct energy when the initial state is prepared to be
+        a product state |111...>.
+        """
         cost_op = SparsePauliOp.from_list([("IIZZ", 1), ("ZIIZ", 2), ("IZII", 4)])
 
         angles = [np.pi / 2, 4.56]
@@ -119,7 +128,8 @@ class TestMPSSampleEvaluator(TestCase):
         self.assertAlmostEqual(energy, energy_benchmark)
 
     def test_trivial_warm_start(self):
-        r"""Test a warm-start like QAOA. We start in 0001.
+        r"""
+        Test a warm-start like QAOA. We start in 0001.
 
         In the case of a warm-start the mixer changes from `+X` to
 
@@ -146,8 +156,8 @@ class TestMPSSampleEvaluator(TestCase):
         self.assertAlmostEqual(energy, 1.5)
 
     def test_warm_start(self):
-        """
-        Test the efficient depth-one with a custom initial state and standard mixer.
+        """Test the efficient depth-one with a custom initial state and standard
+        mixer.
         """
         cost_op = SparsePauliOp.from_list(
             [

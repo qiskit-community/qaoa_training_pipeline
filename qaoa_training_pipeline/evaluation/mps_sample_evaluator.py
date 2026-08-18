@@ -6,7 +6,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Sample-based MPS evaluator"""
+"""Sample-based MPS evaluator."""
 
 import hashlib
 
@@ -21,7 +21,8 @@ from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 
 
 class MPSSampleEvaluator(BaseEvaluator):
-    """Approximate the energy by sampling from a MPS.
+    """
+    Approximate the energy by sampling from a MPS.
 
     This MPS-based energy evaluator does not contract the MPS to compute the value of
     an observable. Instead, we draw samples `x` from the MPS and then evaluate the energy
@@ -34,7 +35,8 @@ class MPSSampleEvaluator(BaseEvaluator):
         max_parallel_threads: int | None = None,
         shots: int | None = None,
     ):
-        """Initialize the class.
+        """
+        Initialize the class.
 
         Args:
             chi: bond dimension of the MPS via AerSimulator.
@@ -62,12 +64,13 @@ class MPSSampleEvaluator(BaseEvaluator):
 
     @property
     def cost_op(self):
-        """Returns the cost operator"""
+        """Returns the cost operator."""
         return self._cost_op
 
     @cost_op.setter
     def cost_op(self, cost_op: SparsePauliOp):
-        """Set the cost operator.
+        """
+        Set the cost operator.
 
         This property setter computes some internal variables that help speed-up the computation
         of the energy for each sample `x`.
@@ -168,6 +171,7 @@ class MPSSampleEvaluator(BaseEvaluator):
     @classmethod
     def from_config(cls, config: dict) -> "MPSSampleEvaluator":
         """Initialize the evaluator from a configuration dictionary."""
+        config.pop("name", None)
         return cls(**config)
 
     @staticmethod
