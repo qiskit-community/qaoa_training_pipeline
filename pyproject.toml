@@ -34,7 +34,7 @@ dependencies = [
     "scikit-learn",
     "matplotlib>=3.3",
     "qiskit-optimization",
-    "qopt-best-practices",
+    "qopt-best-practices @ git+https://github.com/qiskit-community/qopt-best-practices.git@a861d46e6d77c64b87124a50216995d2d2d6d5fe",
 ]
 
 [project.optional-dependencies]
@@ -72,9 +72,6 @@ dev = [
 [tool.uv]
 # numba<0.54 has requires-python <3.10 and no wheels for 3.11+; force a modern version.
 constraint-dependencies = ["numba>=0.60"]
-
-[tool.uv.sources]
-qopt-best-practices = { git = "https://github.com/qiskit-community/qopt-best-practices.git", rev = "a861d46e6d77c64b87124a50216995d2d2d6d5fe" }
 
 [tool.setuptools.dynamic]
 version = { file = "qaoa_training_pipeline/VERSION.txt" }
