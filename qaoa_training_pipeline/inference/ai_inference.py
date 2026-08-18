@@ -32,16 +32,10 @@ class AIInference(ProblemParamsProvider):
     operator. The referenced model config declares which training setting
     the checkpoint was produced under.
 
-    Two prediction backends are available:
-
-    - ``"onnx"`` (default): torch-free runtime backed by ``onnxruntime`` and
-      numpy. Requires an exported ``model.onnx`` next to the config and the
-      optional ``onnxruntime`` dependency (``pip install
-      qaoa_training_pipeline[inference]``); it needs neither torch nor the
-      original checkpoint.
-    - ``"torch"``: the reference PyTorch predictor. Requires the
-      ``inference-torch`` extra (torch + torch_geometric) and the checkpoint
-      referenced by the config.
+    Inference is torch-free: it runs an exported ``model.onnx`` with
+    ``onnxruntime`` and numpy. Requires the optional ``onnxruntime`` dependency
+    (``pip install qaoa_training_pipeline[inference]``) and needs neither torch
+    nor the original checkpoint.
     """
 
     def __init__(
@@ -51,17 +45,16 @@ class AIInference(ProblemParamsProvider):
         strict: bool = True,
         validate_input_operator: bool = True,
         rescale: Callable[[Sequence[float]], Sequence[float]] | None = None,
-        backend: str = "onnx",
         qaoa_angles_function: BaseAnglesFunction | None = None,
     ) -> None:
         """Initialize the AI inference trainer.
 
         Args:
             config_path: Path to a model_config.json file (or its enclosing
-                directory) describing the checkpoint and inputs to load.
-            device: Device for inference ("cpu", "cuda", "mps", ...).
-            strict: Whether to strictly enforce checkpoint loading (torch
-                backend only).
+                directory) describing the model and inputs to load.
+            device: Device for inference ("cpu", "cuda", ...).
+            strict: Reserved for parity with other providers; unused by the
+                ONNX runtime.
             validate_input_operator: If ``True``, cross-check the predicted
                 angle count against the config's ``output_dim``.
             rescale: Optional post-processing hook applied to the predicted
@@ -69,8 +62,6 @@ class AIInference(ProblemParamsProvider):
                 angle list and must return a same-length sequence. Use e.g.
                 ``lambda a: [x * 2 for x in a]`` to rescale to ``[0, π]``, or
                 pass ``None`` (default) to keep only the config's rescaling.
-            backend: Prediction backend, ``"onnx"`` (default, torch-free) or
-                ``"torch"``.
             qaoa_angles_function: Function transforming the predicted angles to
                 a different basis before use. Defaults to
                 :class:`IdentityFunction` (no transformation).
@@ -81,7 +72,6 @@ class AIInference(ProblemParamsProvider):
         self.strict = bool(strict)
         self.validate_input_operator = bool(validate_input_operator)
         self.rescale = rescale
-        self.backend = str(backend).lower()
         self.model = None
 
         self.load_model()
@@ -133,23 +123,13 @@ class AIInference(ProblemParamsProvider):
             "config_path": str(self.config_path),
             "device": self.device,
             "strict": self.strict,
-            "backend": self.backend,
             "predictor_metadata": self.model.metadata(),
         }
         return result
 
     def features(self, cost_op):
-        """Return the packed feature vector for ``cost_op``.
-
-        Uses the torch-free numpy extractor for the ONNX backend and the
-        torch extractor for the torch backend.
-        """
-        if self.backend == "onnx":
-            return self.model.feature_extractor.extract_and_pack_np(cost_op)
-        return self.model.feature_extractor.extract_and_pack(
-            cost_op=cost_op,
-            device=self.model.device,
-        )
+        """Return the packed feature vector for ``cost_op`` (numpy path)."""
+        return self.model.feature_extractor.extract_and_pack_np(cost_op)
 
     @classmethod
     def from_config(cls, config: dict) -> "AIInference":
@@ -181,7 +161,6 @@ class AIInference(ProblemParamsProvider):
             strict=bool(config.get("strict", True)),
             validate_input_operator=bool(config.get("validate_input_operator", True)),
             rescale=config.get("rescale"),
-            backend=str(config.get("backend", "onnx")),
             qaoa_angles_function=angles_function,
         )
 
@@ -192,7 +171,6 @@ class AIInference(ProblemParamsProvider):
             "device": self.device,
             "strict": self.strict,
             "validate_input_operator": self.validate_input_operator,
-            "backend": self.backend,
             "qaoa_angles_function": self.qaoa_angles_function.__class__.__name__,
         }
 
@@ -205,7 +183,7 @@ class AIInference(ProblemParamsProvider):
         """Extract supported runtime keyword arguments from a string."""
         train_kwargs = {}
         for key, val in self.extract_train_kwargs(args_str).items():
-            if key in {"device", "backend"}:
+            if key == "device":
                 train_kwargs[key] = str(val)
             elif key in {"strict", "validate_input_operator"}:
                 train_kwargs[key] = val.lower() == "true"
@@ -214,31 +192,14 @@ class AIInference(ProblemParamsProvider):
         return train_kwargs
 
     def load_model(self) -> None:
-        """Load the predictor from ``self.config_path`` using ``self.backend``.
-
-        The torch predictor is imported lazily so that the default ONNX path
-        stays torch-free.
-        """
+        """Load the ONNX predictor from ``self.config_path``."""
         if self.config_path is None:
             raise ValueError("Config path must be specified to load the model.")
 
-        if self.backend == "onnx":
-            from qaoa_training_pipeline.inference.onnx_predictor import OnnxQAOAPredictor
+        from qaoa_training_pipeline.inference.onnx_predictor import OnnxQAOAPredictor
 
-            self.model = OnnxQAOAPredictor(
-                config_path=Path(self.config_path),
-                device=self.device,
-                strict=self.strict,
-            )
-        elif self.backend == "torch":
-            from qaoa_training_pipeline.inference.torch_backend.lightweight_predictor import (
-                LightweightQAOAPredictor,
-            )
-
-            self.model = LightweightQAOAPredictor(
-                config_path=Path(self.config_path),
-                device=self.device,
-                strict=self.strict,
-            )
-        else:
-            raise ValueError(f"Unknown backend {self.backend!r}. Use 'onnx' (default) or 'torch'.")
+        self.model = OnnxQAOAPredictor(
+            config_path=Path(self.config_path),
+            device=self.device,
+            strict=self.strict,
+        )

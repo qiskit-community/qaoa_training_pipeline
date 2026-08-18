@@ -1,8 +1,7 @@
-"""Fixed, reproducible cost operators shared by the baseline generator and the
-torch-vs-ONNX benchmark.
+"""Fixed, reproducible cost operators for inference checks.
 
-Kept deterministic (no RNG) so the golden baselines are stable across machines
-and the benchmark measures the same graphs every run. Each entry is a small
+Kept deterministic (no RNG) so the golden baselines in
+``test/inference/baselines/`` are stable across machines. Each entry is a small
 QAOA MaxCut-style cost operator over a named graph topology.
 """
 

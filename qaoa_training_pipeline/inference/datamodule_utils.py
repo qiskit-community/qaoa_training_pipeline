@@ -1,24 +1,11 @@
-"""Feature/target helpers shared by the AI inference path.
+"""Feature/target helpers for the torch-free ONNX inference path.
 
-``rescaling_factor`` is pure numpy and is used by the torch-free ONNX runtime.
-``angles_to_target`` / ``undo_gamma_rescale`` belong to the torch path and import
-torch lazily so importing this module stays torch-free.
+``rescaling_factor`` is pure numpy and is used by the ONNX runtime.
 """
-
-# Import juliacall BEFORE torch to avoid a segfault warning on the torch path.
-# See: https://github.com/pytorch/pytorch/issues/78829
-try:
-    import juliacall  # noqa: F401  pylint: disable=unused-import
-except ImportError:
-    pass  # juliacall is optional
 
 import re
 from collections import defaultdict
 import numpy as np
-
-# torch is only needed by angles_to_target / undo_gamma_rescale (the training/
-# torch path). It is imported lazily inside those functions so the ONNX runtime,
-# which only uses rescaling_factor (pure numpy), stays torch-free.
 
 
 def rescaling_factor(cost_op):
@@ -74,42 +61,3 @@ def parse_instance_name(
         raise ValueError(f"Could not parse result_file_name={instance_name!r}")
 
     return m.group(1), int(m.group(2)), int(m.group(3))
-
-
-def angles_to_target(angles: list[float], p: int, rescale_a: float) -> "torch.Tensor":
-    """
-    Check again if p and len(angles) matches and return torch tensor.
-    Applies rescaling to the second half of angles (gammas).
-    """
-    import torch
-
-    p = int(p)
-    if len(angles) != 2 * p:
-        raise ValueError(f"qaoa_angles must have length 2*p. Got {len(angles)} for p={p}.")
-
-    angles = list(angles)  # ensure mutable
-
-    # rescale second half by gamma rescale factor
-    angles[p:] = [a * rescale_a for a in angles[p:]]
-
-    return torch.tensor(angles, dtype=torch.float32)
-
-
-def undo_gamma_rescale(
-    angles: "torch.Tensor", p: int, rescale_a: "torch.Tensor | float"
-) -> "torch.Tensor":
-    """Undo the gamma rescaling on the second half of ``angles`` (divide by ``rescale_a``)."""
-    import torch
-
-    angles = angles.clone()
-
-    if not torch.is_tensor(rescale_a):
-        rescale_a = torch.tensor(rescale_a, dtype=angles.dtype, device=angles.device)
-    else:
-        rescale_a = rescale_a.to(dtype=angles.dtype, device=angles.device)
-
-    if rescale_a.ndim == 1:
-        rescale_a = rescale_a.unsqueeze(-1)
-
-    angles[..., p:] = angles[..., p:] / rescale_a
-    return angles

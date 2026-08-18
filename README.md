@@ -137,7 +137,7 @@ The `qaoa_training_pipeline.inference` subpackage predicts QAOA angles from a
 cost operator using pre-trained models, without training. `AIInference` is a
 `ProblemParamsProvider`, so it plugs into the framework like any other provider.
 
-The default backend is **torch-free**: it runs an exported ONNX graph with
+Inference is **torch-free**: it runs an exported ONNX graph with
 `onnxruntime` + numpy and needs neither PyTorch nor the original training
 checkpoint. Exported models for seven architectures, each at QAOA depths
 `p = 1, 2, 3, 4`, ship with the package under
@@ -147,7 +147,7 @@ the best-test-seed checkpoint for that architecture and depth).
 Install the (optional) runtime dependency and predict:
 
 ```bash
-pip install -e ".[inference]"    # adds onnxruntime; no torch
+pip install -e ".[inference]"    # adds onnxruntime + huggingface_hub; no torch
 ```
 
 ```python
@@ -155,16 +155,11 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.inference import AIInference
 
 cost_op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
-ai = AIInference(  # backend="onnx" by default
+ai = AIInference(
     config_path="qaoa_training_pipeline/inference/model_configs/graph_neural_network/p1/model_config.json",
 )
 angles = ai.provide_params(cost_op)["optimized_params"]  # p=1 -> [beta, gamma]
 ```
-
-The reference PyTorch predictor and the ONNX export/training tooling
-(`tools/inference/`) require the heavier `inference-torch` extra
-(`pip install -e ".[inference-torch]"`, adds `torch` + `torch_geometric`) plus
-the training checkpoints; select it with `AIInference(..., backend="torch")`.
 
 ## Installation
 

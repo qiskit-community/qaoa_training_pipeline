@@ -5,10 +5,9 @@ build-backend = "setuptools.build_meta"
 # Runtime/optional dependencies and packaging metadata are declared in setup.py
 # (not a [project] table here) to avoid conflicting with the set.py-based build.
 # Notable optional extras (see setup.py `extras_require`):
-#   - inference        : torch-free AI angle inference (onnxruntime). Default
-#                        backend of qaoa_training_pipeline.inference.AIInference.
-#   - inference-torch  : the torch/export path (torch + torch_geometric).
-# torch is NOT a base runtime dependency.
+#   - inference : torch-free AI angle inference (onnxruntime) via
+#                 qaoa_training_pipeline.inference.AIInference.
+# torch is NOT a dependency of this package.
 
 [tool.black]
 line-length = 100
@@ -16,10 +15,6 @@ target-version = ['py310', 'py311', 'py312', 'py313']
 
 [tool.pylint.main]
 py-version = "3.12"  # update it when bumping minimum supported python version
-# The torch inference/export backend is vendored, optional research code (the
-# `inference-torch` extra). torch/torch_geometric are not CI dependencies, so it
-# cannot be meaningfully linted here; the torch-free runtime is linted normally.
-ignore-paths = ["qaoa_training_pipeline/inference/torch_backend/.*"]
 
 [tool.pylint.basic]
 good-names = ["a", "b", "i", "j", "k", "d", "n", "m", "ex", "v", "w", "x", "y", "z", "Run", "_", "logger", "q", "c", "r", "qr", "cr", "qc", "nd", "pi", "op", "b", "ar", "br", "p", "cp", "ax", "dt", "__unittest", "iSwapGate", "mu"]
@@ -82,3 +77,12 @@ enable = [
 [tool.pylint.spelling]
 spelling-private-dict-file = ".pylintdict"
 spelling-store-unknown-words = "n"
+
+[tool.bandit]
+# Static security scan (SAST). Skip generated/vendored data and the test tree
+# (tests intentionally use asserts, temp files, etc.). `make security` reports
+# all severities; CI gates on medium+ (see the Makefile / workflow).
+exclude_dirs = [
+    "test",
+    "qaoa_training_pipeline/inference/model_configs",
+]

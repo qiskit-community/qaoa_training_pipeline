@@ -1,10 +1,9 @@
 """Torch-free ONNX predictor for QAOA models.
 
-``OnnxQAOAPredictor`` is a drop-in analogue of ``LightweightQAOAPredictor`` that
-runs a pre-exported ``.onnx`` model with ``onnxruntime`` and numpy — no torch,
-no torch_geometric. Its ``predict`` signature, ``output_dim`` validation, and
-return type match ``LightweightQAOAPredictor`` so ``AIInference`` and existing
-callers work unchanged.
+``OnnxQAOAPredictor`` runs a pre-exported ``.onnx`` model with ``onnxruntime``
+and numpy — no torch, no torch_geometric. It exposes ``predict`` with
+``output_dim`` validation so ``AIInference`` and existing callers work
+unchanged.
 """
 
 from __future__ import annotations
@@ -18,8 +17,9 @@ import onnxruntime as ort
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.inference.config_io import load_config, resolve_bundle_path
+from qaoa_training_pipeline.inference.config_io import load_config
 from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor
+from qaoa_training_pipeline.inference.model_registry import ensure_onnx_local
 from qaoa_training_pipeline.inference.onnx_inputs import numpy_input_builders
 
 DEFAULT_ONNX_FILENAME = "model.onnx"
@@ -28,12 +28,12 @@ DEFAULT_ONNX_FILENAME = "model.onnx"
 def denormalize_qaoa_params_np(
     qaoa_params_norm: np.ndarray, scale: float = math.pi / 2
 ) -> np.ndarray:
-    """Numpy analogue of ``denormalize_qaoa_params``."""
+    """Denormalize predicted QAOA params by ``scale`` (default pi/2)."""
     return qaoa_params_norm * scale
 
 
 def undo_gamma_rescale_np(angles: np.ndarray, p: int, rescale_a: float) -> np.ndarray:
-    """Numpy analogue of ``datamodule_utils.undo_gamma_rescale`` (divide gammas)."""
+    """Undo the gamma rescaling on the second half of ``angles`` (divide gammas)."""
     angles = np.array(angles, copy=True)
     angles[..., p:] = angles[..., p:] / float(rescale_a)
     return angles
@@ -72,17 +72,17 @@ class OnnxQAOAPredictor:
             )
         self._prepare = numpy_input_builders[self.model_type]
 
-        # Resolve the .onnx artifact: explicit arg > config "onnx" key > default filename.
+        # Resolve the .onnx artifact: explicit arg > config "onnx" key > default
+        # filename. The default/config-relative cases are local-first with a
+        # lazy HuggingFace download fallback (see model_registry); an explicit
+        # onnx_path is taken as-is.
         if onnx_path is not None:
             resolved = Path(onnx_path)
-        elif "onnx" in self.config:
-            resolved = resolve_bundle_path(self.config_path, self.config["onnx"])
+            if not resolved.is_file():
+                raise FileNotFoundError(f"ONNX model not found: {resolved}.")
         else:
-            resolved = resolve_bundle_path(self.config_path, DEFAULT_ONNX_FILENAME)
-        if not resolved.is_file():
-            raise FileNotFoundError(
-                f"ONNX model not found: {resolved}. Export it with tools/inference/export_onnx.py."
-            )
+            filename = self.config.get("onnx", DEFAULT_ONNX_FILENAME)
+            resolved = ensure_onnx_local(self.config_path, filename)
         self.onnx_path = resolved
 
         providers = (
@@ -102,7 +102,7 @@ class OnnxQAOAPredictor:
         )
 
     def metadata(self) -> dict[str, Any]:
-        """Return predictor metadata from the config (mirrors LightweightQAOAPredictor)."""
+        """Return predictor metadata from the config."""
         metadata = dict(self.config)
         if "output_dim" not in metadata and "model_init" in metadata:
             metadata["output_dim"] = metadata["model_init"].get("output_dim")
@@ -119,7 +119,7 @@ class OnnxQAOAPredictor:
         """Predict QAOA parameters from a cost operator (torch-free).
 
         ``mixer``/``ansatz_circuit``/``initial_state`` are accepted to match the
-        ``LightweightQAOAPredictor`` signature but are currently unused.
+        provider signature but are currently unused.
         """
         x_vec, features = self.feature_extractor.extract_and_pack_np(cost_op)
         features["x"] = x_vec

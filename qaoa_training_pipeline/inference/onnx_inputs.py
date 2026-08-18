@@ -1,11 +1,8 @@
-"""Torch-free numpy input preparation for the ONNX runtime.
+"""Numpy input preparation for the ONNX runtime.
 
-Each ``prepare_<model>(features) -> dict[str, np.ndarray]`` mirrors the shaping
-that the corresponding ``predict_<model>`` in ``models.py`` does before calling
-the torch module, but returns the plain-numpy feed dict for
-``onnxruntime.InferenceSession.run``. The exported ONNX graph's input names must
-match the keys produced here (the export script builds its example inputs from
-the same functions).
+Each ``prepare_<model>(features) -> dict[str, np.ndarray]`` builds the plain-numpy
+feed dict for ``onnxruntime.InferenceSession.run``. The exported ONNX graph's
+input names must match the keys produced here.
 
 ``features`` is the dict returned by ``AIFeatureExtractor.extract_np`` with the
 packed ``x`` added under key ``"x"``.
@@ -21,14 +18,14 @@ Features = dict[str, Any]
 PrepareFn = Callable[[Features], dict[str, np.ndarray]]
 
 
-# ---------- shared numpy helpers (analogues of models.py) ------------------
+# ---------- shared numpy helpers ------------------
 
 
 def _symmetrize_edges_np(
     edges_mx2: np.ndarray,
     edge_weight: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray | None]:
-    """Add the reverse of every edge; numpy analogue of ``_symmetrize_edges``."""
+    """Add the reverse of every edge (symmetrize an undirected edge list)."""
     if edges_mx2.size == 0:
         return edges_mx2, edge_weight
     reversed_edges = edges_mx2[:, ::-1]
@@ -67,10 +64,8 @@ def prepare_diffusion_transformer(features: Features) -> dict[str, np.ndarray]:
 
 
 def _edges_with_attr_single(features: Features) -> tuple[np.ndarray, np.ndarray]:
-    """Numpy analogue of ``models.edges_with_attr`` for the single-graph (B=1)
-    case. Returns ``(edge_index (2, 2M), edge_attr (2M, 1))`` — symmetrized,
-    zero-weight edges dropped — matching what ``predict_gnn``/``predict_gin`` feed
-    the model."""
+    """Build ``(edge_index (2, 2M), edge_attr (2M, 1))`` for the single-graph
+    (B=1) case — symmetrized, with zero-weight edges dropped."""
     ed = np.asarray(features["edges"])[0]  # (M, 2)
     ew = np.asarray(features["edge_weights"])[0]  # (M,)
     mask = ew != 0.0
@@ -84,7 +79,7 @@ def _edges_with_attr_single(features: Features) -> tuple[np.ndarray, np.ndarray]
 
 def prepare_gnn(features: Features) -> dict[str, np.ndarray]:
     """graph_neural_network / graph_isomorphism_network: fixed tensor inputs for
-    the export-signature wrapper (see scripts/export_onnx.py)."""
+    the exported ONNX graph."""
     edge_index, edge_attr = _edges_with_attr_single(features)
     return {
         "x": np.asarray(features["x"], dtype=np.float32),
@@ -104,10 +99,10 @@ def prepare_gcn(features: Features) -> dict[str, np.ndarray]:
     edge_weight = edge_attr.reshape(-1).astype(np.float32)  # (2M,)
     num_nodes = int(np.asarray(features["node_count"]).reshape(-1)[0])
 
-    # Node degree from the symmetrized edge_index (matches PyG degree(edge_index[0])).
+    # Node degree from the symmetrized edge_index (count of edge_index[0]).
     deg = np.bincount(edge_index[0], minlength=num_nodes).astype(np.float32)
     mean = deg.mean() if deg.size else 0.0
-    # torch.Tensor.std() default is the unbiased (Bessel, ddof=1) estimator.
+    # Use the unbiased (Bessel, ddof=1) std estimator to match training.
     std = deg.std(ddof=1) if deg.size > 1 else np.float32("nan")
     if not np.isfinite(std) or std < 1e-6:
         std = 1.0
@@ -122,18 +117,17 @@ def prepare_gcn(features: Features) -> dict[str, np.ndarray]:
 
 
 def _signed_log1p_np(x: np.ndarray) -> np.ndarray:
-    """Numpy analogue of ``GraphTransformer._signed_log1p``."""
+    """Signed log1p: ``sign(x) * log1p(|x|)``."""
     return np.sign(x) * np.log1p(np.abs(x))
 
 
 def _laplacian_pe_np(edge_index: np.ndarray, num_nodes: int, pos_enc_dim: int) -> np.ndarray:
-    """Numpy analogue of ``LaplacianPositionalEncoding.forward``.
+    """Laplacian positional encoding via eigendecomposition.
 
-    The trained model computes this with ``torch.linalg.eigh`` (no ONNX op), so
-    we bake it into the numpy feed and pass it as a graph input. Laplacian
-    eigenvectors are sign-ambiguous (and non-unique inside degenerate
-    eigenspaces); the model was trained with random sign-flip augmentation, so it
-    tolerates the eigensolver differences between numpy and torch.
+    The eigendecomposition has no ONNX op, so we bake it into the numpy feed and
+    pass it as a graph input. Laplacian eigenvectors are sign-ambiguous (and
+    non-unique inside degenerate eigenspaces); the model was trained with random
+    sign-flip augmentation, so it tolerates eigensolver differences.
     """
     adj = np.zeros((num_nodes, num_nodes), dtype=np.float32)
     if edge_index.size:
@@ -143,7 +137,7 @@ def _laplacian_pe_np(edge_index: np.ndarray, num_nodes: int, pos_enc_dim: int) -
     norm_adj = deg_inv_sqrt[:, None] * adj * deg_inv_sqrt[None, :]
     laplacian = np.eye(num_nodes, dtype=np.float32) - norm_adj
 
-    # eigh returns ascending eigenvalues (matches the argsort in the torch code).
+    # eigh returns ascending eigenvalues; argsort keeps the ordering explicit.
     eigenvalues, eigenvectors = np.linalg.eigh(laplacian.astype(np.float64))
     order = np.argsort(eigenvalues)
     eigenvectors = eigenvectors[:, order]
@@ -156,7 +150,7 @@ def _laplacian_pe_np(edge_index: np.ndarray, num_nodes: int, pos_enc_dim: int) -
 def _gt_default_node_features_np(
     edge_index: np.ndarray, edge_weight: np.ndarray, num_nodes: int
 ) -> np.ndarray:
-    """Numpy analogue of ``GraphTransformer.compute_default_node_features``."""
+    """Default node features: ``[log1p(deg), signed_log1p(weighted_deg)]``."""
     deg = np.bincount(edge_index[0], minlength=num_nodes).astype(np.float32)
     weighted_deg = np.zeros(num_nodes, dtype=np.float32)
     if edge_index.size:
@@ -166,10 +160,9 @@ def _gt_default_node_features_np(
 
 def prepare_graph_transformer(features: Features) -> dict[str, np.ndarray]:
     """graph_transformer: precompute the degree node features and Laplacian
-    positional encoding in numpy (the torch model uses ``torch.linalg.eigh`` and
-    ``degree``, neither friendly to ONNX), then feed them plus the symmetrized
-    edge_index/edge_weight and the global features to the export-signature
-    wrapper (see scripts/export_onnx.py)."""
+    positional encoding in numpy (eigendecomposition is not ONNX-friendly), then
+    feed them plus the symmetrized edge_index/edge_weight and the global features
+    to the exported ONNX graph."""
     edge_index, edge_attr = _edges_with_attr_single(features)  # (2,2M), (2M,1)
     edge_weight = edge_attr.reshape(-1).astype(np.float32)  # (2M,)
     num_nodes = int(np.asarray(features["node_count"]).reshape(-1)[0])

@@ -1,8 +1,6 @@
-"""Torch-free config loading for model bundles.
+"""Config loading for model bundles.
 
-Split out of ``model_loader.py`` (which imports torch) so the ONNX runtime
-path can read ``model_config.json`` without importing torch. ``model_loader``
-re-exports these for backwards compatibility.
+Reads ``model_config.json`` for the ONNX inference runtime.
 """
 
 from __future__ import annotations

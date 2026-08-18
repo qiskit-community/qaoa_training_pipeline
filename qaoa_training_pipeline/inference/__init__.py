@@ -10,13 +10,9 @@
 
 Exposes :class:`AIInference`, a
 :class:`~qaoa_training_pipeline.framework.ProblemParamsProvider` that predicts
-QAOA angles from a cost operator using a pre-trained model. The default backend
-runs an exported ONNX graph with ``onnxruntime`` + numpy and needs neither
-torch nor the original checkpoint.
-
-Importing this package does not import torch; the torch predictor and model
-builders under ``torch_backend`` are only imported when explicitly requested
-(``AIInference(..., backend="torch")``).
+QAOA angles from a cost operator using a pre-trained model. It runs an exported
+ONNX graph with ``onnxruntime`` + numpy and needs neither torch nor the
+original checkpoint.
 """
 
 from qaoa_training_pipeline.inference.ai_inference import AIInference

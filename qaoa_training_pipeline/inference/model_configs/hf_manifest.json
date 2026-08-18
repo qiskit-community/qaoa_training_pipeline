@@ -1,0 +1,288 @@
+{
+  "bundles": {
+    "diffusion_transformer/p1": {
+      "model.onnx": {
+        "sha256": "ce6c4ed2b0118df1c50629a83cbff2614b6eb371f8088576aa508199b0cec70f",
+        "size": 676266
+      },
+      "model.onnx.data": {
+        "sha256": "3e8cdbfcfe90948f8129c8dc961134a1395f884bdafb7de2c9bdacbfd98db786",
+        "size": 574976
+      }
+    },
+    "diffusion_transformer/p2": {
+      "model.onnx": {
+        "sha256": "0b7a5fd6fdb05820f75c445ec2e5033af83c75dadcd7536c5514ff6c7ef43190",
+        "size": 675821
+      },
+      "model.onnx.data": {
+        "sha256": "8e989bdbb2ae1da0166ea07680fe9ba4c4205a6f3833f195d67cab654172a3ff",
+        "size": 576000
+      }
+    },
+    "diffusion_transformer/p3": {
+      "model.onnx": {
+        "sha256": "55fb739847c8c93bcd5e70f5ca5c9cd3828f3117bb4ad75600bcdafca650a915",
+        "size": 675829
+      },
+      "model.onnx.data": {
+        "sha256": "f2c4e9f01f1f13c0e4a2542b08f3c9fec662687ba548262a684c9942e978e5a6",
+        "size": 576512
+      }
+    },
+    "diffusion_transformer/p4": {
+      "model.onnx": {
+        "sha256": "c75d160b60173fc8028ec5e9bbc84615204269ad79f342d1658a22802b4610e3",
+        "size": 675837
+      },
+      "model.onnx.data": {
+        "sha256": "e35bc0d4da90f3f4127eefc99def2323afdda9bccfc55ee7e46840a54a53c202",
+        "size": 577024
+      }
+    },
+    "edge_transformer/p1": {
+      "model.onnx": {
+        "sha256": "b0474c0c03946987aca78c8ecad4d85dc370793d5cb6b9f0e6f66c5686a789cb",
+        "size": 520676
+      },
+      "model.onnx.data": {
+        "sha256": "3d5c6d015d39fd7763ba979208a2dde6b0173b52642f54ba8d07426669773395",
+        "size": 542208
+      }
+    },
+    "edge_transformer/p2": {
+      "model.onnx": {
+        "sha256": "6711e0fd524707e612b29b0d8dfb233852863fc0cd5d671dc54eccdb4127c261",
+        "size": 520230
+      },
+      "model.onnx.data": {
+        "sha256": "298bd63e12e8231144b204ed7bfd7085cb7dac2bcc81b91b42d6991299aca4c8",
+        "size": 543232
+      }
+    },
+    "edge_transformer/p3": {
+      "model.onnx": {
+        "sha256": "58301cc48eeaae4162e8b1a6c2b2db7982c25ecdc4368f0167e3f509f775928b",
+        "size": 520238
+      },
+      "model.onnx.data": {
+        "sha256": "d5f57cd5ecef045eb306ebdf548c79551ec68a337d94118a18e64c5094c1f28d",
+        "size": 543744
+      }
+    },
+    "edge_transformer/p4": {
+      "model.onnx": {
+        "sha256": "267f278819a8046f28991258a25d610dbe1afbfaf5a280b22668686f35ab4126",
+        "size": 520246
+      },
+      "model.onnx.data": {
+        "sha256": "11ae4961f9bb5c964869564dfff71a0b5ecd92c581c9666fd670c073cfa20bc8",
+        "size": 544256
+      }
+    },
+    "gcn/p1": {
+      "model.onnx": {
+        "sha256": "24ffa6741f2d1c3e8890d2d80c2941b0471f98838179b8ec2166a16aee5a95b6",
+        "size": 41200
+      },
+      "model.onnx.data": {
+        "sha256": "ca0410a3aa909982fe6826bc048a29e13a9c1e13374a130e2efd301882506ba7",
+        "size": 50432
+      }
+    },
+    "gcn/p2": {
+      "model.onnx": {
+        "sha256": "abec5426ad773894e6065204d8d302dbb17679c4b6581262606238f05a8cc17e",
+        "size": 40754
+      },
+      "model.onnx.data": {
+        "sha256": "2596cb42fe3334ada606f92cb09f5ae18218cc8abc6d99b6632ac2f8db51a5ce",
+        "size": 51456
+      }
+    },
+    "gcn/p3": {
+      "model.onnx": {
+        "sha256": "18bf73762aaea06a6af62f18ce85655afa02a14efae400e5bd6ce97e39867e4a",
+        "size": 40762
+      },
+      "model.onnx.data": {
+        "sha256": "e1070ca26a1639bbef6808540114c6909548c13c2b6a25a736dcfd3672bef7bd",
+        "size": 51968
+      }
+    },
+    "gcn/p4": {
+      "model.onnx": {
+        "sha256": "b2a275b6f2441502b27cc3ab3a9188dc5ded855fa53cee40c5e6f847f98dc60d",
+        "size": 40770
+      },
+      "model.onnx.data": {
+        "sha256": "ff352e11fd5b905a5a13dd19441e7f27303b5ec8ab19d352730bf7bbe8d708cc",
+        "size": 52480
+      }
+    },
+    "graph_isomorphism_network/p1": {
+      "model.onnx": {
+        "sha256": "c69f0becec89b7c104209a02e49a4217c6ff0d9c1ffd4fa777e50be7568d7fb5",
+        "size": 203424
+      },
+      "model.onnx.data": {
+        "sha256": "59252174220f1d1a067d54205c7203a424c072feee63628fed560da2d022901e",
+        "size": 397056
+      }
+    },
+    "graph_isomorphism_network/p2": {
+      "model.onnx": {
+        "sha256": "c7020123e6eabcdc5fa9ee9b4eee622acd94d8f60c8bc82c6f3a50866dea625d",
+        "size": 202979
+      },
+      "model.onnx.data": {
+        "sha256": "3f938dada12b321fe2d9d67204d2735159eb2d25433d0ee24526b3be667a112d",
+        "size": 398080
+      }
+    },
+    "graph_isomorphism_network/p3": {
+      "model.onnx": {
+        "sha256": "dba23e09c49f83308ad7163907c61c51243044648e66c36c18a597639553eb39",
+        "size": 202987
+      },
+      "model.onnx.data": {
+        "sha256": "8de70a2a5a870438e22b252061e044fa3a161631883c8ecb70bb2b93aac4ada4",
+        "size": 398592
+      }
+    },
+    "graph_isomorphism_network/p4": {
+      "model.onnx": {
+        "sha256": "1c6de733f1037a2bac8e3ca4bd60c86a60eb6aabfad36bfa9fdd23c9fbcec4cb",
+        "size": 202995
+      },
+      "model.onnx.data": {
+        "sha256": "d34e658e52c5565c442ffb68735456aba1210cf7de5cc49bda52dcb55535a8e8",
+        "size": 399104
+      }
+    },
+    "graph_neural_network/p1": {
+      "model.onnx": {
+        "sha256": "a0bf601b9eb156b899473d79d2501b6ccdc5c9388c6b21a991cb1ff05d58a70c",
+        "size": 185591
+      },
+      "model.onnx.data": {
+        "sha256": "318fd07b9052038c8382451b2873942ca5bd7a6b9ebba7f05a964acd5915ba54",
+        "size": 461312
+      }
+    },
+    "graph_neural_network/p2": {
+      "model.onnx": {
+        "sha256": "cebfc5c42d585478e1128b4b70d9bd62fa6fd6f74f30c5bc1b95ba57c40063b8",
+        "size": 185146
+      },
+      "model.onnx.data": {
+        "sha256": "0663114212c1c28659dfe5c6aafc70d303b51060279736e6ef017c5781e0ed71",
+        "size": 462336
+      }
+    },
+    "graph_neural_network/p3": {
+      "model.onnx": {
+        "sha256": "497cbd4dc71a19139a78e701fae2cdc349d6add5688aa63670ee029902e8ca90",
+        "size": 185154
+      },
+      "model.onnx.data": {
+        "sha256": "b0b5902808f3fc7c382bc36ce23050b5a9e49433cd938415e6c4b7e4865f157d",
+        "size": 462848
+      }
+    },
+    "graph_neural_network/p4": {
+      "model.onnx": {
+        "sha256": "398d202b4af64144ea26f44826c4cdde0c7b45051dc241ed5f02ce6451f98fae",
+        "size": 185162
+      },
+      "model.onnx.data": {
+        "sha256": "cb88792a9a4df62af41a2df0a4e33329c490bd7fd0a434e2fdb00c4aff6eaeb9",
+        "size": 463360
+      }
+    },
+    "graph_transformer/p1": {
+      "model.onnx": {
+        "sha256": "d416de1e6d91db39d4a92ca44b89a4258226ace727e73b33c4b53225d122c6f4",
+        "size": 260771
+      },
+      "model.onnx.data": {
+        "sha256": "7baf8bab4dbcf870dc2d59ed67c9bbc02b72af35941b775bf4fc819f64f10d90",
+        "size": 568576
+      }
+    },
+    "graph_transformer/p2": {
+      "model.onnx": {
+        "sha256": "8885d93fa100425ed51e7b93db238f54543591053026b491593fa33ea3dadebb",
+        "size": 261037
+      },
+      "model.onnx.data": {
+        "sha256": "026b3322ce17ba1a4e08e5495fd5fae1c2be5216b446e29e3c61a0ffb7fd9c56",
+        "size": 568576
+      }
+    },
+    "graph_transformer/p3": {
+      "model.onnx": {
+        "sha256": "36a565338ae9e7c51b75fe274f94f08466a4ee606e51afda843b989346fed40f",
+        "size": 261301
+      },
+      "model.onnx.data": {
+        "sha256": "cbad8e938bb32171a41b73325ba1934aeca6fb77ae31e651ae15d80aac52f3db",
+        "size": 568576
+      }
+    },
+    "graph_transformer/p4": {
+      "model.onnx": {
+        "sha256": "51b6d1852878ee76d7f9a88c1bb945765cfab437fddb70811e1a0e6b4e4cbac3",
+        "size": 260599
+      },
+      "model.onnx.data": {
+        "sha256": "7b8f078be6c1260f54a819e53abcbf806f0cabe8b597482f171a9a54f3307c55",
+        "size": 569600
+      }
+    },
+    "mlp/p1": {
+      "model.onnx": {
+        "sha256": "64fc8ce600cb535a8aec1cc7f7289df67544054041195712966cb22a479476a1",
+        "size": 24303
+      },
+      "model.onnx.data": {
+        "sha256": "dc974041970a2f5217b30b6ba6dce05aa53a49599655d7917672d7e79c8b0b39",
+        "size": 50432
+      }
+    },
+    "mlp/p2": {
+      "model.onnx": {
+        "sha256": "eb34ad12a239d64b2f0da2d228ef5186ce810624cd6babb747cbd5088b30e527",
+        "size": 23857
+      },
+      "model.onnx.data": {
+        "sha256": "fca4807b86982dbd4eac2b7040ce115dc173157faa1516456265d0dddcff7d39",
+        "size": 51456
+      }
+    },
+    "mlp/p3": {
+      "model.onnx": {
+        "sha256": "469eeaa0ed4da6fc6c5ddafa8808e0e33323de764f5cbbd372cf97b38cab087d",
+        "size": 23865
+      },
+      "model.onnx.data": {
+        "sha256": "21cb89eabd41e4b07a86d5f42b9b3b7c67134bb6538009c260bf4aa9b7d2bd8d",
+        "size": 51968
+      }
+    },
+    "mlp/p4": {
+      "model.onnx": {
+        "sha256": "7d8ee879683140c415fc5cc7cc7f2386ea14f9a9dd9c4ef6469dfd7ad355595c",
+        "size": 23873
+      },
+      "model.onnx.data": {
+        "sha256": "89ab6a093fc8749af45b60f0c790ca7e5f76be752279fec180c311279a92b952",
+        "size": 52480
+      }
+    }
+  },
+  "path_prefix": "model_configs",
+  "repo_id": "PLACEHOLDER_ORG/qaoa-training-pipeline-models",
+  "repo_type": "model",
+  "revision": "main"
+}

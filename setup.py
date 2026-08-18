@@ -36,19 +36,22 @@ setuptools.setup(
     ),
     install_requires=REQUIREMENTS,
     extras_require={
-        # Torch-free AI-inference runtime (default AIInference backend).
-        "inference": ["onnxruntime"],
-        # Torch/export path: training, ONNX export, and the torch predictor.
-        "inference-torch": ["torch", "torch_geometric"],
+        # Torch-free AI-inference runtime (AIInference).
+        # huggingface_hub lazily fetches the ONNX weights pinned in the manifest.
+        "inference": ["onnxruntime", "huggingface_hub"],
     },
     include_package_data=True,
-    # Ship the exported ONNX model bundles with the wheel so the default
-    # AIInference("onnx") backend works without any external artifacts.
+    # Ship the small per-bundle configs and the HF weight manifest. The large
+    # model.onnx / model.onnx.data weights are lazily downloaded from the
+    # HuggingFace Hub at first use (see inference/model_registry.py); the .onnx*
+    # globs below keep them in the wheel only until that migration is cut over,
+    # after which they should be removed.
     package_data={
         "qaoa_training_pipeline": [
-            "inference/model_configs/*/model_config.json",
-            "inference/model_configs/*/model.onnx",
-            "inference/model_configs/*/model.onnx.data",
+            "inference/model_configs/hf_manifest.json",
+            "inference/model_configs/*/*/model_config.json",
+            "inference/model_configs/*/*/model.onnx",
+            "inference/model_configs/*/*/model.onnx.data",
         ],
     },
     python_requires=">=3.10",
