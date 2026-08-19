@@ -9,7 +9,14 @@ import numpy as np
 
 
 def rescaling_factor(cost_op):
-    """Return the QAOA cost-operator rescaling factor (RMS of per-order weights)."""
+    """Return the QAOA cost-operator rescaling factor (RMS of per-order weights).
+
+    The factor is used as a divisor both on input (``cost_op / rescale_a``) and
+    on output (gammas ``/ rescale_a``). For a degenerate operator with no
+    non-identity terms or all-zero coefficients the RMS is 0; we fall back to
+    ``1.0`` so normalization/denormalization is a no-op instead of dividing by
+    zero.
+    """
     terms = defaultdict(list)
 
     for p in cost_op:
@@ -20,7 +27,8 @@ def rescaling_factor(cost_op):
     for squared_weights in terms.values():
         factor += sum(squared_weights) / len(squared_weights)
 
-    return np.sqrt(factor)
+    factor = np.sqrt(factor)
+    return factor if factor > 0 else 1.0
 
 
 def parse_instance_name(
