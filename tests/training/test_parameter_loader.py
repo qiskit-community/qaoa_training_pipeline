@@ -1,0 +1,48 @@
+#
+#
+# (C) Copyright IBM 2024.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+"""Tests for parameter loading."""
+
+from qaoa_training_pipeline.exceptions import TrainingError
+from qaoa_training_pipeline.training.optimized_parameter_loader import (
+    OptimizedParametersLoader,
+)
+from tests.training_pipeline_test_case import TrainingPipelineTestCase
+
+
+class TestOptimizedParameterLoader(TrainingPipelineTestCase):
+    """Methods to test loading optimized parameters."""
+
+    def test_train(self):
+        """Test that we can load from a file."""
+
+        kwargs = OptimizedParametersLoader.parse_runtime_kwargs(
+            "folder:tests/data/:file_pattern:20nodes_random7regular"
+        )
+        loader = OptimizedParametersLoader(**kwargs)
+
+        result = loader.provide_params()
+
+        self.assertEqual(
+            result["optimized_params"],
+            [0.44901865190957657, 0.19974528971646474],
+        )
+
+        with self.assertRaises(TrainingError):
+            kwargs = OptimizedParametersLoader.parse_runtime_kwargs(
+                "folder:tests/does_not_exist/:file_pattern:20nodes_random7regular"
+            )
+            loader = OptimizedParametersLoader(**kwargs)
+            result = loader.provide_params()
+
+    def test_parse_train_kwargs(self):
+        """Test parsing of training args."""
+        trainer = OptimizedParametersLoader(folder="", file_pattern="")
+
+        kwargs = trainer.parse_runtime_kwargs("folder:my_folder:file_pattern:*.json")
+        self.assertDictEqual(kwargs, {"folder": "my_folder", "file_pattern": "*.json"})

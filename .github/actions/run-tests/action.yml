@@ -38,5 +38,5 @@ runs:
         if [ "${{ inputs.os }}" == "ubuntu-latest" ] && [ "${{ inputs.python-version }}" == "3.11" ]; then
           export PYTHON="coverage3 run --source qaoa_training_pipeline --parallel-mode"
         fi
-        stestr --test-path test run 2> >(tee /dev/stderr out.txt > /dev/null)
+        stestr --test-path tests run 2> >(tee /dev/stderr out.txt > /dev/null)
       shell: bash
