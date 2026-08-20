@@ -2,9 +2,127 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "qaoa_training_pipeline"
+dynamic = ["version"]
+description = "QAOA training pipeline"
+readme = "README.md"
+license = { text = "Apache 2.0" }
+authors = [
+    { name = "Daniel Egger" },
+    { name = "Elena Pena Tapia" },
+    { name = "Alberto Baiardi" },
+]
+keywords = ["qaoa"]
+classifiers = [
+    "Environment :: Console",
+    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "networkx",
+    "numpy>=1.22.0",
+    "scipy",
+    "qiskit",
+    "scikit-learn",
+    "matplotlib>=3.3",
+    "qiskit-optimization",
+    "qopt-best-practices @ git+https://github.com/qiskit-community/qopt-best-practices.git@a861d46e6d77c64b87124a50216995d2d2d6d5fe",
+]
+
+[project.optional-dependencies]
+cplex = [
+    "qiskit-optimization[cplex]",
+]
+tns = [
+    "quimb>=1.8.2",
+    "cotengra<=0.8.1",
+    "juliacall",
+]
+sat = [
+    "python-sat",
+]
+notebooks = [
+    "qiskit-aer",
+    "qiskit-ibm-runtime",
+]
+test = [
+    "ddt",
+]
+ci = [
+    "stestr>=2.0.0",
+    "coverage>=4.4.0",
+]
+lint = [
+    "black[jupyter]~=24.1",
+    "ruff",
+]
+dev = [
+    "qaoa_training_pipeline[tns,sat,cplex,notebooks,test,lint]",
+    "pre-commit",
+]
+
+[tool.uv]
+# numba<0.54 has requires-python <3.10 and no wheels for 3.11+; force a modern version.
+constraint-dependencies = ["numba>=0.60"]
+
+[tool.setuptools.dynamic]
+version = { file = "qaoa_training_pipeline/VERSION.txt" }
+
+[tool.setuptools.packages.find]
+include = ["qaoa_training_pipeline", "qaoa_training_pipeline.*"]
+
 [tool.black]
 line-length = 100
-target-version = ['py310', 'py311', 'py312', 'py313']
+target-version = ['py311', 'py312', 'py313']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I", "C90", "UP", "SIM", "N", "ANN", "D", "ARG", "RUF"]
+ignore = [
+    # intentional style choices
+    "D203",   # conflicts with D211; Black prefers no blank line before class docstring
+    "D212",   # conflicts with D211; choose one convention
+    "D205",   # allow docstring without a summary line
+    "D415",   # Too restrictive: First line should end with a period, question mark, or exclamation point
+    "D406",
+    "D407",
+    "ANN20",  # allows missing return type annotation for functions
+    "ANN001", # allow missing type hint for public function
+    "B905",   # allow zip() to be called without the strict= parameter
+    "E501",   # line too long, black is supposed to handle this so don't complain
+    # TODO: pre-existing violations — fix incrementally
+    "ANN002", "ANN003", "ANN401",  # missing type annotations on *args/**kwargs; use of Any
+    "ARG002", "ARG003",            # unused method / classmethod arguments
+    "B008", "B009", "B018", "B028",  # bugbear: mutable defaults, getattr with constant, dead expressions, missing stacklevel
+    "C901",                        # functions with too-high McCabe complexity
+    "D102", "D105", "D200", "D202", "D209", "D210", "D301", "D400", "D401", "D404", "D411",  # docstring style and coverage
+    "I001",                        # unsorted imports
+    "N806", "N813",                # naming: non-lowercase variable; CamelCase import aliased to lowercase
+    "RUF002", "RUF003", "RUF005", "RUF013", "RUF021", "RUF022",  # ruff: ambiguous unicode, collection concat, implicit Optional, operator parens, unsorted __all__
+    "SIM102", "SIM105", "SIM108", "SIM118", "SIM300", "SIM401", "SIM910",  # simplifications: collapsible-if, suppressible-exception, ternary, dict.get, yoda
+    "UP006", "UP007", "UP015", "UP034", "UP035", "UP037", "UP045",  # modern Python syntax: built-in generics, X|Y unions, deprecated typing imports
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.isort]
+known-first-party = ["qaoa_training_pipeline"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/*.ipynb" = ["D", "ANN", "ARG", "C90", "SIM", "N", "RUF059"]
+"**/__init__.py" = ["D104", "F401"]
 
 [tool.pylint.main]
 py-version = "3.12"  # update it when bumping minimum supported python version

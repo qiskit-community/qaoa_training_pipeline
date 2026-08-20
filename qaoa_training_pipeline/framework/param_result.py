@@ -5,7 +5,6 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-
 """Class to store result data."""
 
 from __future__ import annotations
@@ -22,7 +21,8 @@ if TYPE_CHECKING:
 
 @dataclass
 class ParamResult:
-    """A class to store the results of a parameter optimization.
+    """
+    A class to store the results of a parameter optimization.
 
     This class ensures that we have elementary information such as information on the
     platform in addition to training duration and parameters. The class includes a
@@ -37,7 +37,7 @@ class ParamResult:
         self,
         optimized_params: list,
         duration: float,
-        trainer: "ParamsProvider",
+        trainer: ParamsProvider,
         energy: float | None = None,
     ):
         """Initialize the data class."""
@@ -48,7 +48,7 @@ class ParamResult:
             "system": platform.system(),
             "processor": platform.processor(),
             "platform": platform.platform(),
-            "qaoa_training_pipeline_version": 43,
+            "qaoa_training_pipeline_version": 48,
         }
 
         # Convert, e.g., np.float to float
@@ -78,8 +78,19 @@ class ParamResult:
     def __len__(self):
         return len(self.data)
 
+    def __repr__(self):
+        out = f"{self.__class__.__name__} with {self.data.keys()} entries.\n"
+
+        out += f"Obtained from training with {self.data['trainer']['trainer_name']}"
+        out += f" in {self.data['train_duration']} seconds \n"
+        out += "optimized_params:" + str(self.data["optimized_params"]) + "\n"
+        out += "optimized_qaoa_angles:" + str(self.data["optimized_qaoa_angles"]) + "\n"
+        out += "energy:" + str(self.data["energy"])
+
+        return out
+
     def keys(self):
-        """Return the keys of the underlying dict"""
+        """Return the keys of the underlying dict."""
         return self.data.keys()
 
     def update(self, other: dict):
@@ -96,9 +107,8 @@ class ParamResult:
     @classmethod
     def from_scipy_result(
         cls, result, params0, train_duration, sign, trainer: ScipyTrainer
-    ) -> "ParamResult":
+    ) -> ParamResult:
         """Standardizes results from SciPy such that it can be serialized."""
-
         param_result = cls(
             result.pop("x").tolist(), train_duration, trainer, sign * result.pop("fun")
         )
