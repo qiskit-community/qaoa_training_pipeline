@@ -237,6 +237,7 @@ This repository is still in development: new functionality is being added and th
 |      46 | Add QPU evaluator to draw samples from HW backend.           |          #76 |
 |      47 | Add MPS sampling based energy estimation.                    |          #75 |
 |      48 | Update printing method for ParamResult.                      |          #82 |
+|      49 | Update tests to fix some issues.                             |          #87 |
 
 ## IBM Public Repository Disclosure
 
