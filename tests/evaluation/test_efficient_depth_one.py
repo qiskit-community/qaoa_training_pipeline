@@ -336,23 +336,146 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         energy = self.evaluator.evaluate(cost_op, params, initial_state=init, mixer=mixer)
         self.assertAlmostEqual(float(energy), expected_energy)
 
-    @data((0, 0), (1, 1), (0.1234, -0.56), (0.25, 0.5), (0.5, 0.25))
+    @staticmethod
+    def random_quadratic_op(num_qubits, density, seed):
+        """Create a random operator with weighted ZiZj and Zi terms."""
+        rng = np.random.default_rng(seed)
+        terms = []
+        for i in range(num_qubits):
+            if rng.random() < 0.5:
+                terms.append(("Z", [i], rng.normal()))
+            for j in range(i):
+                if rng.random() < density:
+                    terms.append(("ZZ", [i, j], rng.normal()))
+
+        return SparsePauliOp.from_sparse_list(terms, num_qubits=num_qubits)
+
+    @staticmethod
+    def warm_start_circuits(num_qubits, seed):
+        """Create a warm-start initial state and the matching per-qubit mixer."""
+        thetas = np.random.default_rng(seed).uniform(0, np.pi, num_qubits)
+        beta = Parameter("beta")
+
+        init, mixer = QuantumCircuit(num_qubits), QuantumCircuit(num_qubits)
+        for j, theta in enumerate(thetas):
+            init.ry(theta, j)
+            mixer.ry(theta, j)
+            mixer.rz(-2 * beta, j)
+            mixer.ry(-theta, j)
+
+        return init, mixer
+
+    @staticmethod
+    def statevector_energy(cost_op, params, circ_op=None, init=None, mixer=None):
+        """Reference energy of a depth-one QAOA from a statevector simulation."""
+        num_qubits = cost_op.num_qubits
+        circ_op = circ_op if circ_op is not None else cost_op
+
+        qc = QuantumCircuit(num_qubits)
+        if init is None:
+            qc.h(range(num_qubits))
+        else:
+            qc.compose(init, inplace=True)
+
+        qc.append(PauliEvolutionGate(circ_op, time=params[1]), range(num_qubits))
+
+        if mixer is None:
+            qc.rx(2 * params[0], range(num_qubits))
+        else:
+            qc.compose(mixer.assign_parameters([params[0]]), inplace=True)
+
+        return Statevector(qc).expectation_value(cost_op).real
+
+    @data((0.0, 0), (0.5, 1), (1.0, 2))
     @unpack
-    def test_serial_vs_parallel(self, beta, gamma):
-        """Test that serial and parallel implementations produce identical results."""
-        cost_op = SparsePauliOp.from_list([("IIZZ", 1.0), ("ZIIZ", -1.0), ("IZIZ", 2.3)])
+    def test_random_graphs(self, density, seed):
+        """Test random weighted graphs, from sparse to fully connected, against a statevector."""
+        cost_op = self.random_quadratic_op(7, density, seed)
 
-        # Create serial evaluator
-        serial_evaluator = EfficientDepthOneEvaluator(use_parallel=False)
+        for params in ([0.41, 0.34], [-1.3, 2.1]):
+            expected = self.statevector_energy(cost_op, params)
+            energy = self.evaluator.evaluate(cost_op, params)
+            self.assertAlmostEqual(energy, expected, places=8)
 
-        # Create parallel evaluator
-        parallel_evaluator = EfficientDepthOneEvaluator(use_parallel=True, max_workers=4)
+    @data(0, 1, 2)
+    def test_random_warm_start(self, seed):
+        """Test warm-start states with a different mixer on each qubit on random graphs."""
+        cost_op = self.random_quadratic_op(6, 0.6, seed)
+        init, mixer = self.warm_start_circuits(6, seed)
 
-        # Compute energy with serial implementation
-        serial_energy = serial_evaluator.evaluate(cost_op, [beta, gamma])
+        for params in ([0.41, 0.34], [1.2, -0.7]):
+            expected = self.statevector_energy(cost_op, params, init=init, mixer=mixer)
+            energy = self.evaluator.evaluate(cost_op, params, mixer=mixer, initial_state=init)
+            self.assertAlmostEqual(energy, expected, places=8)
 
-        # Compute energy with parallel implementation
-        parallel_energy = parallel_evaluator.evaluate(cost_op, [beta, gamma])
+    def test_warm_start_custom_ansatz(self):
+        """Test a warm-start with an ansatz that differs from the cost operator.
 
-        # Verify they produce the same result
-        self.assertAlmostEqual(serial_energy, parallel_energy, places=10)
+        The ansatz has edges that are not in the cost operator and vice versa. It also
+        leaves some qubits without any neighbour.
+        """
+        cost_op = SparsePauliOp.from_sparse_list(
+            [("ZZ", [0, 1], 1.0), ("ZZ", [1, 2], -0.7), ("ZZ", [3, 4], 0.4), ("Z", [2], 0.3)],
+            num_qubits=5,
+        )
+        circ_op = SparsePauliOp.from_sparse_list(
+            [("ZZ", [0, 1], 0.8), ("ZZ", [0, 2], 1.1), ("Z", [2], -0.5)], num_qubits=5
+        )
+
+        gamma = Parameter("g")
+        ansatz = QuantumCircuit(5)
+        ansatz.rzz(2 * 0.8 * gamma, 0, 1)
+        ansatz.rzz(2 * 1.1 * gamma, 0, 2)
+        ansatz.rz(2 * -0.5 * gamma, 2)
+
+        init, mixer = self.warm_start_circuits(5, 3)
+        params = [0.37, 0.91]
+
+        expected = self.statevector_energy(cost_op, params, circ_op, init, mixer)
+        energy = self.evaluator.evaluate(
+            cost_op, params, mixer=mixer, initial_state=init, ansatz_circuit=ansatz
+        )
+
+        self.assertAlmostEqual(energy, expected, places=8)
+
+    def test_chunking(self):
+        """Test that splitting the edges into chunks does not change the energy."""
+        cost_op = self.random_quadratic_op(8, 0.7, 4)
+        init, mixer = self.warm_start_circuits(8, 4)
+        params = [0.29, -0.61]
+
+        expected = EfficientDepthOneEvaluator().evaluate(cost_op, params, mixer, init)
+
+        for max_pairs in [1, 7, 30]:
+            evaluator = EfficientDepthOneEvaluator(max_pairs=max_pairs)
+            self.assertAlmostEqual(evaluator.evaluate(cost_op, params, mixer, init), expected)
+
+    def test_caching(self):
+        """Test that repeated evaluations with new arguments do not reuse stale cached data."""
+        cost_op1 = self.random_quadratic_op(5, 0.8, 5)
+        cost_op2 = self.random_quadratic_op(5, 0.8, 6)
+        init, mixer = self.warm_start_circuits(5, 5)
+
+        cases = [
+            (cost_op1, [0.1, 0.2], None, None),
+            (cost_op1, [0.3, 0.2], None, None),
+            (cost_op1, [0.3, 0.2], mixer, init),
+            (cost_op1, [0.5, -0.4], mixer, init),
+            (cost_op2, [0.5, -0.4], mixer, init),
+            (cost_op2, [0.5, -0.4], None, None),
+        ]
+
+        for cost_op, params, mix, init_state in cases:
+            expected = self.statevector_energy(cost_op, params, init=init_state, mixer=mix)
+            energy = self.evaluator.evaluate(cost_op, params, mixer=mix, initial_state=init_state)
+            self.assertAlmostEqual(energy, expected, places=8)
+
+    def test_mismatched_mixer(self):
+        """Test that a mixer with the wrong number of qubits raises."""
+        cost_op = SparsePauliOp.from_list([("IIZZ", 1.0), ("ZIIZ", 1.0)])
+
+        mixer = QuantumCircuit(3)
+        mixer.rx(2 * Parameter("b"), range(3))
+
+        with self.assertRaises(ValueError):
+            self.evaluator.evaluate(cost_op, [0.1, 0.2], mixer=mixer)
