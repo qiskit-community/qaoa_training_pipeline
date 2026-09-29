@@ -9,7 +9,7 @@
 """Classes to extract features from cost operators."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple
+
 import networkx as nx
 import numpy as np
 
@@ -24,7 +24,7 @@ class BaseFeatureExtractor(ABC):
     """A base class that extracts properties from cost operators."""
 
     @abstractmethod
-    def __call__(self, cost_op: SparsePauliOp) -> Tuple:
+    def __call__(self, cost_op: SparsePauliOp) -> tuple:
         """Extract features of the given cost operator."""
 
     def to_config(self) -> dict:
@@ -32,7 +32,7 @@ class BaseFeatureExtractor(ABC):
         return {"feature_extractor_name": self.__class__.__name__}
 
     @abstractmethod
-    def features(self) -> List[str]:
+    def features(self) -> list[str]:
         """Return a list of feature names."""
 
     @classmethod
@@ -70,7 +70,8 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         extract_avg_edge_weights: bool = True,
         extract_standard_devs: bool = True,
         extract_density: bool = True,
-        extra_features: Optional[Dict] = None,
+        include_one_local: bool = True,
+        extra_features: dict | None = None,
     ):
         """Setup the class.
 
@@ -90,6 +91,7 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         self.extract_avg_edge_weights = extract_avg_edge_weights
         self.extract_standard_devs = extract_standard_devs
         self.extract_density = extract_density
+        self._include_one_local = include_one_local
         self._extra_feature = extra_features or dict()
 
     def features(self):
@@ -122,7 +124,11 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
 
         return names
 
-    def __call__(self, cost_op: SparsePauliOp, qaoa_depth: int) -> Tuple:
+    def __call__(
+        self,
+        cost_op: SparsePauliOp,
+        qaoa_depth: int,
+    ) -> tuple:
         """
         Extract features from a graph
 
@@ -133,7 +139,7 @@ class GraphFeatureExtractor(BaseFeatureExtractor):
         Returns:
             A tuple of extracted features.
         """
-        graph = operator_to_graph(cost_op)
+        graph = operator_to_graph(cost_op, include_one_local=self._include_one_local)
 
         features: list[int | float] = [qaoa_depth]
 

@@ -1,17 +1,51 @@
 {
-    "trainer_chain": [
+    "params_provider":{
+        "provider_name": "DepthOneScanTrainer",
+        "provider_init": {
+            "evaluator": "EfficientDepthOneEvaluator",
+            "evaluator_init": {},
+            "parameter_ranges": [[0, 3.1456], [0, 3.1456]],
+            "num_points": 15
+        },
+        "save_file": "method_3.json"
+    },
+    "pipeline_components": [
         {
-            "trainer": "ScipyTrainer",
-            "trainer_init": {
-                "evaluator": "LightConeEvaluator",
-                "evaluator_init": {},
-                "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
+            "component_name": "RecursiveTransitionStates",
+            "component_init": {
+                "trainer": "ScipyTrainer",
+                "trainer_init": {
+                    "evaluator": "MPSEvaluator",
+                    "evaluator_init": {
+                        "use_vidal_form": "True",
+                        "use_swap_strategy": "True"
+                    },
+                    "minimize_args": {
+                        "options": {
+                            "maxiter": 20,
+                            "rhobeg": 0.2
+                        }
+                    }
+                }, 
+                "reps": 3
             },
-            "train_kwargs": {
-                "params0": [0, 0]
+            "save_file": "method_3.json"
+        },
+        {
+            "component_name":"RecursionTrainer",
+            "component_init": {
+                "trainer": "ScipyTrainer",
+                "trainer_init": {
+                    "evaluator": "StatevectorEvaluator",
+                    "evaluator_init": {},
+                    "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
+                },
+                "parameter_extender": "interpolate",
+                "reps": 6
+
             },
             "save_file": "method_3.json"
         }
     ],
-    "description": "Use the light-cone evaluation with the scipy trainer."
+    "description": "Uses a grid search on the efficient depth one evaluator, a RTS trainer, and an INTERP trainer."
 }

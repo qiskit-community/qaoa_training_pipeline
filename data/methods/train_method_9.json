@@ -1,14 +1,17 @@
-{
-    "trainer_chain": [
+{   "params_provider": {
+        "provider_name": "FromConfigParamsProvider",
+        "provider_init":{
+            "params0": [0.5, 0.5],
+            "qaoa_angles_function": "IdentityFunction"
+        }
+    },
+    "pipeline_components": [
         {
-            "trainer": "TQATrainer",
-            "trainer_init": {
+            "component_name": "LRQAOATrainer",
+            "component_init": {
                 "evaluator": "MPSEvaluator",
-                "evaluator_init": {},
-                "initial_dt":[0.5, 0.5]
-            },
-            
-            "train_kwargs": {}
+                "evaluator_init": {}
+            }            
         }
     ],
     "description": "optimized TQATrainer with MPSEvaluator"

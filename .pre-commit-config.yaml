@@ -1,0 +1,82 @@
+###################################
+# GETTING STARTED WITH PRE-COMMIT #
+###################################
+# To start using this pre-commit file install pre-commit:
+#   pip install pre-commit
+# Install hooks:
+#   pre-commit install
+# Note:  Multiple changes to the same file by a hook will block git commits.
+#    Therefore hooks should be added one at a time.
+# Apply to all files without committing:
+#   pre-commit run --all-files
+# For more info, see https://pre-commit.com/
+
+##########
+# UPDATE #
+##########
+# Update this file (will change version numbers of tools, which could lead to
+# simultaneous changes that require manual resolution):
+#   pre-commit autoupdate
+
+#############
+# CUSTOMIZE #
+#############
+# To customize per-hook behavior you can use:
+#  1) the `args` option to pass cli args to the tool
+#  2) per-tool config files such as mypy.ini, .pylintrc etc in repo root
+#  3) the shared config file pyproject.toml in repo root
+
+#############
+# UNINSTALL #
+#############
+# pre-commit uninstall
+repos:
+  # default hooks provided by the pre-commit project
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-illegal-windows-names
+      - id: check-json
+      - id: check-merge-conflict
+        args: [--assume-in-merge]
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: name-tests-test
+        args: [--pytest-test-first]
+      - id: pretty-format-json
+        args: [--autofix]
+        exclude: '\.ipynb$'
+      - id: trailing-whitespace
+
+  # format docstrings
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.7.7
+    hooks:
+      - id: docformatter
+        args: [--in-place, --black, --close-quotes-on-newline, --pre-summary-newline]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.15.10
+    hooks:
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [ python, pyi, jupyter ]
+
+  # black: automatic pep8 compliance code formatting
+  - repo: https://github.com/psf/black
+    rev: 26.3.1
+    hooks:
+      - id: black

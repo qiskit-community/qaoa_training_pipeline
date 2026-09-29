@@ -1,18 +1,24 @@
-{
-    "trainer_chain": [
+{   "params_provider":{
+            "provider_name": "RandomPoint",
+            "provider_init": {
+                "reps": 1
+            }
+        },
+    "pipeline_components": [
         {
-            "trainer": "ScipyTrainer",
-            "trainer_init": {
+            "component_name": "ScipyTrainer",
+            "component_init": {
                 "evaluator": "MPSEvaluator",
                 "evaluator_init": {
                     "bond_dim_circuit": 24,
                     "use_vidal_form": true,
-                    "threshold_circuit": 0.001
+                    "threshold_circuit": 0.001,
+                    "threshold_mpo": null,
+                    "bond_dim_mpo": 4,
+                    "use_swap_strategy": false,
+                    "store_schmidt_values": true
                 },
                 "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
-            },
-            "train_kwargs": {
-                "params0": [0, 0]
             },
             "save_file": "method_4.json"
         }

@@ -1,12 +1,9 @@
-{
-    "trainer_chain": [
-        {
-            "trainer": "DepthOneScanTrainer",
-            "trainer_init": {
+{   
+    "params_provider": {
+            "provider_name": "DepthOneScanTrainer",
+            "provider_init": {
                 "evaluator": "EfficientDepthOneEvaluator",
-                "evaluator_init": {}
-            },
-            "train_kwargs": {
+                "evaluator_init": {},
                 "parameter_ranges": [
                     [
                         0,
@@ -20,9 +17,10 @@
                 "num_points": 15
             }
         },
+    "pipeline_components": [
         {
-            "trainer": "RecursiveTransitionStates",
-            "trainer_init": {
+            "component_name": "RecursiveTransitionStates",
+            "component_init": {
                 "trainer": "ScipyTrainer",
                 "trainer_init": {
                     "evaluator": "MPSEvaluator",
@@ -36,13 +34,8 @@
                             "rhobeg": 0.2
                         }
                     }
-                }
-            },
-            "train_kwargs": {
-                "reps": 3,
-                "result": {
-                    "optimized_params": "previous_optimal_point"
-                }
+                }, 
+                "reps": 3
             },
             "save_file": "method_7.json"
         }

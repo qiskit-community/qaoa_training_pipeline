@@ -8,8 +8,30 @@
 
 """A collection of methods to pre-process data before QAOA parameter training."""
 
-from .sat_mapping import SATMapper
+from .base_processing import BasePreprocessor
+from .angle_aggregation import BaseAngleAggregator, TrivialAngleAggregator, AverageAngleAggregator
+from .feature_extraction import BaseFeatureExtractor, GraphFeatureExtractor
+from .feature_matching import BaseFeatureMatcher, TrivialFeatureMatcher, MinimumNormFeatureMatcher
 
-PREPROCESSORS = {
-    "sat": SATMapper,
-}
+__all__ = [
+    "BasePreprocessor",
+    "BaseAngleAggregator",
+    "TrivialAngleAggregator",
+    "AverageAngleAggregator",
+    "BaseFeatureExtractor",
+    "GraphFeatureExtractor",
+    "BaseFeatureMatcher",
+    "TrivialFeatureMatcher",
+    "MinimumNormFeatureMatcher",
+    "PREPROCESSORS",
+]
+
+PREPROCESSORS = {}
+
+try:
+    from .sat_mapping import SATMapper, SATResult
+
+    __all__ += ["SATMapper", "SATResult"]
+    PREPROCESSORS["sat"] = SATMapper
+except ImportError:
+    pass

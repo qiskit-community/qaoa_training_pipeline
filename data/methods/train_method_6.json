@@ -1,33 +1,27 @@
 {
-    "trainer_chain": [
+    "params_provider":        
         {
-            "trainer": "DepthOneScanTrainer",
-            "trainer_init": {
+            "provider_name": "DepthOneScanTrainer",
+            "provider_init": {
                 "evaluator": "EfficientDepthOneEvaluator",
-                "evaluator_init": {}
-            },
-            "train_kwargs": {
+                "evaluator_init": {},
                 "parameter_ranges": [[0, 3.1456], [0, 3.1456]],
                 "num_points": 15
             }
         },
+    "pipeline_components": [
         {
-            "trainer":"RecursionTrainer",
-            "trainer_init": {
+            "component_name":"RecursionTrainer",
+            "component_init": {
                 "trainer": "ScipyTrainer",
                 "trainer_init": {
                     "evaluator": "StatevectorEvaluator",
                     "evaluator_init": {},
                     "minimize_args": {"options": {"maxiter": 20, "rhobeg": 0.2}}
                 },
-                "parameter_extender": "interpolate"
+                "parameter_extender": "interpolate",
+                "reps": 3
 
-            },
-            "train_kwargs": {
-                "reps": 3,
-                "result": {
-                    "optimized_params": "params0"
-                }
             },
             "save_file": "method_6.json"
         }

@@ -7,3 +7,9 @@
 # that they have been altered from the originals.
 
 """Module that contains visualization routines."""
+
+from .plotting import plot_cdf
+
+__all__ = [
+    "plot_cdf",
+]

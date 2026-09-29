@@ -1,0 +1,127 @@
+#
+#
+# (C) Copyright IBM 2024.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+"""Class to store result data."""
+
+from __future__ import annotations
+
+import platform
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qaoa_training_pipeline.framework.params_provider import ParamsProvider
+    from qaoa_training_pipeline.training.history_mixin import HistoryMixin
+    from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
+
+
+@dataclass
+class ParamResult:
+    """
+    A class to store the results of a parameter optimization.
+
+    This class ensures that we have elementary information such as information on the
+    platform in addition to training duration and parameters. The class includes a
+    `qaoa_training_pipeline_version` variable. This variable should be updated manually
+    in each new commit to the repository. The added functionality is tracked in
+    a table in the main README.md.
+    """
+
+    data: dict
+
+    def __init__(
+        self,
+        optimized_params: list,
+        duration: float,
+        trainer: ParamsProvider,
+        energy: float | None = None,
+    ):
+        """Initialize the data class."""
+        self.data = {}
+
+        self.data["system_info"] = {
+            "python_version": platform.python_version(),
+            "system": platform.system(),
+            "processor": platform.processor(),
+            "platform": platform.platform(),
+            "qaoa_training_pipeline_version": 49,
+        }
+
+        # Convert, e.g., np.float to float
+        self.data["optimized_params"] = [float(val) for val in optimized_params]
+        self.data["optimized_qaoa_angles"] = [
+            float(val) for val in trainer.qaoa_angles_function(optimized_params)
+        ]
+        self.data["train_duration"] = duration
+        self.data["energy"] = "NA" if energy is None else float(energy)
+        self.data["trainer"] = trainer.to_config()
+
+    def __contains__(self, item):
+        return item in self.data
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def __delitem__(self, key):
+        del self.data[key]
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __repr__(self):
+        out = f"{self.__class__.__name__} with {self.data.keys()} entries.\n"
+
+        out += f"Obtained from training with {self.data['trainer']['trainer_name']}"
+        out += f" in {self.data['train_duration']} seconds \n"
+        out += "optimized_params:" + str(self.data["optimized_params"]) + "\n"
+        out += "optimized_qaoa_angles:" + str(self.data["optimized_qaoa_angles"]) + "\n"
+        out += "energy:" + str(self.data["energy"])
+
+        return out
+
+    def keys(self):
+        """Return the keys of the underlying dict."""
+        return self.data.keys()
+
+    def update(self, other: dict):
+        """Update the data with the given dictionary."""
+        self.data.update(other)
+
+    def add_history(self, history_mixin: HistoryMixin):
+        """Add the history to the data."""
+        self.data["energy_history"] = history_mixin.energy_history
+        self.data["parameter_history"] = history_mixin.parameter_history
+        self.data["energy_evaluation_time"] = history_mixin.energy_evaluation_time
+
+    # pylint: disable=(too-many-positional-arguments
+    @classmethod
+    def from_scipy_result(
+        cls, result, params0, train_duration, sign, trainer: ScipyTrainer
+    ) -> ParamResult:
+        """Standardizes results from SciPy such that it can be serialized."""
+        param_result = cls(
+            result.pop("x").tolist(), train_duration, trainer, sign * result.pop("fun")
+        )
+
+        result = dict(result)
+
+        param_result["x0"] = params0
+
+        # Serialize the success boolean to avoid json issues
+        if "success" in result:
+            success = result["success"]
+            param_result["success"] = f"{success}"
+
+        param_result.add_history(trainer)
+
+        return param_result

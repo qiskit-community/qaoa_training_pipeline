@@ -72,8 +72,3 @@ runs:
           pip install -U qiskit
         fi
       shell: bash
-    - name: Install stable Aer
-      run: |
-        echo 'Install stable Aer'
-        pip install -U qiskit-aer
-      shell: bash
