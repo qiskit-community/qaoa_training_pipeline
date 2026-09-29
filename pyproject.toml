@@ -31,6 +31,7 @@ dependencies = [
     "numpy>=1.22.0",
     "scipy",
     "qiskit",
+    "qiskit-aer",
     "scikit-learn",
     "matplotlib>=3.3",
     "qiskit-optimization",
@@ -50,7 +51,6 @@ sat = [
     "python-sat",
 ]
 notebooks = [
-    "qiskit-aer",
     "qiskit-ibm-runtime",
 ]
 test = [

@@ -8,7 +8,9 @@
 
 """MPS-based QAOA evaluator."""
 
+import importlib.util
 from math import prod, sqrt
+from typing import TYPE_CHECKING
 
 import numpy as np
 from qiskit.circuit import QuantumCircuit
@@ -20,15 +22,25 @@ from qaoa_training_pipeline.utils.graph_utils import (
     make_swap_strategy,
     operator_to_list_of_hyper_edges,
 )
-from qaoa_training_pipeline.utils.tns_utils.qaoa_circuit_mps import (
-    QAOACircuitMPSRepresentation,
-    QAOACircuitVidalRepresentation,
-)
-from qaoa_training_pipeline.utils.tns_utils.qaoa_cost_function import QAOACostFunction
+
+# Safely import the tensor network utilities if quimb is installed. quimb is part
+# of the optional `tns` dependencies of the QAOA training pipeline.
+HAS_QUIMB = importlib.util.find_spec("quimb") is not None
+if HAS_QUIMB or TYPE_CHECKING:
+    from qaoa_training_pipeline.utils.tns_utils.qaoa_circuit_mps import (
+        QAOACircuitMPSRepresentation,
+        QAOACircuitVidalRepresentation,
+    )
+    from qaoa_training_pipeline.utils.tns_utils.qaoa_cost_function import QAOACostFunction
+else:
+    # pylint: disable=invalid-name
+    QAOACircuitMPSRepresentation = None
+    QAOACircuitVidalRepresentation = None
+    QAOACostFunction = None
 
 
 # cspell: words Trotterized
-# cspell: ignore inds
+# cspell: ignore inds quimb
 class MPSEvaluator(BaseEvaluator):
     r"""Matrix Product State-based evaluator of QAOA circuits
 
@@ -92,6 +104,13 @@ class MPSEvaluator(BaseEvaluator):
                 allowed bond dimension. Therefore, a large amount of data may be generated for
                 accurate simulations of deep circuits.
         """
+        if not HAS_QUIMB:
+            raise ImportError(
+                f"{self.__class__.__name__} requires quimb. "
+                "Please install the optional tensor network dependencies with "
+                "`pip install qaoa_training_pipeline[tns]`."
+            )
+
         self._threshold_circuit = threshold_circuit
         self._max_bond_circuit = bond_dim_circuit
         self._threshold_cost = threshold_mpo
