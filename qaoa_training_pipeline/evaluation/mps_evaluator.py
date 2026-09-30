@@ -8,9 +8,7 @@
 
 """MPS-based QAOA evaluator."""
 
-import importlib.util
 from math import prod, sqrt
-from typing import TYPE_CHECKING
 
 import numpy as np
 from qiskit.circuit import QuantumCircuit
@@ -23,20 +21,16 @@ from qaoa_training_pipeline.utils.graph_utils import (
     operator_to_list_of_hyper_edges,
 )
 
-# Safely import the tensor network utilities if quimb is installed. quimb is part
-# of the optional `tns` dependencies of the QAOA training pipeline.
-HAS_QUIMB = importlib.util.find_spec("quimb") is not None
-if HAS_QUIMB or TYPE_CHECKING:
+# Safely import the tensor network utilities if quimb is installed.
+try:
     from qaoa_training_pipeline.utils.tns_utils.qaoa_circuit_mps import (
         QAOACircuitMPSRepresentation,
         QAOACircuitVidalRepresentation,
     )
     from qaoa_training_pipeline.utils.tns_utils.qaoa_cost_function import QAOACostFunction
-else:
-    # pylint: disable=invalid-name
-    QAOACircuitMPSRepresentation = None
-    QAOACircuitVidalRepresentation = None
-    QAOACostFunction = None
+    HAS_QUIMB = True
+except ImportError:
+    HAS_QUIMB = False
 
 
 # cspell: words Trotterized
