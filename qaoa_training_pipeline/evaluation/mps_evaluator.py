@@ -28,6 +28,7 @@ try:
         QAOACircuitVidalRepresentation,
     )
     from qaoa_training_pipeline.utils.tns_utils.qaoa_cost_function import QAOACostFunction
+
     HAS_QUIMB = True
 except ImportError:
     HAS_QUIMB = False
