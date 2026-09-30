@@ -124,7 +124,9 @@ class MPSEvaluator(BaseEvaluator):
 
         # Type variable remembering which type to use for the MPS representation of the circuit
         self._circuit_type = (
-            QAOACircuitVidalRepresentation if use_vidal_form else QAOACircuitMPSRepresentation
+            QAOACircuitVidalRepresentation  # pyright: ignore[reportPossiblyUnboundVariable]
+            if use_vidal_form
+            else QAOACircuitMPSRepresentation  # pyright: ignore[reportPossiblyUnboundVariable]
         )
 
         self._results_last_iteration = {}
@@ -203,7 +205,9 @@ class MPSEvaluator(BaseEvaluator):
                 cost_op = cost_op.apply_layout(permutation)
 
         if self._cost_op is None or not cost_op.equiv(self._cost_op.sparse_pauli):
-            self._cost_op = QAOACostFunction(cost_op, self._threshold_cost, self._max_bond_cost)
+            self._cost_op = QAOACostFunction(  # pyright: ignore[reportPossiblyUnboundVariable]
+                cost_op, self._threshold_cost, self._max_bond_cost
+            )
 
         # Construct the circuit
         beta_parameters = list(params[: len(params) // 2])
@@ -343,7 +347,9 @@ class MPSEvaluator(BaseEvaluator):
         Args:
             new_cost_op (SparsePauliOp): new `SparsePauliOp` object to be used
         """
-        self._cost_op = QAOACostFunction(new_cost_op)
+        self._cost_op = QAOACostFunction(  # pyright: ignore[reportPossiblyUnboundVariable]
+            new_cost_op
+        )
 
     @property
     def swap_strategy(self):
