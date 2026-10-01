@@ -156,7 +156,7 @@ The package declares several optional groups that can be combined as needed:
 | `tns` | `quimb`, `juliacall` | Tensor-network evaluators (`MPSEvaluator`) and Pauli propagation (`PPEvaluator`) |
 | `sat` | `python-sat` | SAT-based qubit-mapping pre-processor (`SATMapper`) |
 | `cplex` | `qiskit-optimization[cplex]` | Exact MaxCut solver via CPLEX (`solve_max_cut`) |
-| `notebooks` | `qiskit-aer`, `qiskit-ibm-runtime` | Running the `how_tos` notebooks |
+| `notebooks` | `qiskit-ibm-runtime` | Running the `how_tos` notebooks |
 | `test` | `ddt` | Running the test suite |
 | `ci` | `stestr`, `coverage` | CI-only test runner and coverage tooling |
 | `lint` | `black`, `ruff` | Code formatting and linting |

@@ -2210,6 +2210,7 @@ dependencies = [
     { name = "networkx" },
     { name = "numpy" },
     { name = "qiskit" },
+    { name = "qiskit-aer" },
     { name = "qiskit-optimization" },
     { name = "qopt-best-practices" },
     { name = "scikit-learn" },
@@ -2232,7 +2233,6 @@ dev = [
     { name = "juliacall" },
     { name = "pre-commit" },
     { name = "python-sat" },
-    { name = "qiskit-aer" },
     { name = "qiskit-ibm-runtime" },
     { name = "qiskit-optimization", extra = ["cplex"] },
     { name = "quimb" },
@@ -2243,7 +2243,6 @@ lint = [
     { name = "ruff" },
 ]
 notebooks = [
-    { name = "qiskit-aer" },
     { name = "qiskit-ibm-runtime" },
 ]
 sat = [
@@ -2272,7 +2271,7 @@ requires-dist = [
     { name = "python-sat", marker = "extra == 'sat'" },
     { name = "qaoa-training-pipeline", extras = ["cplex", "lint", "notebooks", "sat", "test", "tns"], marker = "extra == 'dev'" },
     { name = "qiskit" },
-    { name = "qiskit-aer", marker = "extra == 'notebooks'" },
+    { name = "qiskit-aer" },
     { name = "qiskit-ibm-runtime", marker = "extra == 'notebooks'" },
     { name = "qiskit-optimization" },
     { name = "qiskit-optimization", extras = ["cplex"], marker = "extra == 'cplex'" },
