@@ -20,15 +20,22 @@ from qaoa_training_pipeline.utils.graph_utils import (
     make_swap_strategy,
     operator_to_list_of_hyper_edges,
 )
-from qaoa_training_pipeline.utils.tns_utils.qaoa_circuit_mps import (
-    QAOACircuitMPSRepresentation,
-    QAOACircuitVidalRepresentation,
-)
-from qaoa_training_pipeline.utils.tns_utils.qaoa_cost_function import QAOACostFunction
+
+# Safely import the tensor network utilities if quimb is installed.
+try:
+    from qaoa_training_pipeline.utils.tns_utils.qaoa_circuit_mps import (
+        QAOACircuitMPSRepresentation,
+        QAOACircuitVidalRepresentation,
+    )
+    from qaoa_training_pipeline.utils.tns_utils.qaoa_cost_function import QAOACostFunction
+
+    HAS_QUIMB = True
+except ImportError:
+    HAS_QUIMB = False
 
 
 # cspell: words Trotterized
-# cspell: ignore inds
+# cspell: ignore inds quimb
 class MPSEvaluator(BaseEvaluator):
     r"""Matrix Product State-based evaluator of QAOA circuits
 
@@ -92,6 +99,13 @@ class MPSEvaluator(BaseEvaluator):
                 allowed bond dimension. Therefore, a large amount of data may be generated for
                 accurate simulations of deep circuits.
         """
+        if not HAS_QUIMB:
+            raise ImportError(
+                f"{self.__class__.__name__} requires quimb. "
+                "Please install the optional tensor network dependencies with "
+                "`pip install qaoa_training_pipeline[tns]`."
+            )
+
         self._threshold_circuit = threshold_circuit
         self._max_bond_circuit = bond_dim_circuit
         self._threshold_cost = threshold_mpo
@@ -110,7 +124,9 @@ class MPSEvaluator(BaseEvaluator):
 
         # Type variable remembering which type to use for the MPS representation of the circuit
         self._circuit_type = (
-            QAOACircuitVidalRepresentation if use_vidal_form else QAOACircuitMPSRepresentation
+            QAOACircuitVidalRepresentation  # pyright: ignore[reportPossiblyUnboundVariable]
+            if use_vidal_form
+            else QAOACircuitMPSRepresentation  # pyright: ignore[reportPossiblyUnboundVariable]
         )
 
         self._results_last_iteration = {}
@@ -189,7 +205,9 @@ class MPSEvaluator(BaseEvaluator):
                 cost_op = cost_op.apply_layout(permutation)
 
         if self._cost_op is None or not cost_op.equiv(self._cost_op.sparse_pauli):
-            self._cost_op = QAOACostFunction(cost_op, self._threshold_cost, self._max_bond_cost)
+            self._cost_op = QAOACostFunction(  # pyright: ignore[reportPossiblyUnboundVariable]
+                cost_op, self._threshold_cost, self._max_bond_cost
+            )
 
         # Construct the circuit
         beta_parameters = list(params[: len(params) // 2])
@@ -329,7 +347,9 @@ class MPSEvaluator(BaseEvaluator):
         Args:
             new_cost_op (SparsePauliOp): new `SparsePauliOp` object to be used
         """
-        self._cost_op = QAOACostFunction(new_cost_op)
+        self._cost_op = QAOACostFunction(  # pyright: ignore[reportPossiblyUnboundVariable]
+            new_cost_op
+        )
 
     @property
     def swap_strategy(self):

@@ -156,7 +156,7 @@ The package declares several optional groups that can be combined as needed:
 | `tns` | `quimb`, `juliacall` | Tensor-network evaluators (`MPSEvaluator`) and Pauli propagation (`PPEvaluator`) |
 | `sat` | `python-sat` | SAT-based qubit-mapping pre-processor (`SATMapper`) |
 | `cplex` | `qiskit-optimization[cplex]` | Exact MaxCut solver via CPLEX (`solve_max_cut`) |
-| `notebooks` | `qiskit-aer`, `qiskit-ibm-runtime` | Running the `how_tos` notebooks |
+| `notebooks` | `qiskit-ibm-runtime` | Running the `how_tos` notebooks |
 | `test` | `ddt` | Running the test suite |
 | `ci` | `stestr`, `coverage` | CI-only test runner and coverage tooling |
 | `lint` | `black`, `ruff` | Code formatting and linting |
@@ -238,6 +238,7 @@ This repository is still in development: new functionality is being added and th
 |      47 | Add MPS sampling based energy estimation.                    |          #75 |
 |      48 | Update printing method for ParamResult.                      |          #82 |
 |      49 | Update tests to fix some issues.                             |          #87 |
+|      50 | Fix install: Quimb stays optional, Qiskit Aer is default.    |          #90 |
 
 ## IBM Public Repository Disclosure
 
