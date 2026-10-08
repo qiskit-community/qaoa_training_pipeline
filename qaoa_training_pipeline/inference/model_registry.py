@@ -1,138 +1,128 @@
-"""Torch-free resolution of ONNX weight bundles (local-first, HF fallback).
+"""Resolution of ONNX model bundles from the HuggingFace Hub.
 
-The tiny ``model_config.json`` files ship inside the package; the large
-``model.onnx`` / ``model.onnx.data`` weights live on the HuggingFace Hub and are
-downloaded lazily on first use, then cached. Resolution is **local-first**:
+The model zoo lives entirely on the Hub: each bundle is a self-contained repo
+holding ``model_config.json``, ``model.onnx`` and ``model.onnx.data`` at its
+root. This package ships no model artifacts — only ``hf_setup.json``, which
+maps a *bundle key* to the repo and the pinned revision it is served from.
 
-1. If the weight sits next to its config (bundled subset, a dev export, or a
-   pre-fetched cache), it is used directly and no network access happens.
-2. Otherwise it is downloaded from the Hub at the pinned revision recorded in
-   ``model_configs/hf_manifest.json`` and integrity-checked against the
-   manifest checksum.
+A bundle key is ``<model>/p<p>`` (e.g. ``"gcn/p3"``): it is the stable public
+identifier used by :class:`~qaoa_training_pipeline.inference.AIInference`, the
+tests and the tooling, and is independent of how the repos happen to be named.
 
-This keeps offline / air-gapped and CI setups working provided the weights are
-present locally (ship a subset, or run :func:`prefetch_bundles` ahead of time).
+:func:`resolve_bundle` downloads a bundle with ``snapshot_download``, which
+caches under ``~/.cache/huggingface``, so only the first use touches the
+network. Call :func:`prefetch_bundles` to warm the cache ahead of an offline /
+air-gapped run.
+
+The repos are private while the models are unreleased, so downloads need a
+token (``hf auth login``, or ``HF_TOKEN`` in the environment).
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-MODEL_CONFIGS_DIR = Path(__file__).resolve().parent / "model_configs"
-MANIFEST_PATH = MODEL_CONFIGS_DIR / "hf_manifest.json"
-WEIGHT_FILENAMES = ("model.onnx", "model.onnx.data")
+hf_paths = Path(__file__).resolve().parent / "huggingface/hf_setup_local.json"
 
-# The manifest ships with this sentinel repo id until the weights are uploaded
-# and it is pinned to a real repo + commit. We refuse to hit the network while
-# it is still a placeholder so the failure is a clear message, not a 404.
-_PLACEHOLDER_MARKER = "PLACEHOLDER"
+# Files that make up a bundle; passed as snapshot_download allow_patterns so a
+# repo gaining unrelated files (a README, a license) does not enlarge the
+# download. The .onnx references its .data sidecar by relative filename, so
+# both must land in the same directory — a snapshot always co-locates them.
+BUNDLE_FILES = ("model_config.json", "model.onnx", "model.onnx.data")
 
 
+@lru_cache(maxsize=1)
 def load_manifest() -> dict[str, Any]:
-    """Load and cache the HF weight manifest."""
-    if not MANIFEST_PATH.is_file():
-        raise FileNotFoundError(f"HF manifest not found: {MANIFEST_PATH}")
-    with open(MANIFEST_PATH, "r", encoding="utf-8") as handle:
+    """Load and cache the HF bundle manifest."""
+    if not hf_paths.is_file():
+        raise FileNotFoundError(f"HF manifest not found: {hf_paths}")
+    with open(hf_paths, "r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
-def bundle_key_for(config_path: Path) -> str:
-    """Derive the ``<model>/p<p>`` bundle key from a config path or its dir."""
-    config_path = Path(config_path)
-    bundle_dir = config_path if config_path.is_dir() else config_path.parent
-    return f"{bundle_dir.parent.name}/{bundle_dir.name}"
+def available_bundles() -> list[str]:
+    """All bundle keys the manifest knows about, sorted."""
+    return sorted(load_manifest().get("bundles", {}))
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+def published_bundles() -> list[str]:
+    """Bundle keys that are actually uploaded (i.e. have a pinned revision)."""
+    bundles = load_manifest().get("bundles", {})
+    return sorted(key for key, entry in bundles.items() if entry.get("revision"))
 
 
-def _verify(path: Path, expected: dict[str, Any]) -> None:
-    actual = _sha256(path)
-    if actual != expected["sha256"]:
-        raise ValueError(
-            f"Checksum mismatch for {path.name}: expected {expected['sha256']}, got {actual}. "
-            "The manifest and the downloaded weights are out of sync."
+def bundle_entry(bundle_key: str) -> dict[str, Any]:
+    """Return the manifest entry for ``bundle_key``.
+
+    Raises:
+        KeyError: If the key is not in the manifest.
+        RuntimeError: If the bundle has no pinned revision (not yet uploaded).
+    """
+    bundles = load_manifest().get("bundles", {})
+    if bundle_key not in bundles:
+        raise KeyError(
+            f"Unknown model bundle {bundle_key!r}. Available: {', '.join(available_bundles())}."
         )
 
-
-def _download_bundle(bundle_key: str, manifest: dict[str, Any]) -> Path:
-    """Download a bundle's weights from the Hub and return the local .onnx path."""
-    repo_id = manifest["repo_id"]
-    if _PLACEHOLDER_MARKER in repo_id:
+    entry = bundles[bundle_key]
+    if not entry.get("revision"):
         raise RuntimeError(
-            f"ONNX weights for {bundle_key!r} are not present locally and the HF manifest "
-            f"still points at the placeholder repo {repo_id!r}. Either ship the weights "
-            "locally, or wait until the manifest is pinned to the uploaded HuggingFace repo."
+            f"Model bundle {bundle_key!r} is not published yet: its manifest entry "
+            f"({hf_paths}) has no pinned revision. Published bundles: "
+            f"{', '.join(published_bundles()) or 'none'}."
         )
+    return entry
+
+
+def _snapshot_download():
+    """Import ``snapshot_download`` with a helpful error if the extra is missing."""
     try:
-        from huggingface_hub import hf_hub_download
+        from huggingface_hub import snapshot_download
     except ImportError as exc:  # pragma: no cover - dependency guard
         raise ImportError(
-            "Downloading ONNX weights from HuggingFace requires 'huggingface_hub'. "
+            "Downloading model bundles from HuggingFace requires 'huggingface_hub'. "
             "Install the inference extra: pip install qaoa_training_pipeline[inference]."
         ) from exc
-
-    files = manifest["bundles"][bundle_key]
-    prefix = manifest.get("path_prefix", "").strip("/")
-    onnx_local: Path | None = None
-    # Both files must land in the same directory (the .onnx references its
-    # .data sidecar by relative filename); hf_hub_download preserves the repo
-    # layout in the cache, so co-location is guaranteed.
-    for name in WEIGHT_FILENAMES:
-        repo_filename = f"{prefix}/{bundle_key}/{name}" if prefix else f"{bundle_key}/{name}"
-        cached = Path(
-            hf_hub_download(
-                repo_id=repo_id,
-                filename=repo_filename,
-                revision=manifest.get("revision"),
-                repo_type=manifest.get("repo_type", "model"),
-            )
-        )
-        _verify(cached, files[name])
-        if name == "model.onnx":
-            onnx_local = cached
-    if onnx_local is None:  # pragma: no cover - WEIGHT_FILENAMES always includes model.onnx
-        raise RuntimeError(f"No model.onnx entry for bundle {bundle_key!r} in the manifest.")
-    return onnx_local
+    return snapshot_download
 
 
-def ensure_onnx_local(config_path: Path, filename: str = "model.onnx") -> Path:
-    """Return a local path to ``filename`` for the bundle at ``config_path``.
+def download_bundle(repo_id: str, revision: str = "main") -> Path:
+    """Download a bundle repo and return the local directory holding its files.
 
-    Local-first: an existing file next to the config is returned untouched. If
-    it is missing, the bundle is fetched from the Hub (per the manifest) and the
-    cached path is returned.
+    Escape hatch for a repo that is not in the manifest (a private export, a
+    fork, an unreleased retrain). Prefer :func:`resolve_bundle` for the shipped
+    zoo, which pins the revision for you.
     """
-    config_path = Path(config_path)
-    bundle_dir = config_path if config_path.is_dir() else config_path.parent
-    local = bundle_dir / filename
-    if local.is_file():
-        return local
-
     manifest = load_manifest()
-    bundle_key = bundle_key_for(config_path)
-    if bundle_key not in manifest.get("bundles", {}):
-        raise FileNotFoundError(
-            f"ONNX weight {local} is missing and bundle {bundle_key!r} is not in the HF "
-            f"manifest ({MANIFEST_PATH})."
+    snapshot_download = _snapshot_download()
+    return Path(
+        snapshot_download(
+            repo_id,
+            revision=revision,
+            repo_type=manifest.get("repo_type", "model"),
+            allow_patterns=list(manifest.get("bundle_files", BUNDLE_FILES)),
         )
-    return _download_bundle(bundle_key, manifest)
+    )
+
+
+def resolve_bundle(bundle_key: str) -> Path:
+    """Download the bundle for ``bundle_key`` and return its local directory.
+
+    The returned directory contains ``model_config.json`` next to the ONNX
+    artifacts, which is what :class:`OnnxQAOAPredictor` expects.
+    """
+    entry = bundle_entry(bundle_key)
+    return download_bundle(entry["repo_id"], revision=entry["revision"])
 
 
 def prefetch_bundles(bundle_keys: list[str] | None = None) -> list[Path]:
-    """Download and cache weights for the given bundles (all if ``None``).
+    """Download and cache the given bundles (all published ones if ``None``).
 
     Useful to warm the cache before running in an air-gapped / offline setting.
-    Returns the local ``model.onnx`` paths.
+    Returns the local bundle directories.
     """
-    manifest = load_manifest()
-    keys = bundle_keys if bundle_keys is not None else sorted(manifest.get("bundles", {}))
-    return [_download_bundle(key, manifest) for key in keys]
+    keys = bundle_keys if bundle_keys is not None else published_bundles()
+    return [resolve_bundle(key) for key in keys]

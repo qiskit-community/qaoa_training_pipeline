@@ -14,9 +14,15 @@ and numpy, and needs neither torch nor the original checkpoint.
 ### 1. Entry point — `AIInference`
 
 [`ai_inference.py`](ai_inference.py) is a `ProblemParamsProvider`, so it plugs
-into the existing pipeline exactly like any other angle provider. You give it a
-`config_path`; it calls `provide_params(cost_op)` and returns a `ParamResult` of
-angles.
+into the existing pipeline exactly like any other angle provider. You name a
+model; it calls `provide_params(cost_op)` and returns a `ParamResult` of angles.
+
+```python
+from qaoa_training_pipeline.inference import AIInference
+
+inference = AIInference(model="gcn/p3")      # downloaded from the Hub, then cached
+result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, gamma_1..gamma_p]
+```
 
 - Runs the exported `model.onnx` via `onnxruntime` + numpy — no torch, no
   checkpoint needed.
@@ -31,8 +37,8 @@ angles.
 - It loads the `.onnx` graph, runs it, and only feeds inputs the graph actually
   declares — so optional inputs like `edge_weights` do not break models that
   omit them.
-- Model artifacts are **local-first with a lazy HuggingFace download fallback**
-  (`ensure_onnx_local`, via `model_registry.py`).
+- Model artifacts are **ingested from the HuggingFace Hub** (`resolve_bundle`,
+  via `model_registry.py`) and cached locally.
 
 ### 3. Feature extraction
 
@@ -61,19 +67,43 @@ This is gated by `denormalize_output` (default `True`) in the config.
 
 ## Model zoo
 
-Multiple GNN/transformer architectures ship as exported ONNX bundles: GCN, GIN,
-graph transformer, edge transformer, a DDPM transformer, plus MLP — each with
-per-depth (p = 1…4) configs under `model_configs/<model>/p<p>/`.
+Seven GNN/transformer architectures are released as exported ONNX bundles: GCN,
+GIN, GNN, graph transformer, edge transformer, a DDPM transformer, plus MLP —
+each at depths p = 1…5, for 35 bundles.
 [`onnx_inputs.py`](onnx_inputs.py) holds a registry (`numpy_input_builders`)
 mapping model type → how to build its numpy feed.
+
+### How models are ingested
+
+No model artifacts ship with this package. Each bundle is a **self-contained
+HuggingFace repo** holding `model_config.json`, `model.onnx` and
+`model.onnx.data` at its root. [`hf_setup.json`](huggingface/hf_setup.json) maps a
+**bundle key** — `<model>/p<p>`, e.g. `gcn/p3`, the stable public identifier —
+to that repo and the commit it is pinned to, so a download is reproducible.
+
+There are three ways in, in decreasing order of how much the library does for
+you:
+
+| Call | Use for |
+|---|---|
+| `AIInference(model="gcn/p3")` / `OnnxQAOAPredictor.from_bundle("gcn/p3")` | a bundle of the released zoo; revision pinned by the manifest |
+| `OnnxQAOAPredictor.from_hf("org/repo", revision=...)` | any bundle repo outside the manifest (a private export, a retrain) |
+| `OnnxQAOAPredictor(config_path="/path/to/bundle")` | a local export directory, with the ONNX files next to the config |
+
+`snapshot_download` caches under `~/.cache/huggingface`, so only the first use
+touches the network. For an air-gapped run, warm the cache first with
+`model_registry.prefetch_bundles()`. The repos are private while the models are
+unreleased, so downloads need a token (`hf auth login`, or `HF_TOKEN`); a bundle
+with no pinned revision in the manifest is not published yet and raises a
+message saying so.
 
 ## Supporting tooling
 
 [`tools/inference/`](../../tools/inference/) provides torch-free helpers:
 `model_keys.py` (bundle discovery), `bench_ops.py` (deterministic cost
-operators), `hf_manifest.py` and `upload_to_hf.py` (HuggingFace weight manifest
-and upload). The frozen predictions in `test/inference/baselines/` guard against
-regressions in the ONNX runtime.
+operators), `hf_manifest.py` and `upload_to_hf.py` (bundle upload and manifest
+revision pinning). The frozen predictions in `test/inference/baselines/` guard
+against regressions in the ONNX runtime.
 
 ## One-line summary
 

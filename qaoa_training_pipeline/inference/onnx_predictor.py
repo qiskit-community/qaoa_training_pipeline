@@ -4,6 +4,10 @@
 and numpy — no torch, no torch_geometric. It exposes ``predict`` with
 ``output_dim`` validation so ``AIInference`` and existing callers work
 unchanged.
+
+Models are ingested from the HuggingFace Hub: use :meth:`from_bundle` for a
+bundle from the shipped zoo, :meth:`from_hf` for an arbitrary bundle repo, or
+the constructor directly to point at a local export directory.
 """
 
 from __future__ import annotations
@@ -17,9 +21,17 @@ import onnxruntime as ort
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.inference.config_io import load_config
+from qaoa_training_pipeline.inference.config_io import (
+    CONFIG_FILENAME,
+    load_config,
+    resolve_bundle_path,
+)
 from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor
-from qaoa_training_pipeline.inference.model_registry import ensure_onnx_local
+from qaoa_training_pipeline.inference.model_registry import (
+    bundle_entry,
+    download_bundle,
+    resolve_bundle,
+)
 from qaoa_training_pipeline.inference.onnx_inputs import numpy_input_builders
 
 DEFAULT_ONNX_FILENAME = "model.onnx"
@@ -43,8 +55,7 @@ class OnnxQAOAPredictor:
     """Torch-free predictor backed by an exported ONNX model.
 
     Example:
-        bundle = "qaoa_training_pipeline/inference/model_configs/gcn/p1"
-        predictor = OnnxQAOAPredictor(config_path=f"{bundle}/model_config.json")
+        predictor = OnnxQAOAPredictor.from_bundle("gcn/p1")
         angles = predictor.predict(cost_op)
     """
 
@@ -54,10 +65,19 @@ class OnnxQAOAPredictor:
         device: str = "cpu",
         strict: bool = True,
         onnx_path: Path | str | None = None,
+        bundle_key: str | None = None,
+        repo_id: str | None = None,
+        revision: str | None = None,
     ) -> None:
         self.config_path = Path(config_path)
         self.device = str(device)
         self.strict = bool(strict)
+        # Hub coordinates when this predictor came from from_bundle/from_hf.
+        # They are what gets serialized, since config_path then points into a
+        # machine-specific HF cache directory.
+        self.bundle_key = bundle_key
+        self.repo_id = repo_id
+        self.revision = revision
 
         self.config = load_config(self.config_path)
         self.model_init = self.config.get("model_init", {})
@@ -73,16 +93,19 @@ class OnnxQAOAPredictor:
         self._prepare = numpy_input_builders[self.model_type]
 
         # Resolve the .onnx artifact: explicit arg > config "onnx" key > default
-        # filename. The default/config-relative cases are local-first with a
-        # lazy HuggingFace download fallback (see model_registry); an explicit
-        # onnx_path is taken as-is.
+        # filename. Without an explicit path it sits next to the config — true
+        # both for a downloaded bundle snapshot and for a local export dir.
         if onnx_path is not None:
             resolved = Path(onnx_path)
-            if not resolved.is_file():
-                raise FileNotFoundError(f"ONNX model not found: {resolved}.")
         else:
             filename = self.config.get("onnx", DEFAULT_ONNX_FILENAME)
-            resolved = ensure_onnx_local(self.config_path, filename)
+            resolved = resolve_bundle_path(self.config_path, filename)
+        if not resolved.is_file():
+            raise FileNotFoundError(
+                f"ONNX model not found: {resolved}. Bundles are downloaded from the "
+                "HuggingFace Hub — use OnnxQAOAPredictor.from_bundle('<model>/p<p>') "
+                "or from_hf('<org>/<repo>') instead of a local path."
+            )
         self.onnx_path = resolved
 
         providers = (
@@ -100,6 +123,54 @@ class OnnxQAOAPredictor:
             in_features=self.in_features,
             norm_stats=norm_stats,
         )
+
+    @classmethod
+    def from_bundle(cls, bundle_key: str, **kwargs: Any) -> "OnnxQAOAPredictor":
+        """Load a bundle of the shipped zoo by its ``<model>/p<p>`` key.
+
+        The manifest resolves the key to a HuggingFace repo at a pinned
+        revision; the bundle is downloaded once and cached (see
+        :mod:`~qaoa_training_pipeline.inference.model_registry`).
+        """
+        entry = bundle_entry(bundle_key)
+        bundle = resolve_bundle(bundle_key)
+        return cls(
+            config_path=bundle / CONFIG_FILENAME,
+            bundle_key=bundle_key,
+            repo_id=entry["repo_id"],
+            revision=entry["revision"],
+            **kwargs,
+        )
+
+    @classmethod
+    def from_hf(cls, repo_id: str, revision: str = "main", **kwargs: Any) -> "OnnxQAOAPredictor":
+        """Download a bundle repo from the Hub and wrap it in a predictor.
+
+        For bundles outside the shipped manifest (a private export, a retrain).
+        ``snapshot_download`` caches under ``~/.cache/huggingface``, so re-runs
+        are offline.
+        """
+        bundle = download_bundle(repo_id, revision=revision)
+        return cls(
+            config_path=bundle / CONFIG_FILENAME,
+            repo_id=repo_id,
+            revision=revision,
+            **kwargs,
+        )
+
+    def source(self) -> dict[str, str]:
+        """Where this predictor's artifacts came from, in serializable form.
+
+        Prefers the Hub coordinates; falls back to the local config path for a
+        predictor built directly from a directory.
+        """
+        if self.bundle_key is not None:
+            # The manifest owns the revision for a zoo bundle, so the key alone
+            # is a complete, pin-stable address.
+            return {"model": self.bundle_key}
+        if self.repo_id is not None:
+            return {"repo_id": self.repo_id, "revision": self.revision or "main"}
+        return {"config_path": str(self.config_path)}
 
     def metadata(self) -> dict[str, Any]:
         """Return predictor metadata from the config."""
