@@ -1,0 +1,151 @@
+{
+  "schema": 2,
+  "repo_type": "model",
+  "bundle_files": [
+    "model_config.json",
+    "model.onnx",
+    "model.onnx.data"
+  ],
+  "bundles": {
+    "diffusion_transformer/p1": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p1.diffusion_transformer",
+      "revision": null
+    },
+    "diffusion_transformer/p2": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p2.diffusion_transformer",
+      "revision": null
+    },
+    "diffusion_transformer/p3": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p3.diffusion_transformer",
+      "revision": null
+    },
+    "diffusion_transformer/p4": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p4.diffusion_transformer",
+      "revision": null
+    },
+    "diffusion_transformer/p5": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p5.diffusion_transformer",
+      "revision": null
+    },
+    "edge_transformer/p1": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p1.edge_transformer",
+      "revision": null
+    },
+    "edge_transformer/p2": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p2.edge_transformer",
+      "revision": null
+    },
+    "edge_transformer/p3": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p3.edge_transformer",
+      "revision": null
+    },
+    "edge_transformer/p4": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p4.edge_transformer",
+      "revision": null
+    },
+    "edge_transformer/p5": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p5.edge_transformer",
+      "revision": null
+    },
+    "gcn/p1": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gcn",
+      "revision": null
+    },
+    "gcn/p2": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p2.gcn",
+      "revision": null
+    },
+    "gcn/p3": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p3.gcn",
+      "revision": null
+    },
+    "gcn/p4": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p4.gcn",
+      "revision": null
+    },
+    "gcn/p5": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p5.gcn",
+      "revision": null
+    },
+    "graph_isomorphism_network/p1": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gin",
+      "revision": null
+    },
+    "graph_isomorphism_network/p2": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p2.gin",
+      "revision": null
+    },
+    "graph_isomorphism_network/p3": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p3.gin",
+      "revision": null
+    },
+    "graph_isomorphism_network/p4": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p4.gin",
+      "revision": null
+    },
+    "graph_isomorphism_network/p5": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p5.gin",
+      "revision": null
+    },
+    "graph_neural_network/p1": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gnn",
+      "revision": null
+    },
+    "graph_neural_network/p2": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p2.gnn",
+      "revision": null
+    },
+    "graph_neural_network/p3": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p3.gnn",
+      "revision": null
+    },
+    "graph_neural_network/p4": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p4.gnn",
+      "revision": null
+    },
+    "graph_neural_network/p5": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p5.gnn",
+      "revision": null
+    },
+    "graph_transformer/p1": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p1.graph_transformer",
+      "revision": null
+    },
+    "graph_transformer/p2": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p2.graph_transformer",
+      "revision": null
+    },
+    "graph_transformer/p3": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p3.graph_transformer",
+      "revision": null
+    },
+    "graph_transformer/p4": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p4.graph_transformer",
+      "revision": null
+    },
+    "graph_transformer/p5": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p5.graph_transformer",
+      "revision": null
+    },
+    "mlp/p1": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p1.mlp",
+      "revision": null
+    },
+    "mlp/p2": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p2.mlp",
+      "revision": null
+    },
+    "mlp/p3": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p3.mlp",
+      "revision": null
+    },
+    "mlp/p4": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p4.mlp",
+      "revision": null
+    },
+    "mlp/p5": {
+      "repo_id": "ibm-research/qaoa_angles.max_cut.p5.mlp",
+      "revision": null
+    }
+  }
+}

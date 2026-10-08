@@ -25,12 +25,19 @@ from qaoa_training_pipeline.training.functions import (
 )
 
 
+# TODO: REMOVE EVERYTHING THAT RELATES TO LOCAL BUNDLE/CONFIG -- ONLY SUPPORT HUGGINGFACE. NO ADDITIONAL VALUE FROM LOCAL
+
+
 class AIInference(ProblemParamsProvider):
     """AI-based inference for QAOA angle prediction.
 
     Loads a pre-trained AI model and predicts QAOA angles from a cost
     operator. The referenced model config declares which training setting
     the checkpoint was produced under.
+
+    The model is addressed in one of three ways: ``model`` (a ``<model>/p<p>``
+    bundle key from the shipped zoo), ``repo_id`` (any HuggingFace bundle repo)
+    or ``config_path`` (a local export directory).
 
     Inference is torch-free: it runs an exported ``model.onnx`` with
     ``onnxruntime`` and numpy. Requires the optional ``onnxruntime`` dependency
@@ -40,7 +47,10 @@ class AIInference(ProblemParamsProvider):
 
     def __init__(
         self,
+        model: str | None = None,
         config_path: str | None = None,
+        repo_id: str | None = None,
+        revision: str = "main",
         device: str = "cpu",
         strict: bool = True,
         validate_input_operator: bool = True,
@@ -49,9 +59,19 @@ class AIInference(ProblemParamsProvider):
     ) -> None:
         """Initialize the AI inference trainer.
 
+        Exactly one of ``model``, ``config_path`` or ``repo_id`` must be given.
+
         Args:
+            model: Bundle key of a model in the shipped zoo, ``"<model>/p<p>"``
+                (e.g. ``"gcn/p3"``). Resolved to a HuggingFace repo at a pinned
+                revision via ``inference/hf_setup.json`` and downloaded once
+                into the local HF cache. See
+                :func:`~qaoa_training_pipeline.inference.model_registry.available_bundles`.
             config_path: Path to a model_config.json file (or its enclosing
-                directory) describing the model and inputs to load.
+                directory) describing the model and inputs to load. For a local
+                export; the ONNX artifacts must sit next to the config.
+            repo_id: HuggingFace repo holding a bundle outside the manifest.
+            revision: Revision to download when ``repo_id`` is used.
             device: Device for inference ("cpu", "cuda", ...).
             strict: Reserved for parity with other providers; unused by the
                 ONNX runtime.
@@ -67,7 +87,20 @@ class AIInference(ProblemParamsProvider):
                 :class:`IdentityFunction` (no transformation).
         """
         super().__init__(qaoa_angles_function=qaoa_angles_function or IdentityFunction())
+        given = [
+            name
+            for name, val in (("model", model), ("config_path", config_path), ("repo_id", repo_id))
+            if val is not None
+        ]
+        if len(given) != 1:
+            raise ValueError(
+                "AIInference needs exactly one of 'model', 'config_path' or 'repo_id', "
+                f"got {given or 'none'}."
+            )
+        self.model_key = model
         self.config_path = config_path
+        self.repo_id = repo_id
+        self.revision = str(revision)
         self.device = str(device)
         self.strict = bool(strict)
         self.validate_input_operator = bool(validate_input_operator)
@@ -120,7 +153,7 @@ class AIInference(ProblemParamsProvider):
 
         result = ParamResult(qaoa_angles, time() - start, self, energy)
         result["ai_inference"] = {
-            "config_path": str(self.config_path),
+            **self.model.source(),
             "device": self.device,
             "strict": self.strict,
             "predictor_metadata": self.model.metadata(),
@@ -142,8 +175,12 @@ class AIInference(ProblemParamsProvider):
             "config_path",
             config.get("model_bundle", config.get("model_path")),
         )
-        if config_path is None:
-            raise ValueError("AIInference requires 'config_path' in config.")
+        model = config.get("model")
+        repo_id = config.get("repo_id")
+        if model is None and repo_id is None and config_path is None:
+            raise ValueError(
+                "AIInference requires one of 'model', 'repo_id' or 'config_path' in config."
+            )
 
         # Rebuild the angles function from its config when serialized; default
         # to the identity transformation otherwise.
@@ -156,7 +193,10 @@ class AIInference(ProblemParamsProvider):
             )
 
         return cls(
+            model=model,
             config_path=config_path,
+            repo_id=repo_id,
+            revision=str(config.get("revision", "main")),
             device=str(config.get("device", "cpu")),
             strict=bool(config.get("strict", True)),
             validate_input_operator=bool(config.get("validate_input_operator", True)),
@@ -166,8 +206,11 @@ class AIInference(ProblemParamsProvider):
 
     def to_config(self) -> dict:
         """Create a serializable dictionary describing the instance."""
+        # Serialize the model's address, not self.config_path: for a Hub-ingested
+        # bundle that path points into a machine-specific HF cache and would not
+        # round-trip elsewhere.
         config = {
-            "config_path": str(self.config_path),
+            **(self.model.source() if self.model is not None else self._address()),
             "device": self.device,
             "strict": self.strict,
             "validate_input_operator": self.validate_input_operator,
@@ -178,6 +221,14 @@ class AIInference(ProblemParamsProvider):
             config["predictor_metadata"] = self.model.metadata()
 
         return config
+
+    def _address(self) -> dict:
+        """The model address as given to the constructor (pre-load fallback)."""
+        if self.model_key is not None:
+            return {"model": self.model_key}
+        if self.repo_id is not None:
+            return {"repo_id": self.repo_id, "revision": self.revision}
+        return {"config_path": str(self.config_path)}
 
     def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Extract supported runtime keyword arguments from a string."""
@@ -192,14 +243,14 @@ class AIInference(ProblemParamsProvider):
         return train_kwargs
 
     def load_model(self) -> None:
-        """Load the ONNX predictor from ``self.config_path``."""
-        if self.config_path is None:
-            raise ValueError("Config path must be specified to load the model.")
-
+        """Load the ONNX predictor from whichever model address was given."""
         from qaoa_training_pipeline.inference.onnx_predictor import OnnxQAOAPredictor
 
-        self.model = OnnxQAOAPredictor(
-            config_path=Path(self.config_path),
-            device=self.device,
-            strict=self.strict,
-        )
+        shared = {"device": self.device, "strict": self.strict}
+
+        if self.model_key is not None:
+            self.model = OnnxQAOAPredictor.from_bundle(self.model_key, **shared)
+        elif self.repo_id is not None:
+            self.model = OnnxQAOAPredictor.from_hf(self.repo_id, revision=self.revision, **shared)
+        else:
+            self.model = OnnxQAOAPredictor(config_path=Path(self.config_path), **shared)

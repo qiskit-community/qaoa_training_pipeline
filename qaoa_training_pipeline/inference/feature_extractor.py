@@ -10,10 +10,11 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+
+from collections import defaultdict
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
-from qaoa_training_pipeline.inference.datamodule_utils import rescaling_factor
 
 
 SCALAR_FEATURES = {"num_nodes", "num_edges", "edges_per_node", "mean_degree", "std_degree"}
@@ -55,6 +56,29 @@ class AIFeatureExtractor:
                 f"Available stats: {sorted(norm_stats)}"
             )
 
+    def rescaling_factor(self, cost_op):
+        """Return the QAOA cost-operator rescaling factor (RMS of per-order weights).
+
+        The factor is used as a divisor both on input (``cost_op / rescale_a``) and
+        on output (gammas ``/ rescale_a``). For a degenerate operator with no
+        non-identity terms or all-zero coefficients the RMS is 0; we fall back to
+        ``1.0`` so normalization/denormalization is a no-op instead of dividing by
+        zero.
+        """
+        terms = defaultdict(list)
+
+        for p in cost_op:
+            order = sum(p.paulis[0].z)
+            terms[order].append(np.real(p.coeffs[0]) ** 2)
+
+        factor = 0
+        for squared_weights in terms.values():
+            factor += sum(squared_weights) / len(squared_weights)
+
+        factor = np.sqrt(factor)
+        return factor if factor > 0 else 1.0
+
+
     def extract_np(self, cost_op: SparsePauliOp) -> dict[str, Any]:
         """Extract raw (unnormalized) features from a cost operator as numpy.
 
@@ -66,7 +90,7 @@ class AIFeatureExtractor:
             t             (1,)      int64
             nodes, rescale_a
         """
-        rescale_a = rescaling_factor(cost_op)
+        rescale_a = self.rescaling_factor(cost_op)
         graph = operator_to_graph(cost_op / rescale_a)
 
         edge_list = list(graph.edges())
