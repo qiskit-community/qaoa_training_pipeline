@@ -1,5 +1,3 @@
-# TODO: REDO ALL TEST CASES ONCE REMAINING INFERENCE PIPELINE IS READY.
-
 #
 #
 # (C) Copyright IBM 2026.
@@ -15,8 +13,9 @@ Covered entrypoint:
 
 Model bundles are ingested from the HuggingFace Hub, so the tests come in two
 flavours:
-  * Offline tests exercise the setup and the bundle-resolution logic with a
-    mocked ``snapshot_download``. They always run.
+  * Offline tests exercise the bundle-resolution logic with a mocked
+    ``snapshot_download``. They always run. (The setup file itself is checked
+    in test_model_names.py.)
   * Model-running tests (including the frozen-baseline regression) need an
     actual bundle. They download it, which is opt-in: set ``QTP_HF_TESTS=1``, or
     they run automatically against bundles already in the local HF cache. While
@@ -45,23 +44,11 @@ HAS_HF_HUB = importlib.util.find_spec("huggingface_hub") is not None
 
 BASELINE_DIR = Path(__file__).resolve().parent / "baselines"
 
-# Model architectures in the zoo. The MLP bundle key is ``mlp`` (its
-# ``model_type`` inside the config is still ``agg_transformer``).
-MODEL_NAMES = [
-    "diffusion_transformer",
-    "edge_transformer",
-    "gcn",
-    "graph_isomorphism_network",
-    "graph_neural_network",
-    "graph_transformer",
-    "mlp",
-]
-
-# QAOA depths per architecture; bundle keys are ``<model>/p<p>``.
-P_VALUES = [1, 2, 3, 4, 5]
-
-# The setup is the authoritative list of bundles; MODEL_NAMES/P_VALUES above
-# are cross-checked against it by test_setup_covers_expected_zoo.
+# The registry's verified table is the single source of truth for which
+# architectures and depths exist; the setup file maps each key to a repo.
+# See test_model_names.py for the checks on that table and the setup file.
+MODEL_NAMES = sorted(model_registry.VERIFIED_ARCHITECTURES)
+P_VALUES = list(model_registry.P_VALUES)
 MODEL_KEYS = model_registry.available_bundles()
 
 # Graph-consuming model exercised by the behavioral tests alongside the
@@ -252,56 +239,6 @@ class TestOnnxInference(TrainingPipelineTestCase):
                             delta=atol,
                             msg=f"{model_key}/{case_name}: ONNX drifted from baseline",
                         )
-
-
-class TestHfSetup(TrainingPipelineTestCase):
-    """Offline checks on the setup that addresses the model zoo."""
-
-    def setUp(self):
-        super().setUp()
-        self.setup = model_registry.load_setup()
-        self.bundles = self.setup["bundles"]
-
-    def test_setup_covers_expected_zoo(self):
-        """Every architecture x depth of the zoo has exactly one setup entry."""
-        expected = {f"{model}/p{p}" for model in MODEL_NAMES for p in P_VALUES}
-        self.assertEqual(set(self.bundles), expected)
-
-    def test_repo_ids_are_unique(self):
-        """No two bundles point at the same repo (a copy-paste guard)."""
-        repo_ids = [entry["repo_id"] for entry in self.bundles.values()]
-        self.assertEqual(len(repo_ids), len(set(repo_ids)))
-
-    def test_repo_id_depth_matches_bundle_key(self):
-        """The repo name's ``p<p>`` component agrees with the bundle key's depth."""
-        for key, entry in self.bundles.items():
-            with self.subTest(bundle=key):
-                self.assertIn(f".p{_p_of(key)}.", entry["repo_id"])
-
-    def test_revisions_are_commit_shas(self):
-        """A published bundle is pinned to an immutable commit, not a branch."""
-        for key in model_registry.published_bundles():
-            with self.subTest(bundle=key):
-                revision = self.bundles[key]["revision"]
-                self.assertRegex(revision, r"^[0-9a-f]{40}$")
-
-    def test_bundle_entry_rejects_unverified_key(self):
-        """An unverified bundle key fails before any setup lookup.
-
-        See test_model_names.py for the full name-verification contract.
-        """
-        with self.assertRaises(ValueError) as ctx:
-            model_registry.bundle_entry("no_such_model/p1")
-        self.assertIn("Unverified model architecture", str(ctx.exception))
-
-    def test_bundle_entry_rejects_unpublished_bundle(self):
-        """An unpinned bundle reports that it is not published, not a 404."""
-        unpublished = sorted(set(self.bundles) - set(model_registry.published_bundles()))
-        if not unpublished:
-            self.skipTest("every bundle in the setup is published")
-        with self.assertRaises(RuntimeError) as ctx:
-            model_registry.bundle_entry(unpublished[0])
-        self.assertIn("not published yet", str(ctx.exception))
 
 
 @unittest.skipUnless(HAS_HF_HUB, "huggingface_hub not installed (install the 'inference' extra)")

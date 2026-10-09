@@ -194,18 +194,6 @@ class AIInference(ProblemParamsProvider):
 
         return config
 
-    def parse_train_kwargs(self, args_str: str | None = None) -> dict:
-        """Extract supported runtime keyword arguments from a string."""
-        train_kwargs = {}
-        for key, val in self.extract_train_kwargs(args_str).items():
-            if key == "device":
-                train_kwargs[key] = str(val)
-            elif key in {"strict", "validate_input_operator"}:
-                train_kwargs[key] = val.lower() == "true"
-            else:
-                raise ValueError(f"Unknown key {key!r} in provided train_kwargs.")
-        return train_kwargs
-
     def load_model(self) -> None:
         """Download the bundle from the Hub and wrap it in an ONNX predictor."""
         from qaoa_training_pipeline.inference.onnx_predictor import OnnxQAOAPredictor
