@@ -139,10 +139,11 @@ cost operator using pre-trained models, without training. `AIInference` is a
 
 Inference is **torch-free**: it runs an exported ONNX graph with
 `onnxruntime` + numpy and needs neither PyTorch nor the original training
-checkpoint. Exported models for seven architectures, each at QAOA depths
-`p = 1, 2, 3, 4`, ship with the package under
-`qaoa_training_pipeline/inference/model_configs/<model>/p<p>/` (every bundle is
-the best-test-seed checkpoint for that architecture and depth).
+checkpoint. Models for seven architectures, each at QAOA depths `p = 1…5`, are
+published on the HuggingFace Hub (every bundle is the best-test-seed checkpoint
+for that architecture and depth). They are **not** shipped in the package: a
+model is downloaded on first use and cached under `~/.cache/huggingface`, so
+later runs are offline. Name one by its bundle key, `<model>/p<p>`.
 
 Install the (optional) runtime dependency and predict:
 
@@ -155,11 +156,15 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.inference import AIInference
 
 cost_op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
-ai = AIInference(
-    config_path="qaoa_training_pipeline/inference/model_configs/graph_neural_network/p1/model_config.json",
-)
+ai = AIInference(model="graph_neural_network/p1")
 angles = ai.provide_params(cost_op)["optimized_params"]  # p=1 -> [beta, gamma]
 ```
+
+`model_registry.available_bundles()` lists the bundle keys, which are the only
+way to address a model. While the model repos are private, downloading needs a
+HuggingFace token (`hf auth login`, or `HF_TOKEN` in the environment). See
+[`qaoa_training_pipeline/inference/README.md`](qaoa_training_pipeline/inference/README.md)
+for how to serve a bundle outside the shipped zoo.
 
 ## Installation
 

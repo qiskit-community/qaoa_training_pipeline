@@ -162,3 +162,11 @@ cython_debug/
 #.idea/
 # Machine-specific AI-inference benchmark output (tools/inference/bench_onnx_vs_torch.py --json)
 bench_results.json
+
+# Model bundles are never part of this repo: they live on the HuggingFace Hub.
+qaoa_training_pipeline/inference/model_configs/
+*.onnx
+*.onnx.data
+
+# Untracked developer override of the shipped HF manifest.
+qaoa_training_pipeline/inference/huggingface/hf_setup_local.json

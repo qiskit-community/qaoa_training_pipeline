@@ -15,7 +15,7 @@ Covered entrypoint:
 
 Model bundles are ingested from the HuggingFace Hub, so the tests come in two
 flavours:
-  * Offline tests exercise the manifest and the bundle-resolution logic with a
+  * Offline tests exercise the setup and the bundle-resolution logic with a
     mocked ``snapshot_download``. They always run.
   * Model-running tests (including the frozen-baseline regression) need an
     actual bundle. They download it, which is opt-in: set ``QTP_HF_TESTS=1``, or
@@ -60,8 +60,8 @@ MODEL_NAMES = [
 # QAOA depths per architecture; bundle keys are ``<model>/p<p>``.
 P_VALUES = [1, 2, 3, 4, 5]
 
-# The manifest is the authoritative list of bundles; MODEL_NAMES/P_VALUES above
-# are cross-checked against it by test_manifest_covers_expected_zoo.
+# The setup is the authoritative list of bundles; MODEL_NAMES/P_VALUES above
+# are cross-checked against it by test_setup_covers_expected_zoo.
 MODEL_KEYS = model_registry.available_bundles()
 
 # Graph-consuming model exercised by the behavioral tests alongside the
@@ -84,7 +84,7 @@ def bundle_is_cached(model_key):
         return False
     from huggingface_hub import try_to_load_from_cache
 
-    entry = model_registry.load_manifest()["bundles"].get(model_key) or {}
+    entry = model_registry.load_setup()["bundles"].get(model_key) or {}
     if not entry.get("revision"):
         return False
     cached = try_to_load_from_cache(
@@ -95,7 +95,7 @@ def bundle_is_cached(model_key):
 
 def skip_reason(model_key):
     """Why a model-running subtest cannot run, or None if it can."""
-    entry = model_registry.load_manifest()["bundles"].get(model_key) or {}
+    entry = model_registry.load_setup()["bundles"].get(model_key) or {}
     if not entry.get("revision"):
         return f"bundle {model_key!r} is not published on the Hub yet"
     if not (HF_TESTS_ENABLED or bundle_is_cached(model_key)):
@@ -254,16 +254,16 @@ class TestOnnxInference(TrainingPipelineTestCase):
                         )
 
 
-class TestHfManifest(TrainingPipelineTestCase):
-    """Offline checks on the manifest that addresses the model zoo."""
+class TestHfSetup(TrainingPipelineTestCase):
+    """Offline checks on the setup that addresses the model zoo."""
 
     def setUp(self):
         super().setUp()
-        self.manifest = model_registry.load_manifest()
-        self.bundles = self.manifest["bundles"]
+        self.setup = model_registry.load_setup()
+        self.bundles = self.setup["bundles"]
 
-    def test_manifest_covers_expected_zoo(self):
-        """Every architecture x depth of the zoo has exactly one manifest entry."""
+    def test_setup_covers_expected_zoo(self):
+        """Every architecture x depth of the zoo has exactly one setup entry."""
         expected = {f"{model}/p{p}" for model in MODEL_NAMES for p in P_VALUES}
         self.assertEqual(set(self.bundles), expected)
 
@@ -285,17 +285,20 @@ class TestHfManifest(TrainingPipelineTestCase):
                 revision = self.bundles[key]["revision"]
                 self.assertRegex(revision, r"^[0-9a-f]{40}$")
 
-    def test_bundle_entry_rejects_unknown_key(self):
-        """An unknown bundle key fails with the available keys listed."""
-        with self.assertRaises(KeyError) as ctx:
+    def test_bundle_entry_rejects_unverified_key(self):
+        """An unverified bundle key fails before any setup lookup.
+
+        See test_model_names.py for the full name-verification contract.
+        """
+        with self.assertRaises(ValueError) as ctx:
             model_registry.bundle_entry("no_such_model/p1")
-        self.assertIn("no_such_model/p1", str(ctx.exception))
+        self.assertIn("Unverified model architecture", str(ctx.exception))
 
     def test_bundle_entry_rejects_unpublished_bundle(self):
         """An unpinned bundle reports that it is not published, not a 404."""
         unpublished = sorted(set(self.bundles) - set(model_registry.published_bundles()))
         if not unpublished:
-            self.skipTest("every bundle in the manifest is published")
+            self.skipTest("every bundle in the setup is published")
         with self.assertRaises(RuntimeError) as ctx:
             model_registry.bundle_entry(unpublished[0])
         self.assertIn("not published yet", str(ctx.exception))
@@ -309,7 +312,7 @@ class TestBundleResolution(TrainingPipelineTestCase):
         """A zoo bundle downloads at its pinned revision, fetching only its files."""
         published = model_registry.published_bundles()
         if not published:
-            self.skipTest("no published bundle in the manifest")
+            self.skipTest("no published bundle in the setup")
         key = published[0]
         entry = model_registry.bundle_entry(key)
 
@@ -329,7 +332,7 @@ class TestBundleResolution(TrainingPipelineTestCase):
         self.assertEqual(sorted(kwargs["allow_patterns"]), sorted(model_registry.BUNDLE_FILES))
 
     def test_download_bundle_defaults_to_main(self):
-        """The manifest-free path defaults to the repo's main branch."""
+        """The download step defaults to main when a setup pins no revision."""
         with mock.patch(
             "huggingface_hub.snapshot_download", return_value="/tmp/snapshot"
         ) as download:

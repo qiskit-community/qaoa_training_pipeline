@@ -7,11 +7,10 @@ making the feature engineering process transparent and configurable.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Any
 
 import numpy as np
-
-from collections import defaultdict
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
@@ -77,7 +76,6 @@ class AIFeatureExtractor:
 
         factor = np.sqrt(factor)
         return factor if factor > 0 else 1.0
-
 
     def extract_np(self, cost_op: SparsePauliOp) -> dict[str, Any]:
         """Extract raw (unnormalized) features from a cost operator as numpy.

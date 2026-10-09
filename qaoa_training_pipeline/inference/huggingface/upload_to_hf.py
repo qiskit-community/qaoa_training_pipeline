@@ -31,16 +31,20 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from qaoa_training_pipeline.inference.huggingface.hf_setup import load_hf_setup, write_hf_setup  # local sibling module
-from model_keys import resolve_model_keys
+from model_keys import resolve_model_keys  # local sibling module
 
-from qaoa_training_pipeline.inference.model_registry import (
+from qaoa_training_pipeline.inference.huggingface.hf_setup import (  # noqa: E402
+    load_hf_setup,
+    write_hf_setup,
+)
+from qaoa_training_pipeline.inference.model_registry import (  # noqa: E402
     BUNDLE_FILES,
-    hf_paths,
-)  # noqa: E402  (model_keys sets sys.path)
+    PRIVATE_CONFIG_FIELDS,
+    setup_path,
+)
 
-# Config fields that must not leave the private training environment.
-PRIVATE_CONFIG_FIELDS = ("checkpoint",)
+# Resolved once, so a run cannot read one setup and write back another.
+hf_paths = setup_path()
 
 
 def stage_bundle(bundle_dir: Path, staging: Path) -> Path:
@@ -88,6 +92,7 @@ def upload_bundle(
 
 
 def main() -> None:
+    """Upload bundles of a local export tree and pin their revisions."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--source",

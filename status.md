@@ -90,7 +90,7 @@ The handoff says "big weights live on the HF Hub, not git." **This is false for
 the current repo state:**
 - All 28 p1..4 `model.onnx` + `.onnx.data` are **committed directly in git**
   (commit `17aae7d`). No `.gitignore` excludes them.
-- `hf_manifest.json` `repo_id` is still `PLACEHOLDER_ORG/qaoa-training-pipeline-models`
+- `hf_setup.json` `repo_id` is still `PLACEHOLDER_ORG/qaoa-training-pipeline-models`
   — the HF upload was never done.
 - `huggingface_hub` is NOT installed in `.venv-export`; no HF auth configured.
 - Runtime is **local-first** (`model_registry.py`), so it uses local weights and
@@ -105,7 +105,7 @@ p1..4.
 
 - 7 × `qaoa_training_pipeline/inference/model_configs/<arch>/p5/model_config.json`
 - 7 × `.../<arch>/p5/model.onnx` + 7 × `.../<arch>/p5/model.onnx.data`
-- `qaoa_training_pipeline/inference/model_configs/hf_manifest.json` (28→35 bundles,
+- `qaoa_training_pipeline/inference/model_configs/hf_setup.json` (28→35 bundles,
   repo_id unchanged = placeholder)
 - 7 × `test/inference/baselines/<arch>_p5.json` (8 cases each)
 - `test/inference/test_onnx_inference.py` (`P_VALUES = [1,2,3,4]` → `[1,2,3,4,5]`)
@@ -166,7 +166,7 @@ git checkout bd9d5a6^ -- tools/inference/export_onnx.py tools/inference/gen_base
    ```
    (bench ops are non-degenerate, so the old `rescaling_factor` lacking the
    `e8d57e1` zero-guard doesn't change baseline values.)
-3. **Manifest**: `.venv-export/bin/python tools/inference/hf_manifest.py` (keeps
+3. **Setup**: `.venv-export/bin/python tools/inference/hf_setup.py` (keeps
    existing placeholder repo_id, rescans all local weights → 35 bundles).
 
 ## Runtime architecture (torch-free, unchanged — do not touch)

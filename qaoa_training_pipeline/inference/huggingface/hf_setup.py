@@ -29,10 +29,13 @@ from pathlib import Path
 from model_keys import resolve_model_keys  # local sibling module
 
 from qaoa_training_pipeline.inference.model_registry import (
-    hf_paths,
+    setup_path,
 )  # noqa: E402  (model_keys sets sys.path)
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
+# Resolved once, so a run cannot read one setup and write back another.
+hf_paths = setup_path()
 
 
 def load_hf_setup() -> dict:
@@ -79,6 +82,7 @@ def refresh_revisions(hf_setup: dict, keys: list[str]) -> tuple[int, int]:
 
 
 def main() -> None:
+    """Refresh each bundle's pinned revision from its repo head."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--only",
@@ -88,7 +92,7 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="report without writing")
     args = parser.parse_args()
 
-    hf_setup = ()
+    hf_setup = load_hf_setup()
     keys = [k for k in resolve_model_keys(args.only) if k in hf_setup["bundles"]]
     if not keys:
         parser.error(f"--only {args.only!r} matched no bundle in {hf_paths}")
@@ -97,7 +101,7 @@ def main() -> None:
     updated, missing = refresh_revisions(hf_setup, keys)
 
     if updated and not args.dry_run:
-        (hf_setup)
+        write_hf_setup(hf_setup)
         print(f"\nWrote {hf_paths.relative_to(REPO_ROOT)} ({updated} updated).")
     elif updated:
         print(f"\n--dry-run: {updated} entries would change.")

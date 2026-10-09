@@ -5,13 +5,16 @@ and numpy — no torch, no torch_geometric. It exposes ``predict`` with
 ``output_dim`` validation so ``AIInference`` and existing callers work
 unchanged.
 
-Models are ingested from the HuggingFace Hub: use :meth:`from_bundle` for a
-bundle from the shipped zoo, :meth:`from_hf` for an arbitrary bundle repo, or
-the constructor directly to point at a local export directory.
+Models are ingested from the HuggingFace Hub and nowhere else, through a
+single entry point: :meth:`from_bundle`, which takes a ``<model>/p<p>`` bundle
+key. The setup file resolves the key to a repo at a pinned revision; the bundle
+is downloaded (cached under ``~/.cache/huggingface``) and its snapshot
+directory handed to the constructor.
 """
 
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 from typing import Any
@@ -21,20 +24,16 @@ import onnxruntime as ort
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.inference.config_io import (
-    CONFIG_FILENAME,
-    load_config,
-    resolve_bundle_path,
-)
 from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor
 from qaoa_training_pipeline.inference.model_registry import (
+    CONFIG_FILENAME,
+    ONNX_FILENAME,
     bundle_entry,
-    download_bundle,
+    PRIVATE_CONFIG_FIELDS,
+    expected_model_type,
     resolve_bundle,
 )
 from qaoa_training_pipeline.inference.onnx_inputs import numpy_input_builders
-
-DEFAULT_ONNX_FILENAME = "model.onnx"
 
 
 def denormalize_qaoa_params_np(
@@ -61,29 +60,52 @@ class OnnxQAOAPredictor:
 
     def __init__(
         self,
-        config_path: Path | str,
+        bundle_dir: Path | str,
+        bundle_key: str,
+        repo_id: str,
+        revision: str,
         device: str = "cpu",
         strict: bool = True,
-        onnx_path: Path | str | None = None,
-        bundle_key: str | None = None,
-        repo_id: str | None = None,
-        revision: str | None = None,
     ) -> None:
-        self.config_path = Path(config_path)
+        """Wrap an already-downloaded bundle snapshot.
+
+        Use :meth:`from_bundle` instead of calling this directly: it is what
+        downloads the snapshot that ``bundle_dir`` points at.
+
+        Args:
+            bundle_dir: Directory of the downloaded snapshot, holding
+                ``model_config.json`` next to the ONNX artifacts.
+            bundle_key: ``<model>/p<p>`` key the bundle was resolved from.
+            repo_id: HuggingFace repo the snapshot came from.
+            revision: Revision (commit sha or branch) it was downloaded at.
+            device: Device for inference ("cpu", "cuda", ...).
+            strict: Reserved for parity with other providers; unused.
+        """
+        self.bundle_dir = Path(bundle_dir)
         self.device = str(device)
         self.strict = bool(strict)
-        # Hub coordinates when this predictor came from from_bundle/from_hf.
-        # They are what gets serialized, since config_path then points into a
-        # machine-specific HF cache directory.
+        # Where the snapshot came from. This, not bundle_dir, is what gets
+        # serialized: bundle_dir points into a machine-specific HF cache.
         self.bundle_key = bundle_key
         self.repo_id = repo_id
         self.revision = revision
 
-        self.config = load_config(self.config_path)
+        self.config = self._load_config()
         self.model_init = self.config.get("model_init", {})
         self.model_type = str(self.model_init.get("model_type", "")).lower()
         self.in_features = list(self.model_init.get("in_features", []))
         self.output_dim = int(self.model_init.get("output_dim", 0))
+
+        # The key fixes which architecture the download must be: a mismatch
+        # means the setup file points at the wrong repo, which would otherwise
+        # surface only as quietly wrong angles.
+        wanted = expected_model_type(self.bundle_key)
+        if self.model_type != wanted:
+            raise ValueError(
+                f"Bundle {self.bundle_key!r} must declare model_type {wanted!r}, but "
+                f"{self.repo_id} at revision {self.revision} declares "
+                f"{self.model_type!r}. The setup file points at the wrong repo."
+            )
 
         if self.model_type not in numpy_input_builders:
             raise KeyError(
@@ -92,21 +114,15 @@ class OnnxQAOAPredictor:
             )
         self._prepare = numpy_input_builders[self.model_type]
 
-        # Resolve the .onnx artifact: explicit arg > config "onnx" key > default
-        # filename. Without an explicit path it sits next to the config — true
-        # both for a downloaded bundle snapshot and for a local export dir.
-        if onnx_path is not None:
-            resolved = Path(onnx_path)
-        else:
-            filename = self.config.get("onnx", DEFAULT_ONNX_FILENAME)
-            resolved = resolve_bundle_path(self.config_path, filename)
-        if not resolved.is_file():
+        # The .onnx sits next to the config under a name fixed by the bundle
+        # contract; a snapshot that lacks it is an incomplete download.
+        self.onnx_path = self.bundle_dir / ONNX_FILENAME
+        if not self.onnx_path.is_file():
             raise FileNotFoundError(
-                f"ONNX model not found: {resolved}. Bundles are downloaded from the "
-                "HuggingFace Hub — use OnnxQAOAPredictor.from_bundle('<model>/p<p>') "
-                "or from_hf('<org>/<repo>') instead of a local path."
+                f"{ONNX_FILENAME} missing from bundle {self.repo_id} at {self.bundle_dir}. "
+                "The snapshot looks incomplete; clear it from the HuggingFace cache "
+                "and download it again."
             )
-        self.onnx_path = resolved
 
         providers = (
             ["CUDAExecutionProvider", "CPUExecutionProvider"]
@@ -126,51 +142,48 @@ class OnnxQAOAPredictor:
 
     @classmethod
     def from_bundle(cls, bundle_key: str, **kwargs: Any) -> "OnnxQAOAPredictor":
-        """Load a bundle of the shipped zoo by its ``<model>/p<p>`` key.
+        """Load a model bundle by its ``<model>/p<p>`` key. The only way in.
 
-        The manifest resolves the key to a HuggingFace repo at a pinned
+        The setup file resolves the key to a HuggingFace repo at a pinned
         revision; the bundle is downloaded once and cached (see
         :mod:`~qaoa_training_pipeline.inference.model_registry`).
         """
         entry = bundle_entry(bundle_key)
-        bundle = resolve_bundle(bundle_key)
         return cls(
-            config_path=bundle / CONFIG_FILENAME,
-            bundle_key=bundle_key,
+            bundle_dir=resolve_bundle(bundle_key),
             repo_id=entry["repo_id"],
             revision=entry["revision"],
+            bundle_key=bundle_key,
             **kwargs,
         )
 
-    @classmethod
-    def from_hf(cls, repo_id: str, revision: str = "main", **kwargs: Any) -> "OnnxQAOAPredictor":
-        """Download a bundle repo from the Hub and wrap it in a predictor.
+    def _load_config(self) -> dict[str, Any]:
+        """Read ``model_config.json`` from the downloaded snapshot."""
+        config_file = self.bundle_dir / CONFIG_FILENAME
+        if not config_file.is_file():
+            raise FileNotFoundError(
+                f"{CONFIG_FILENAME} missing from bundle {self.repo_id} at {self.bundle_dir}. "
+                "The snapshot looks incomplete; clear it from the HuggingFace cache "
+                "and download it again."
+            )
+        with open(config_file, "r", encoding="utf-8") as handle:
+            config = json.load(handle)
 
-        For bundles outside the shipped manifest (a private export, a retrain).
-        ``snapshot_download`` caches under ``~/.cache/huggingface``, so re-runs
-        are offline.
-        """
-        bundle = download_bundle(repo_id, revision=revision)
-        return cls(
-            config_path=bundle / CONFIG_FILENAME,
-            repo_id=repo_id,
-            revision=revision,
-            **kwargs,
-        )
+        # Drop private training-environment fields the publisher may have left
+        # in, so they cannot reach metadata() or a serialized config.
+        for field in PRIVATE_CONFIG_FIELDS:
+            config.pop(field, None)
+        return config
 
     def source(self) -> dict[str, str]:
-        """Where this predictor's artifacts came from, in serializable form.
+        """The Hub address this predictor's artifacts came from, serializable.
 
-        Prefers the Hub coordinates; falls back to the local config path for a
-        predictor built directly from a directory.
+        Never the local snapshot directory: that path is specific to one
+        machine's HuggingFace cache.
         """
-        if self.bundle_key is not None:
-            # The manifest owns the revision for a zoo bundle, so the key alone
-            # is a complete, pin-stable address.
-            return {"model": self.bundle_key}
-        if self.repo_id is not None:
-            return {"repo_id": self.repo_id, "revision": self.revision or "main"}
-        return {"config_path": str(self.config_path)}
+        # The setup owns the revision, so the key alone is a complete,
+        # pin-stable address.
+        return {"model": self.bundle_key}
 
     def metadata(self) -> dict[str, Any]:
         """Return predictor metadata from the config."""

@@ -4,5 +4,5 @@ juliacall
 # needed for the torch-free AI-inference runtime (AIInference).
 # Installed via the `inference` extra: pip install qaoa_training_pipeline[inference]
 onnxruntime
-# lazily downloads the ONNX weights pinned in inference/model_configs/hf_manifest.json
+# lazily downloads the ONNX weights pinned in inference/model_configs/hf_setup.json
 huggingface_hub

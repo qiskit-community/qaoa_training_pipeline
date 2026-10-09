@@ -36,22 +36,19 @@ setuptools.setup(
     ),
     install_requires=REQUIREMENTS,
     extras_require={
-        # Torch-free AI-inference runtime (AIInference).
-        # huggingface_hub lazily fetches the ONNX weights pinned in the manifest.
+        # Torch-free AI-inference runtime (AIInference). Both are required by
+        # it: onnxruntime executes the graph, and huggingface_hub downloads the
+        # model bundles, which are not shipped in the wheel.
         "inference": ["onnxruntime", "huggingface_hub"],
     },
     include_package_data=True,
-    # Ship the small per-bundle configs and the HF weight manifest. The large
-    # model.onnx / model.onnx.data weights are lazily downloaded from the
-    # HuggingFace Hub at first use (see inference/model_registry.py); the .onnx*
-    # globs below keep them in the wheel only until that migration is cut over,
-    # after which they should be removed.
+    # No model artifacts ship in the wheel: every bundle (model_config.json +
+    # model.onnx + model.onnx.data) is downloaded from the HuggingFace Hub on
+    # first use and cached locally. Only the setup file pinning each bundle to a
+    # repo + revision is packaged (see inference/model_registry.py).
     package_data={
         "qaoa_training_pipeline": [
-            "inference/model_configs/hf_manifest.json",
-            "inference/model_configs/*/*/model_config.json",
-            "inference/model_configs/*/*/model.onnx",
-            "inference/model_configs/*/*/model.onnx.data",
+            "inference/huggingface/hf_setup.json",
         ],
     },
     python_requires=">=3.10",

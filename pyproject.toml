@@ -84,5 +84,4 @@ spelling-store-unknown-words = "n"
 # all severities; CI gates on medium+ (see the Makefile / workflow).
 exclude_dirs = [
     "test",
-    "qaoa_training_pipeline/inference/model_configs",
 ]

@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from pathlib import Path
 from time import time
 
 from qiskit import QuantumCircuit
@@ -19,13 +18,14 @@ from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.framework import ProblemParamsProvider
 from qaoa_training_pipeline.framework import ParamResult
+from qaoa_training_pipeline.inference.model_registry import (
+    available_bundles,
+    parse_bundle_key,
+)
 from qaoa_training_pipeline.training.functions import (
     BaseAnglesFunction,
     IdentityFunction,
 )
-
-
-# TODO: REMOVE EVERYTHING THAT RELATES TO LOCAL BUNDLE/CONFIG -- ONLY SUPPORT HUGGINGFACE. NO ADDITIONAL VALUE FROM LOCAL
 
 
 class AIInference(ProblemParamsProvider):
@@ -35,9 +35,12 @@ class AIInference(ProblemParamsProvider):
     operator. The referenced model config declares which training setting
     the checkpoint was produced under.
 
-    The model is addressed in one of three ways: ``model`` (a ``<model>/p<p>``
-    bundle key from the shipped zoo), ``repo_id`` (any HuggingFace bundle repo)
-    or ``config_path`` (a local export directory).
+    There is one way to address a model: ``model``, a ``<model>/p<p>`` bundle
+    key. The setup file resolves it to a HuggingFace repo at a pinned revision,
+    so every run is reproducible and every key is a verified name. A bundle
+    outside the shipped zoo (a private export, a retrain) is reached by
+    listing it in your own setup file and pointing ``$QAOA_HF_SETUP`` at it —
+    not by a second constructor argument.
 
     Inference is torch-free: it runs an exported ``model.onnx`` with
     ``onnxruntime`` and numpy. Requires the optional ``onnxruntime`` dependency
@@ -47,10 +50,7 @@ class AIInference(ProblemParamsProvider):
 
     def __init__(
         self,
-        model: str | None = None,
-        config_path: str | None = None,
-        repo_id: str | None = None,
-        revision: str = "main",
+        model: str,
         device: str = "cpu",
         strict: bool = True,
         validate_input_operator: bool = True,
@@ -59,19 +59,12 @@ class AIInference(ProblemParamsProvider):
     ) -> None:
         """Initialize the AI inference trainer.
 
-        Exactly one of ``model``, ``config_path`` or ``repo_id`` must be given.
-
         Args:
-            model: Bundle key of a model in the shipped zoo, ``"<model>/p<p>"``
-                (e.g. ``"gcn/p3"``). Resolved to a HuggingFace repo at a pinned
-                revision via ``inference/hf_setup.json`` and downloaded once
-                into the local HF cache. See
+            model: Bundle key of the model, ``"<model>/p<p>"`` (e.g.
+                ``"gcn/p3"``). Resolved to a HuggingFace repo at a pinned
+                revision via the setup file and downloaded once into the local
+                HF cache. See
                 :func:`~qaoa_training_pipeline.inference.model_registry.available_bundles`.
-            config_path: Path to a model_config.json file (or its enclosing
-                directory) describing the model and inputs to load. For a local
-                export; the ONNX artifacts must sit next to the config.
-            repo_id: HuggingFace repo holding a bundle outside the manifest.
-            revision: Revision to download when ``repo_id`` is used.
             device: Device for inference ("cpu", "cuda", ...).
             strict: Reserved for parity with other providers; unused by the
                 ONNX runtime.
@@ -87,20 +80,11 @@ class AIInference(ProblemParamsProvider):
                 :class:`IdentityFunction` (no transformation).
         """
         super().__init__(qaoa_angles_function=qaoa_angles_function or IdentityFunction())
-        given = [
-            name
-            for name, val in (("model", model), ("config_path", config_path), ("repo_id", repo_id))
-            if val is not None
-        ]
-        if len(given) != 1:
-            raise ValueError(
-                "AIInference needs exactly one of 'model', 'config_path' or 'repo_id', "
-                f"got {given or 'none'}."
-            )
+        # Fail here, not at download time: an unverified name must not get as
+        # far as resolving to some repo.
+        parse_bundle_key(model)
+
         self.model_key = model
-        self.config_path = config_path
-        self.repo_id = repo_id
-        self.revision = str(revision)
         self.device = str(device)
         self.strict = bool(strict)
         self.validate_input_operator = bool(validate_input_operator)
@@ -169,17 +153,10 @@ class AIInference(ProblemParamsProvider):
         """Return an instance of the class based on a config."""
         config = dict(config)
 
-        # Accept legacy keys (`model_bundle`, `model_path`) alongside the
-        # current `config_path` — old call sites keep working.
-        config_path = config.get(
-            "config_path",
-            config.get("model_bundle", config.get("model_path")),
-        )
-        model = config.get("model")
-        repo_id = config.get("repo_id")
-        if model is None and repo_id is None and config_path is None:
+        if "model" not in config:
             raise ValueError(
-                "AIInference requires one of 'model', 'repo_id' or 'config_path' in config."
+                "AIInference requires 'model' in config: a bundle key such as 'gcn/p3'. "
+                f"Available: {', '.join(available_bundles())}."
             )
 
         # Rebuild the angles function from its config when serialized; default
@@ -193,10 +170,7 @@ class AIInference(ProblemParamsProvider):
             )
 
         return cls(
-            model=model,
-            config_path=config_path,
-            repo_id=repo_id,
-            revision=str(config.get("revision", "main")),
+            model=str(config["model"]),
             device=str(config.get("device", "cpu")),
             strict=bool(config.get("strict", True)),
             validate_input_operator=bool(config.get("validate_input_operator", True)),
@@ -206,29 +180,19 @@ class AIInference(ProblemParamsProvider):
 
     def to_config(self) -> dict:
         """Create a serializable dictionary describing the instance."""
-        # Serialize the model's address, not self.config_path: for a Hub-ingested
-        # bundle that path points into a machine-specific HF cache and would not
-        # round-trip elsewhere.
+        # Serialize the model's Hub address, never the local snapshot
+        # directory: that path is specific to one machine's HF cache and would
+        # not round-trip elsewhere.
         config = {
-            **(self.model.source() if self.model is not None else self._address()),
+            **self.model.source(),
             "device": self.device,
             "strict": self.strict,
             "validate_input_operator": self.validate_input_operator,
             "qaoa_angles_function": self.qaoa_angles_function.__class__.__name__,
+            "predictor_metadata": self.model.metadata(),
         }
 
-        if self.model is not None:
-            config["predictor_metadata"] = self.model.metadata()
-
         return config
-
-    def _address(self) -> dict:
-        """The model address as given to the constructor (pre-load fallback)."""
-        if self.model_key is not None:
-            return {"model": self.model_key}
-        if self.repo_id is not None:
-            return {"repo_id": self.repo_id, "revision": self.revision}
-        return {"config_path": str(self.config_path)}
 
     def parse_train_kwargs(self, args_str: str | None = None) -> dict:
         """Extract supported runtime keyword arguments from a string."""
@@ -243,14 +207,9 @@ class AIInference(ProblemParamsProvider):
         return train_kwargs
 
     def load_model(self) -> None:
-        """Load the ONNX predictor from whichever model address was given."""
+        """Download the bundle from the Hub and wrap it in an ONNX predictor."""
         from qaoa_training_pipeline.inference.onnx_predictor import OnnxQAOAPredictor
 
-        shared = {"device": self.device, "strict": self.strict}
-
-        if self.model_key is not None:
-            self.model = OnnxQAOAPredictor.from_bundle(self.model_key, **shared)
-        elif self.repo_id is not None:
-            self.model = OnnxQAOAPredictor.from_hf(self.repo_id, revision=self.revision, **shared)
-        else:
-            self.model = OnnxQAOAPredictor(config_path=Path(self.config_path), **shared)
+        self.model = OnnxQAOAPredictor.from_bundle(
+            self.model_key, device=self.device, strict=self.strict
+        )

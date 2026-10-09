@@ -81,27 +81,43 @@ HuggingFace repo** holding `model_config.json`, `model.onnx` and
 **bundle key** — `<model>/p<p>`, e.g. `gcn/p3`, the stable public identifier —
 to that repo and the commit it is pinned to, so a download is reproducible.
 
-There are three ways in, in decreasing order of how much the library does for
-you:
+The Hub is the only source of models, and a bundle key is the only way to
+address one — there is no local-path loading and no raw-repo-id argument:
 
-| Call | Use for |
-|---|---|
-| `AIInference(model="gcn/p3")` / `OnnxQAOAPredictor.from_bundle("gcn/p3")` | a bundle of the released zoo; revision pinned by the manifest |
-| `OnnxQAOAPredictor.from_hf("org/repo", revision=...)` | any bundle repo outside the manifest (a private export, a retrain) |
-| `OnnxQAOAPredictor(config_path="/path/to/bundle")` | a local export directory, with the ONNX files next to the config |
+```python
+AIInference(model="gcn/p3")              # or, lower level:
+OnnxQAOAPredictor.from_bundle("gcn/p3")
+```
+
+Every model therefore resolves the same way: key → setup → repo at a pinned
+revision. That is what makes a key a verified name (an unknown one fails, it
+does not resolve to the wrong repo), a run reproducible, and `to_config()`
+portable between machines.
+
+To use a bundle outside the shipped zoo — a private export, a retrain — copy
+`hf_setup.json`, give your bundle one of the verified keys, and point
+`$QAOA_HF_SETUP` at your copy:
+
+```bash
+export QAOA_HF_SETUP=/path/to/my_hf_setup.json
+```
+
+The setup file in use is `$QAOA_HF_SETUP` when set, and the packaged
+`hf_setup.json` otherwise — nothing else is picked up implicitly, so a
+checkout always resolves models the same way.
 
 `snapshot_download` caches under `~/.cache/huggingface`, so only the first use
 touches the network. For an air-gapped run, warm the cache first with
 `model_registry.prefetch_bundles()`. The repos are private while the models are
 unreleased, so downloads need a token (`hf auth login`, or `HF_TOKEN`); a bundle
-with no pinned revision in the manifest is not published yet and raises a
+with no pinned revision in the setup file is not published yet and raises a
 message saying so.
 
 ## Supporting tooling
 
 [`tools/inference/`](../../tools/inference/) provides torch-free helpers:
 `model_keys.py` (bundle discovery), `bench_ops.py` (deterministic cost
-operators), `hf_manifest.py` and `upload_to_hf.py` (bundle upload and manifest
+operators), `hf_setup.py` and `upload_to_hf.py` (bundle upload and setup
 revision pinning). The frozen predictions in `test/inference/baselines/` guard
 against regressions in the ONNX runtime.
 
