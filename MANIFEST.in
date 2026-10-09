@@ -1,0 +1,3 @@
+include qaoa_training_pipeline/inference/huggingface/hf_setup.json
+exclude qaoa_training_pipeline/inference/huggingface/hf_setup_local.json
+global-exclude *.onnx *.onnx.data
