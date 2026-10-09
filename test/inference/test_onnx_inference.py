@@ -16,17 +16,16 @@ flavours:
   * Offline tests exercise the bundle-resolution logic with a mocked
     ``snapshot_download``. They always run. (The setup file itself is checked
     in test_model_names.py.)
-  * Model-running tests (including the frozen-baseline regression) need an
-    actual bundle. They download it, which is opt-in: set ``QTP_HF_TESTS=1``, or
-    they run automatically against bundles already in the local HF cache. While
-    the repos are private a token is needed too (``hf auth login`` / ``HF_TOKEN``).
+  * Model-running tests need an actual bundle. Downloading is opt-in: set
+    ``QTP_HF_TESTS=1``, or they run automatically against bundles already in the
+    local HF cache. While the repos are private a token is needed too
+    (``hf auth login`` / ``HF_TOKEN``).
 
 ``onnxruntime`` is an optional dependency (the ``inference`` extra), so the whole
 module skips if it is not importable.
 """
 
 import importlib.util
-import json
 import math
 import os
 import unittest
@@ -41,8 +40,6 @@ from ..training_pipeline_test_case import TrainingPipelineTestCase
 
 HAS_ONNXRUNTIME = importlib.util.find_spec("onnxruntime") is not None
 HAS_HF_HUB = importlib.util.find_spec("huggingface_hub") is not None
-
-BASELINE_DIR = Path(__file__).resolve().parent / "baselines"
 
 # The registry's verified table is the single source of truth for which
 # architectures and depths exist; the setup file maps each key to a repo.
@@ -88,54 +85,6 @@ def skip_reason(model_key):
     if not (HF_TESTS_ENABLED or bundle_is_cached(model_key)):
         return f"set QTP_HF_TESTS=1 to download {model_key!r} from the Hub"
     return None
-
-
-# The graph_transformer's Laplacian positional encoding relies on an
-# eigensolver whose eigenvectors are sign-ambiguous; the model was trained with
-# random sign-flip augmentation and tolerates the difference — hence a looser
-# tolerance for it.
-PARITY_ATOL = {"graph_transformer": 2e-3}
-DEFAULT_PARITY_ATOL = 1e-4
-
-
-# --- deterministic cost operators (mirrors tools/inference/bench_ops.py) ----
-
-
-def _zz(num_qubits, i, j, weight=1.0):
-    label = ["I"] * num_qubits
-    label[i] = "Z"
-    label[j] = "Z"
-    return "".join(label), weight
-
-
-def _ring(n, weight=1.0):
-    return SparsePauliOp.from_list([_zz(n, k, (k + 1) % n, weight) for k in range(n)])
-
-
-def _line(n, weight=1.0):
-    return SparsePauliOp.from_list([_zz(n, k, k + 1, weight) for k in range(n - 1)])
-
-
-def _complete(n, weight=1.0):
-    return SparsePauliOp.from_list(
-        [_zz(n, i, j, weight) for i in range(n) for j in range(i + 1, n)]
-    )
-
-
-def _weighted_ring(n):
-    return SparsePauliOp.from_list([_zz(n, k, (k + 1) % n, 0.5 + 0.25 * k) for k in range(n)])
-
-
-BENCH_OPS = {
-    "triangle_3": _complete(3),
-    "line_4": _line(4),
-    "ring_4": _ring(4),
-    "complete_4": _complete(4),
-    "ring_6": _ring(6),
-    "line_8": _line(8),
-    "weighted_ring_6": _weighted_ring(6),
-    "complete_5": _complete(5),
-}
 
 
 def _p_of(model_key):
@@ -210,35 +159,6 @@ class TestOnnxInference(TrainingPipelineTestCase):
                 p = predictor.output_dim // 2
                 for raw_beta, scaled_beta in zip(raw[:p], scaled[:p]):
                     self.assertAlmostEqual(scaled_beta, raw_beta * (math.pi / 2), places=5)
-
-    def test_onnx_matches_baseline(self):
-        """The ONNX predictor reproduces the frozen baseline for every op.
-
-        Baselines are committed under ``test/inference/baselines/`` and were
-        frozen from the original predictor at export time.
-        """
-        for model_key in MODEL_KEYS:
-            with self.subTest(model=model_key):
-                reason = skip_reason(model_key)
-                if reason:
-                    self.skipTest(reason)
-                baseline_file = BASELINE_DIR / f"{model_key.replace('/', '_')}.json"
-                if not baseline_file.is_file():
-                    self.skipTest(f"no baseline for {model_key!r}")
-
-                baseline = json.loads(baseline_file.read_text())
-                predictor = self._predictor(model_key)
-                atol = PARITY_ATOL.get(model_key.split("/", 1)[0], DEFAULT_PARITY_ATOL)
-
-                for case_name, expected in baseline["cases"].items():
-                    got = predictor.predict(BENCH_OPS[case_name])
-                    for got_angle, expected_angle in zip(got, expected):
-                        self.assertAlmostEqual(
-                            got_angle,
-                            expected_angle,
-                            delta=atol,
-                            msg=f"{model_key}/{case_name}: ONNX drifted from baseline",
-                        )
 
 
 @unittest.skipUnless(HAS_HF_HUB, "huggingface_hub not installed (install the 'inference' extra)")

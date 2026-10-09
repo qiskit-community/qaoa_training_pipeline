@@ -39,8 +39,3 @@ def resolve_model_keys(arg: str) -> list[str]:
     if "/" in arg:
         return [arg]
     return [k for k in keys if k.split("/", 1)[0] == arg]
-
-
-def baseline_filename(model_key: str) -> str:
-    """Flatten a bundle key to a baseline filename, e.g. ``gcn/p3`` -> ``gcn_p3.json``."""
-    return model_key.replace("/", "_") + ".json"
