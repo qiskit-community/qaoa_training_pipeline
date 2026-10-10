@@ -152,10 +152,14 @@ pip install -e ".[inference]"    # adds onnxruntime + huggingface_hub; no torch
 ```
 
 ```python
-from qiskit.quantum_info import SparsePauliOp
+import networkx as nx
 from qaoa_training_pipeline.inference import AIInference
+from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
-cost_op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
+# The models are trained on the max-cut convention H = -0.5 * sum_e w_e Z_i Z_j,
+# so the operator must be built with pre_factor=-0.5 (graph_to_operator defaults
+# to 1.0). With any other pre-factor the predicted gammas are quietly wrong.
+cost_op = graph_to_operator(nx.cycle_graph(3), pre_factor=-0.5)
 ai = AIInference(model="graph_neural_network/p1")
 angles = ai.provide_params(cost_op)["optimized_params"]  # p=1 -> [beta, gamma]
 ```

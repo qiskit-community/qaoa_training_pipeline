@@ -18,11 +18,22 @@ into the existing pipeline exactly like any other angle provider. You name a
 model; it calls `provide_params(cost_op)` and returns a `ParamResult` of angles.
 
 ```python
+import networkx as nx
 from qaoa_training_pipeline.inference import AIInference
+from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
+cost_op = graph_to_operator(nx.random_regular_graph(3, 10, seed=7), pre_factor=-0.5)
 inference = AIInference(model="gcn/p3")      # downloaded from the Hub, then cached
 result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, gamma_1..gamma_p]
 ```
+
+- **The cost operator must use the max-cut convention the models were trained
+  on**, `H = -0.5 * sum_e w_e Z_i Z_j` — i.e. `pre_factor=-0.5`, *not* the
+  `pre_factor=1.0` default of `graph_to_operator`. The models consume edge
+  weights, which `extract_np` recovers by dividing the coefficients by that
+  pre-factor (`MAX_CUT_PRE_FACTOR`), so an operator built with a different one
+  gives finite but wrong gammas rather than an error. The one recognisable case
+  — all-positive quadratic coefficients — raises a `UserWarning`.
 
 - Runs the exported `model.onnx` via `onnxruntime` + numpy — no torch, no
   checkpoint needed.

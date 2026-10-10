@@ -37,7 +37,7 @@ HF_DIR = Path(__file__).resolve().parent / "huggingface"
 # way to use another one is to say so explicitly via $QAOA_HF_SETUP, so a
 # checkout always resolves models the same way regardless of what else happens
 # to be lying around in this directory.
-TRACKED_SETUP = HF_DIR / "hf_setup_local.json"
+TRACKED_SETUP = HF_DIR / "hf_setup.json"
 SETUP_ENV_VAR = "QAOA_HF_SETUP"
 
 # The seven released architectures, keyed by the name used in a bundle key.
@@ -181,10 +181,9 @@ def validate_setup(setup: dict[str, Any], source: Path) -> None:
         raise ValueError(f"HF setup file {source} is invalid:\n  - " + "\n  - ".join(problems))
 
 
-@lru_cache(maxsize=1)
-def load_setup() -> dict[str, Any]:
-    """Load, validate and cache the HF bundle setup file."""
-    source = setup_path()
+@lru_cache(maxsize=4)
+def _load_setup_file(source: Path) -> dict[str, Any]:
+    """Load and validate one setup file, caching the result per path."""
     if not source.is_file():
         raise FileNotFoundError(
             f"HF setup file not found: {source}. The packaged setup file is "
@@ -194,6 +193,17 @@ def load_setup() -> dict[str, Any]:
         setup = json.load(handle)
     validate_setup(setup, source)
     return setup
+
+
+def load_setup() -> dict[str, Any]:
+    """Load, validate and cache the HF bundle setup file.
+
+    The cache is keyed on the resolved path, not on nothing: $QAOA_HF_SETUP can
+    be set or changed after this module is imported, and a process-lifetime
+    cache would then keep serving bundles from the file that happened to be
+    read first.
+    """
+    return _load_setup_file(setup_path())
 
 
 def available_bundles() -> list[str]:

@@ -42,6 +42,13 @@ class AIInference(ProblemParamsProvider):
     listing it in your own setup file and pointing ``$QAOA_HF_SETUP`` at it —
     not by a second constructor argument.
 
+    The cost operator passed to :meth:`provide_params` must use the max-cut
+    convention the models were trained on, ``H = -0.5 * sum_e w_e Z_i Z_j``
+    (``graph_to_operator(graph, pre_factor=-0.5)``). See
+    :data:`~qaoa_training_pipeline.inference.feature_extractor.MAX_CUT_PRE_FACTOR`:
+    an operator built with another pre-factor is not an error, it just predicts
+    the wrong gammas.
+
     Inference is torch-free: it runs an exported ``model.onnx`` with
     ``onnxruntime`` and numpy. Requires the optional ``onnxruntime`` dependency
     (``pip install qaoa_training_pipeline[inference]``) and needs neither torch
@@ -100,7 +107,10 @@ class AIInference(ProblemParamsProvider):
         initial_state: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
     ) -> ParamResult:
-        """Return QAOA angles by running inference on the loaded model."""
+        """Return QAOA angles by running inference on the loaded model.
+
+        ``cost_op`` must be in the max-cut convention described on the class.
+        """
         start = time()
 
         if self.model is None:
