@@ -113,7 +113,7 @@ class TestModelAddressing(TrainingPipelineTestCase):
     def test_no_second_addressing_argument(self):
         """A raw repo id or local path must not be reachable through __init__."""
         with mock.patch.object(AIInference, "load_model"):
-            for argument in ("repo_id", "revision", "config_path", "model_path"):
+            for argument in ("repo_id", "revision", "config_path", "model_path", "strict"):
                 with self.subTest(argument=argument):
                     with self.assertRaises(TypeError):
                         AIInference(model=STUB_KEY, **{argument: "anything"})
@@ -123,8 +123,8 @@ class TestModelAddressing(TrainingPipelineTestCase):
         with mock.patch(
             "qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.from_bundle"
         ) as from_bundle:
-            provider = AIInference(model=STUB_KEY, device="cpu", strict=False)
-        from_bundle.assert_called_once_with(STUB_KEY, device="cpu", strict=False)
+            provider = AIInference(model=STUB_KEY, device="cpu")
+        from_bundle.assert_called_once_with(STUB_KEY, device="cpu")
         self.assertIs(provider.model, from_bundle.return_value)
 
 
@@ -150,7 +150,6 @@ class TestConfigRoundTrip(TrainingPipelineTestCase):
         config = {
             "model": STUB_KEY,
             "device": "cuda",
-            "strict": False,
             "validate_input_operator": False,
             "qaoa_angles_function": "IdentityFunction",
         }
@@ -159,7 +158,6 @@ class TestConfigRoundTrip(TrainingPipelineTestCase):
 
         self.assertEqual(provider.model_key, STUB_KEY)
         self.assertEqual(provider.device, "cuda")
-        self.assertFalse(provider.strict)
         self.assertFalse(provider.validate_input_operator)
         self.assertIsInstance(provider.qaoa_angles_function, IdentityFunction)
 
@@ -178,7 +176,7 @@ class TestConfigRoundTrip(TrainingPipelineTestCase):
 
     def test_config_round_trips(self):
         """from_config(to_config()) must rebuild an equivalent provider."""
-        provider, stub = _provider(device="cpu", strict=True)
+        provider, stub = _provider(device="cpu")
 
         def fake_load(self):
             self.model = stub
@@ -188,7 +186,7 @@ class TestConfigRoundTrip(TrainingPipelineTestCase):
 
         self.assertEqual(rebuilt.model_key, provider.model_key)
         self.assertEqual(rebuilt.device, provider.device)
-        self.assertEqual(rebuilt.strict, provider.strict)
+        self.assertEqual(rebuilt.validate_input_operator, provider.validate_input_operator)
 
 
 class TestProvideParams(TrainingPipelineTestCase):

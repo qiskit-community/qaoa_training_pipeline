@@ -124,10 +124,6 @@ class TestFeedShapesAndDtypes(TrainingPipelineTestCase):
         for name, array in diffusion.items():
             np.testing.assert_array_equal(array, edge[name])
 
-    def test_diffusion_does_not_feed_the_timestep(self):
-        """``t`` is in the features but must not reach the graph."""
-        self.assertNotIn("t", prepare_diffusion_transformer(self.features))
-
 
 class TestEdgeConventions(TrainingPipelineTestCase):
     """The edge-list conventions differ per builder and are easy to get wrong."""

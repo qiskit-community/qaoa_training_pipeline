@@ -65,7 +65,6 @@ class OnnxQAOAPredictor:
         repo_id: str,
         revision: str,
         device: str = "cpu",
-        strict: bool = True,
     ) -> None:
         """Wrap an already-downloaded bundle snapshot.
 
@@ -79,11 +78,9 @@ class OnnxQAOAPredictor:
             repo_id: HuggingFace repo the snapshot came from.
             revision: Revision (commit sha or branch) it was downloaded at.
             device: Device for inference ("cpu", "cuda", ...).
-            strict: Reserved for parity with other providers; unused.
         """
         self.bundle_dir = Path(bundle_dir)
         self.device = str(device)
-        self.strict = bool(strict)
         # Where the snapshot came from. This, not bundle_dir, is what gets
         # serialized: bundle_dir points into a machine-specific HF cache.
         self.bundle_key = bundle_key

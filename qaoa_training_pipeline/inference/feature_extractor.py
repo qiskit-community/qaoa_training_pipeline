@@ -125,7 +125,6 @@ class AIFeatureExtractor:
             edges         (1, M, 2) int64
             edge_weights  (1, M)    float32
             node_count    (1,)      int64
-            t             (1,)      int64
             nodes, rescale_a
 
         ``cost_op`` must be a max-cut operator in the training convention
@@ -161,7 +160,6 @@ class AIFeatureExtractor:
             "edges": edges_arr[np.newaxis, ...],
             "edge_weights": weights_arr[np.newaxis, ...],
             "node_count": np.asarray([num_nodes], dtype=np.int64),
-            "t": np.zeros(1, dtype=np.int64),
         }
 
     def pack_features_np(self, features: dict[str, Any]) -> np.ndarray:

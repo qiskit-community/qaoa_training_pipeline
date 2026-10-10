@@ -59,7 +59,6 @@ class AIInference(ProblemParamsProvider):
         self,
         model: str,
         device: str = "cpu",
-        strict: bool = True,
         validate_input_operator: bool = True,
         rescale: Callable[[Sequence[float]], Sequence[float]] | None = None,
         qaoa_angles_function: BaseAnglesFunction | None = None,
@@ -73,8 +72,6 @@ class AIInference(ProblemParamsProvider):
                 HF cache. See
                 :func:`~qaoa_training_pipeline.inference.model_registry.available_bundles`.
             device: Device for inference ("cpu", "cuda", ...).
-            strict: Reserved for parity with other providers; unused by the
-                ONNX runtime.
             validate_input_operator: If ``True``, cross-check the predicted
                 angle count against the config's ``output_dim``.
             rescale: Optional post-processing hook applied to the predicted
@@ -93,7 +90,6 @@ class AIInference(ProblemParamsProvider):
 
         self.model_key = model
         self.device = str(device)
-        self.strict = bool(strict)
         self.validate_input_operator = bool(validate_input_operator)
         self.rescale = rescale
         self.model = None
@@ -149,14 +145,9 @@ class AIInference(ProblemParamsProvider):
         result["ai_inference"] = {
             **self.model.source(),
             "device": self.device,
-            "strict": self.strict,
             "predictor_metadata": self.model.metadata(),
         }
         return result
-
-    def features(self, cost_op):
-        """Return the packed feature vector for ``cost_op`` (numpy path)."""
-        return self.model.feature_extractor.extract_and_pack_np(cost_op)
 
     @classmethod
     def from_config(cls, config: dict) -> "AIInference":
@@ -182,7 +173,6 @@ class AIInference(ProblemParamsProvider):
         return cls(
             model=str(config["model"]),
             device=str(config.get("device", "cpu")),
-            strict=bool(config.get("strict", True)),
             validate_input_operator=bool(config.get("validate_input_operator", True)),
             rescale=config.get("rescale"),
             qaoa_angles_function=angles_function,
@@ -196,7 +186,6 @@ class AIInference(ProblemParamsProvider):
         config = {
             **self.model.source(),
             "device": self.device,
-            "strict": self.strict,
             "validate_input_operator": self.validate_input_operator,
             "qaoa_angles_function": self.qaoa_angles_function.__class__.__name__,
             "predictor_metadata": self.model.metadata(),
@@ -208,6 +197,4 @@ class AIInference(ProblemParamsProvider):
         """Download the bundle from the Hub and wrap it in an ONNX predictor."""
         from qaoa_training_pipeline.inference.onnx_predictor import OnnxQAOAPredictor
 
-        self.model = OnnxQAOAPredictor.from_bundle(
-            self.model_key, device=self.device, strict=self.strict
-        )
+        self.model = OnnxQAOAPredictor.from_bundle(self.model_key, device=self.device)
