@@ -70,7 +70,7 @@ This is gated by `denormalize_output` (default `True`) in the config.
 Seven GNN/transformer architectures are released as exported ONNX bundles: GCN,
 GIN, GNN, graph transformer, edge transformer, a DDPM transformer, plus MLP —
 each at depths p = 1…5, for 35 bundles.
-[`onnx_inputs.py`](onnx_inputs.py) holds a registry (`numpy_input_builders`)
+[`onnx_inputs.py`](onnx_inputs.py) holds a registry (`INPUT_BUILDERS`)
 mapping model type → how to build its numpy feed.
 
 ### How models are ingested

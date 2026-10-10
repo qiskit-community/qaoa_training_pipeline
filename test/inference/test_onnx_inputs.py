@@ -22,7 +22,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor
 from qaoa_training_pipeline.inference.model_registry import VERIFIED_ARCHITECTURES
 from qaoa_training_pipeline.inference.onnx_inputs import (
-    numpy_input_builders,
+    INPUT_BUILDERS,
     prepare_diffusion_transformer,
     prepare_edge_transformer,
     prepare_gcn,
@@ -75,13 +75,13 @@ class TestBuilderRegistry(TrainingPipelineTestCase):
         """A bundle that loads must have a builder for its declared model_type."""
         for architecture, (_, model_type) in VERIFIED_ARCHITECTURES.items():
             with self.subTest(architecture=architecture):
-                self.assertIn(model_type, numpy_input_builders)
+                self.assertIn(model_type, INPUT_BUILDERS)
 
     def test_gin_and_gnn_share_a_builder(self):
         """Both message-passing models feed the same tensors."""
         self.assertIs(
-            numpy_input_builders["graph_isomorphism_network"],
-            numpy_input_builders["graph_neural_network"],
+            INPUT_BUILDERS["graph_isomorphism_network"],
+            INPUT_BUILDERS["graph_neural_network"],
         )
 
 
@@ -94,7 +94,7 @@ class TestFeedShapesAndDtypes(TrainingPipelineTestCase):
 
     def test_all_builders_emit_finite_arrays(self):
         """No builder produces NaN/inf, which would poison the prediction."""
-        for model_type, builder in numpy_input_builders.items():
+        for model_type, builder in INPUT_BUILDERS.items():
             with self.subTest(model_type=model_type):
                 for name, array in builder(self.features).items():
                     self.assertTrue(
@@ -104,7 +104,7 @@ class TestFeedShapesAndDtypes(TrainingPipelineTestCase):
     def test_index_inputs_are_int64_and_values_float32(self):
         """ONNX is strict about dtypes: indices int64, everything else float32."""
         int_inputs = {"edges", "edge_index", "node_count"}
-        for model_type, builder in numpy_input_builders.items():
+        for model_type, builder in INPUT_BUILDERS.items():
             for name, array in builder(self.features).items():
                 with self.subTest(model_type=model_type, input=name):
                     expected = np.int64 if name in int_inputs else np.float32

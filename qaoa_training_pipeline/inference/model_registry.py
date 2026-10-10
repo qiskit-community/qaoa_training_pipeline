@@ -37,7 +37,7 @@ HF_DIR = Path(__file__).resolve().parent / "huggingface"
 # way to use another one is to say so explicitly via $QAOA_HF_SETUP, so a
 # checkout always resolves models the same way regardless of what else happens
 # to be lying around in this directory.
-TRACKED_SETUP = HF_DIR / "hf_setup.json"
+TRACKED_SETUP = HF_DIR / "hf_setup_local.json"
 SETUP_ENV_VAR = "QAOA_HF_SETUP"
 
 # The seven released architectures, keyed by the name used in a bundle key.

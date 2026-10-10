@@ -33,7 +33,7 @@ from qaoa_training_pipeline.inference.model_registry import (
     expected_model_type,
     resolve_bundle,
 )
-from qaoa_training_pipeline.inference.onnx_inputs import numpy_input_builders
+from qaoa_training_pipeline.inference.onnx_inputs import INPUT_BUILDERS
 
 
 def denormalize_qaoa_params_np(
@@ -107,12 +107,12 @@ class OnnxQAOAPredictor:
                 f"{self.model_type!r}. The setup file points at the wrong repo."
             )
 
-        if self.model_type not in numpy_input_builders:
+        if self.model_type not in INPUT_BUILDERS:
             raise KeyError(
                 f"No ONNX input builder registered for model type {self.model_type!r}. "
-                f"Registered: {sorted(numpy_input_builders)}"
+                f"Registered: {sorted(INPUT_BUILDERS)}"
             )
-        self._prepare = numpy_input_builders[self.model_type]
+        self._prepare = INPUT_BUILDERS[self.model_type]
 
         # The .onnx sits next to the config under a name fixed by the bundle
         # contract; a snapshot that lacks it is an incomplete download.
