@@ -131,6 +131,50 @@ In addition we can specify run-time arguments under `train_kwargs`.
 The result of the optimization is saved in the Json file `example_result.json`.
 This file will contain information on the training history and the method employed.
 
+## AI parameter inference
+
+The `qaoa_training_pipeline.inference` subpackage predicts QAOA angles from a
+cost operator using pre-trained models, without training. `AIInference` is a
+`ProblemParamsProvider`, so it plugs into the framework like any other provider.
+
+Inference is **torch-free**: it runs an exported ONNX graph with
+`onnxruntime` + numpy and needs neither PyTorch nor the original training
+checkpoint. Bundles for seven architectures at QAOA depths `p = 1…5` (35 in
+total) are registered in the packaged setup file, but **none is uploaded to the
+HuggingFace Hub yet**: `model_registry.published_bundles()` returns the bundles
+that can actually be downloaded, and naming an unpublished one raises a
+`RuntimeError` saying so. No model artifacts ship in the package: a published
+bundle is downloaded on first use and cached under `~/.cache/huggingface`, so
+later runs are offline. Name one by its bundle key, `<architecture>/p<p>`.
+
+Install the (optional) runtime dependency and predict:
+
+```bash
+pip install -e ".[inference]"    # adds onnxruntime + huggingface_hub; no torch
+```
+
+The snippet below works once `graph_neural_network/p1` is uploaded; until then
+it raises a `RuntimeError` naming the unpublished bundle.
+
+```python
+import networkx as nx
+from qaoa_training_pipeline.inference import AIInference
+from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
+
+# The models are trained on the max-cut convention H = -0.5 * sum_e w_e Z_i Z_j,
+# so the operator must be built with pre_factor=-0.5 (graph_to_operator defaults
+# to 1.0). With any other pre-factor the predicted gammas are quietly wrong.
+cost_op = graph_to_operator(nx.cycle_graph(3), pre_factor=-0.5)
+ai = AIInference(model="graph_neural_network/p1")
+angles = ai.provide_params(cost_op)["optimized_params"]  # p=1 -> [beta, gamma]
+```
+
+`model_registry.available_bundles()` lists the bundle keys, which are the only
+way to address a model. While the model repos are private, downloading needs a
+HuggingFace token (`hf auth login`, or `HF_TOKEN` in the environment). See
+[`qaoa_training_pipeline/inference/README.md`](qaoa_training_pipeline/inference/README.md)
+for how to serve a bundle outside the shipped zoo.
+
 ## Installation
 
 Install from a clone of the repository with:
@@ -240,6 +284,7 @@ This repository is still in development: new functionality is being added and th
 |      49 | Update tests to fix some issues.                             |          #87 |
 |      50 | Fix install: Quimb stays optional, Qiskit Aer is default.    |          #90 |
 |      51 | Vectorized depth-one evaluator to improve speed.             |          #65 |
+|      52 | Predict QAOA angles with pretrained models (AIInference)     |          #79 |
 
 ## IBM Public Repository Disclosure
 
