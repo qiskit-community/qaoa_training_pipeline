@@ -137,13 +137,15 @@ unreleased, so downloads need a token (`hf auth login`, or `HF_TOKEN`); a bundle
 with no pinned revision in the setup file is not published yet and raises a
 message saying so.
 
-## Publisher tooling
+## Publishing a bundle
 
-[`tools/inference/`](../../tools/inference/) holds the scripts that maintain the
-Hub side of the zoo: `upload_to_hf.py` (one repo per bundle, with the private
-`checkpoint` field stripped) and `hf_setup.py` (revision pinning). They are not
-part of the installed package and nothing here imports them — see
-[their README](../../tools/inference/README.md).
+Uploading to the zoo and pinning its revision is a maintainer task, done with
+tooling kept outside this repository: a bundle is a repo holding
+`model_config.json`, `model.onnx` and `model.onnx.data` at its root, named
+`<org>/qaoa_angles.max_cut.p<p>.<short>`, with the private `checkpoint` field
+stripped from the config before upload. The new entry then goes into
+`hf_setup.json` with the commit sha as its `revision`; `validate_setup` rejects
+anything else, since a branch name would not stay reproducible.
 
 ## One-line summary
 
