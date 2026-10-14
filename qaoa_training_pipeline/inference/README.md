@@ -31,9 +31,16 @@ result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, g
   on**, `H = -0.5 * sum_e w_e Z_i Z_j` — i.e. `pre_factor=-0.5`, *not* the
   `pre_factor=1.0` default of `graph_to_operator`. The models consume edge
   weights, which `extract_np` recovers by dividing the coefficients by that
-  pre-factor (`MAX_CUT_PRE_FACTOR`), so an operator built with a different one
-  gives finite but wrong gammas rather than an error. The one recognisable case
-  — all-positive quadratic coefficients — raises a `UserWarning`.
+  pre-factor (`MAX_CUT_PRE_FACTOR`). What has to match is the *sign*: the
+  normalization described under *Rescaling of the cost operator* below divides
+  the pre-factor's magnitude back out, so `-2.0` is the same normalized problem
+  as `-0.5` and gets the gammas that are right for the operator it produced.
+  The opposite sign does not divide out — it normalizes to the negated operator
+  — so it gives finite but wrong gammas rather than an error. The one
+  recognisable case, all-positive quadratic coefficients, raises a
+  `UserWarning`; a graph with weights of both signs has mixed coefficients
+  under either convention, so nothing warns and the convention is yours to get
+  right.
 
 - Runs the exported `model.onnx` via `onnxruntime` + numpy — no torch, no
   checkpoint needed.
@@ -59,25 +66,40 @@ result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, g
 model inputs via a numpy path (`extract_np`/`pack_features_np`) that reproduces
 the shaping used during training, so the ONNX runtime produces the same numbers.
 It produces scalar features (num_nodes, degrees, …), a graph (edges,
-edge_weights), and the `rescale_a` factor.
+edge_weights), and reports back the `rescale_a` it was normalized at — the
+normalization itself belongs to [`scaling.py`](scaling.py), see below.
 
 ## Rescaling of the cost operator
 
-Scale-invariance is handled in two coupled places:
+Scale-invariance is a three-step chain, and `AIInference.provide_params` runs it
+in the open:
 
-- **On input**, the operator is normalized: `cost_op / rescaling_factor(cost_op)`
-  where the factor is the RMS of per-Pauli-order coefficients
-  (`AIFeatureExtractor.rescaling_factor` in
-  [`feature_extractor.py`](feature_extractor.py)). The model always sees a
-  scale-normalized problem.
-- **On output**, predictions are denormalized: `× π/2`, then the **gammas only**
-  are divided back by `rescale_a` to map onto the original operator's scale.
-  Betas are left untouched.
-- `rescaling_factor` (input) and the gamma un-rescale (output) reproduce the
-  scaling applied during training, which is what guarantees ONNX inference
-  matches the trained model.
+```python
+normalized_cost_op, rescale_a = normalize_cost_op(cost_op)          # 1. scale
+raw_angles = predictor.predict_normalized(normalized_cost_op, rescale_a)  # 2. predict
+angles = undo_gamma_rescale(raw_angles, p, rescale_a)               # 3. unscale
+```
 
-This is gated by `denormalize_output` (default `True`) in the config.
+1. **Scale.** `normalize_cost_op` divides the operator by `rescaling_factor`,
+   the RMS of its per-Pauli-order coefficients, so the network always sees the
+   same scale-normalized problem.
+2. **Predict.** `predict_normalized` builds the features from that operator
+   (`rescale_a` is handed in, since some bundles consume it as a feature), runs
+   the ONNX session, and denormalizes the output by the bundle's `output_scale`
+   (`× π/2` by default).
+3. **Unscale.** `undo_gamma_rescale` divides the **gammas only** by `rescale_a`,
+   mapping them onto the operator that was actually passed. Betas are untouched.
+
+Both scaling steps live in [`scaling.py`](scaling.py), which imports neither
+`onnxruntime` nor a bundle, so the chain can be read and tested on its own
+(`tests/inference/test_scaling.py`). They reproduce the scaling applied during
+training, which is what makes ONNX inference match the trained model.
+
+`OnnxQAOAPredictor.predict(cost_op)` runs the same three steps in one call, for
+a caller not going through the provider; a test asserts the two paths agree.
+Steps 1 and 3 are gated together by `denormalize_output` (default `True`) in the
+config: with it off, `predict` returns raw network output, which is on no
+operator's scale and so has nothing to un-rescale.
 
 The invariance holds for a *positive* rescaling of the operator: `rescaling_factor`
 is an RMS and so is sign-blind, and negating the cost operator describes a

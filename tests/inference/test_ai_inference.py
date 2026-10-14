@@ -54,9 +54,18 @@ class StubPredictor:
         self.predict_calls = []
 
     def predict(self, cost_op, **kwargs):
-        """Record how the provider called us and return fixed angles."""
+        """The one-call round trip. Not what the provider uses; kept for parity."""
         self.predict_calls.append({"cost_op": cost_op, **kwargs})
         return list(self.angles)
+
+    def predict_normalized(self, cost_op, rescale_a, **kwargs):
+        """What the provider calls: the network step, with the scale handed in."""
+        self.predict_calls.append({"cost_op": cost_op, "rescale_a": rescale_a, **kwargs})
+        return list(self.angles)
+
+    def denormalizes(self, denormalize=None):
+        """Mimic the predictor's config-driven answer; these stubs always do."""
+        return True if denormalize is None else bool(denormalize)
 
     def metadata(self):
         """Mimic the predictor's metadata payload."""
@@ -301,6 +310,99 @@ class TestProvideParams(TrainingPipelineTestCase):
         provider.model = None
         with self.assertRaises(RuntimeError):
             provider.provide_params(self.cost_op)
+
+
+@unittest.skipUnless(HAS_ONNXRUNTIME, "onnxruntime not installed (install the 'inference' extra)")
+class TestProviderScaleInvariance(TrainingPipelineTestCase):
+    """Scaling the operator must leave betas fixed and divide gammas by it.
+
+    ``TestScaleInvariance`` in ``test_onnx_inference.py`` measures this on the
+    predictor. This measures it where a caller meets it: through
+    ``provide_params``, which adds the angles function and the rescale hook on
+    top of the predictor's round trip. The network is stubbed -- a scale-
+    invariant model returns the same raw output at every scale -- so what is
+    under test is the transformation layer, not the weights.
+    """
+
+    SCALES = (1.0, 2.0, 10.0, 0.1)
+
+    @staticmethod
+    def _max_cut_ring(n):
+        """A ring in the training convention: negative quadratic coefficients."""
+        return _ring(n) * -0.5
+
+    def _provider_on_a_stubbed_network(self, raw, output_dim):
+        """An AIInference whose model is a real predictor with a mock session."""
+        from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor
+        from qaoa_training_pipeline.inference.onnx_predictor import OnnxQAOAPredictor
+
+        predictor = OnnxQAOAPredictor.__new__(OnnxQAOAPredictor)
+        predictor.config = {"denormalize_output": True, "output_scale": np.pi / 2}
+        predictor.model_init = {"output_dim": output_dim}
+        predictor.output_dim = output_dim
+        predictor.bundle_key = STUB_KEY
+        predictor.feature_extractor = AIFeatureExtractor(in_features=[], norm_stats={})
+        predictor.session = mock.Mock()
+        predictor.session.run.return_value = [np.asarray([raw], dtype=np.float32)]
+        # pylint: disable=protected-access
+        predictor._input_names = set()
+        predictor._prepare = lambda _features: {}
+
+        def fake_load(self):
+            self.model = predictor
+
+        with mock.patch.object(AIInference, "load_model", fake_load):
+            return AIInference(model=STUB_KEY)
+
+    def test_betas_hold_still_and_gammas_track_the_scale(self):
+        """The guarantee documented on AIInference, measured through it."""
+        cost_op = self._max_cut_ring(10)
+
+        for output_dim, raw in ((2, [0.25, 0.20]), (4, [0.25, 0.30, 0.20, 0.15])):
+            depth = output_dim // 2
+            provider = self._provider_on_a_stubbed_network(raw, output_dim)
+            reference = list(provider.provide_params(cost_op)["optimized_params"])
+
+            for scale in self.SCALES:
+                with self.subTest(output_dim=output_dim, scale=scale):
+                    angles = list(provider.provide_params(cost_op * scale)["optimized_params"])
+
+                    for index in range(depth):
+                        self.assertAlmostEqual(
+                            angles[index], reference[index], places=6, msg="a beta moved"
+                        )
+                    for index in range(depth, output_dim):
+                        self.assertAlmostEqual(
+                            angles[index] * scale,
+                            reference[index],
+                            places=6,
+                            msg="a gamma did not track the operator scale",
+                        )
+
+    def test_the_provider_chain_matches_the_predictor_round_trip(self):
+        """provide_params spells the three steps out; predict does them in one.
+
+        Both must land on the same angles, or one of the two public ways in is
+        returning gammas on the wrong scale.
+        """
+        cost_op = self._max_cut_ring(10) * 4.0
+        provider = self._provider_on_a_stubbed_network([0.25, 0.20], 2)
+
+        through_provider = list(provider.provide_params(cost_op)["optimized_params"])
+        through_predictor = provider.model.predict(cost_op)
+        np.testing.assert_allclose(through_provider, through_predictor, rtol=1e-6)
+
+    def test_the_rescale_hook_does_not_break_the_round_trip(self):
+        """A hook runs on top of the scaling, so the invariant must survive it."""
+        cost_op = self._max_cut_ring(8)
+        provider = self._provider_on_a_stubbed_network([0.25, 0.20], 2)
+        hooked = self._provider_on_a_stubbed_network([0.25, 0.20], 2)
+        hooked.rescale = lambda angles: [value * 2.0 for value in angles]
+
+        plain = list(provider.provide_params(cost_op * 4.0)["optimized_params"])
+        scaled = list(hooked.provide_params(cost_op * 4.0)["optimized_params"])
+        self.assertAlmostEqual(scaled[0], plain[0] * 2.0, places=6)
+        self.assertAlmostEqual(scaled[1], plain[1] * 2.0, places=6)
 
 
 class TestPipelineRegistration(TrainingPipelineTestCase):

@@ -168,6 +168,77 @@ class TestCostOperatorConvention(TrainingPipelineTestCase):
         np.testing.assert_allclose(feats["edge_weights"].squeeze(0), [expected] * 3, rtol=1e-6)
 
 
+class TestPreFactorSignAndMagnitude(TrainingPipelineTestCase):
+    """Normalization divides out the pre-factor's magnitude, not its sign.
+
+    This is what decides whether the sign-convention warning is still needed
+    once the operator is normalized. It is: two pre-factors of the same sign
+    are indistinguishable after normalization, so the magnitude is free, while
+    the opposite sign survives normalization as an exact negation and silently
+    predicts for the wrong Hamiltonian.
+    """
+
+    @staticmethod
+    def _weights(pre_factor):
+        """Recovered edge weights for a uniform triangle at ``pre_factor``."""
+        op = SparsePauliOp.from_list(
+            [("ZZI", pre_factor), ("IZZ", pre_factor), ("ZIZ", pre_factor)]
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return make_extractor().extract_np(op)["edge_weights"].squeeze(0)
+
+    def test_magnitude_divides_out(self):
+        """-0.5 and -2.0 are the same normalized problem, so the same features."""
+        np.testing.assert_allclose(self._weights(-0.5), self._weights(-2.0), rtol=1e-6)
+
+    def test_the_opposite_sign_survives_as_a_negation(self):
+        """+1.0 normalizes to the negated operator -- the case worth warning about."""
+        np.testing.assert_allclose(self._weights(1.0), -self._weights(-0.5), rtol=1e-6)
+
+    def test_mixed_sign_weights_are_the_documented_blind_spot(self):
+        """Neither spelling of a mixed-sign graph warns; the test pins that down.
+
+        Nothing is wrong here -- it is why the docstring says the convention is
+        the caller's to get right when weights have both signs.
+        """
+        for pre_factor in (-0.5, 1.0):
+            op = SparsePauliOp.from_list(
+                [("ZZI", pre_factor), ("IZZ", -pre_factor), ("ZIZ", 2 * pre_factor)]
+            )
+            with self.subTest(pre_factor=pre_factor):
+                with warnings.catch_warnings(record=True) as caught:
+                    warnings.simplefilter("always")
+                    make_extractor().extract_np(op)
+                self.assertEqual([str(w.message) for w in caught], [])
+
+
+class TestExtractorInterface(TrainingPipelineTestCase):
+    """AIFeatureExtractor is a BaseFeatureExtractor, so it answers that interface."""
+
+    def test_features_are_reported_in_packing_order(self):
+        """features() must be the order pack_features_np actually packs in."""
+        extractor = AIFeatureExtractor(
+            in_features=["num_nodes", "mean_degree"], norm_stats=IDENTITY_STATS
+        )
+        self.assertEqual(extractor.features(), ["mean_degree", "num_nodes"])
+
+    def test_config_round_trip(self):
+        """A rebuilt extractor packs the same vector as the original."""
+        extractor = AIFeatureExtractor(
+            in_features=sorted(SCALAR_FEATURES), norm_stats=IDENTITY_STATS
+        )
+        rebuilt = AIFeatureExtractor.from_config(extractor.to_config())
+        op = SparsePauliOp.from_list([("ZZI", -0.5), ("IZZ", -0.5), ("ZIZ", -0.5)])
+        np.testing.assert_allclose(rebuilt(op)[0], extractor(op)[0], rtol=1e-6)
+
+    def test_a_config_without_norm_stats_is_refused(self):
+        """Rebuilding without stats would silently stop normalizing."""
+        with self.assertRaises(KeyError) as ctx:
+            AIFeatureExtractor.from_config({"in_features": ["num_nodes"]})
+        self.assertIn("norm_stats", str(ctx.exception))
+
+
 class TestOutOfDistributionWarning(TrainingPipelineTestCase):
     """A graph far outside the training set must not predict silently."""
 
