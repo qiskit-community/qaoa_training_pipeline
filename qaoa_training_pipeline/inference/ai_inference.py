@@ -22,6 +22,10 @@ from qaoa_training_pipeline.inference.model_registry import (
     available_bundles,
     parse_bundle_key,
 )
+from qaoa_training_pipeline.inference.scaling import (
+    normalize_cost_op,
+    undo_gamma_rescale,
+)
 from qaoa_training_pipeline.training.functions import (
     BaseAnglesFunction,
     IdentityFunction,
@@ -44,10 +48,35 @@ class AIInference(ProblemParamsProvider):
 
     The cost operator passed to :meth:`provide_params` must use the max-cut
     convention the models were trained on, ``H = -0.5 * sum_e w_e Z_i Z_j``
-    (``graph_to_operator(graph, pre_factor=-0.5)``). See
-    :data:`~qaoa_training_pipeline.inference.feature_extractor.MAX_CUT_PRE_FACTOR`:
-    an operator built with another pre-factor is not an error, it just predicts
-    the wrong gammas.
+    (``graph_to_operator(graph, pre_factor=-0.5)``). What matters is the
+    *sign*: the scaling below divides the magnitude of the pre-factor straight
+    back out, so ``-2.0`` predicts the angles that are right for the operator
+    it produced, while ``+1.0`` -- the ``graph_to_operator`` default --
+    normalizes to the negated operator and predicts the wrong gammas without
+    erroring. See
+    :data:`~qaoa_training_pipeline.inference.feature_extractor.MAX_CUT_PRE_FACTOR`.
+
+    **The scaling round trip.** The models are scale-invariant, and
+    :meth:`provide_params` is where that is arranged, in three steps:
+
+    1. **Scale.** ``normalize_cost_op(cost_op)`` divides the operator by the
+       RMS of its coefficients, so the network sees the same normalized problem
+       whatever the operator's scale.
+    2. **Predict.** ``predict_normalized`` runs the network on it and
+       denormalizes the output by the bundle's own ``output_scale``.
+    3. **Unscale.** ``undo_gamma_rescale`` divides the gammas -- and only the
+       gammas -- by the same factor, undoing step 1 for the operator the caller
+       actually passed.
+
+    Both scaling steps live in
+    :mod:`~qaoa_training_pipeline.inference.scaling`, which needs neither
+    ``onnxruntime`` nor a bundle, so they can be read and tested on their own.
+    :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict`
+    runs the same three in one call, for a caller who is not going through this
+    class. The resulting guarantee, that ``H -> c H`` leaves the betas fixed
+    and sends ``gamma -> gamma / c``, is measured by ``TestScaleInvariance``
+    in ``tests/inference/test_onnx_inference.py`` and, through this class, by
+    ``TestProviderScaleInvariance`` in ``tests/inference/test_ai_inference.py``.
 
     Inference is torch-free: it runs an exported ``model.onnx`` with
     ``onnxruntime`` and numpy. Requires the optional ``onnxruntime`` dependency
@@ -114,17 +143,33 @@ class AIInference(ProblemParamsProvider):
         if self.model is None:
             raise RuntimeError("AI inference model config was not loaded.")
 
-        # The rescale hook runs *after* the config's denormalization, never
-        # instead of it: denormalization undoes the gamma rescaling that makes
-        # the model scale-invariant, so skipping it would hand the hook raw
-        # network output and quietly produce gammas on the wrong scale.
-        qaoa_angles = self.model.predict(
-            cost_op,
+        # Scale, predict, unscale -- the three steps of the round trip
+        # documented on the class, in the order they happen. They are spelled
+        # out here rather than delegated to OnnxQAOAPredictor.predict (which
+        # does the same three in one call) so that the chain a prediction goes
+        # through is readable in one place.
+        normalized_cost_op, rescale_a = normalize_cost_op(cost_op)
+
+        raw_angles = self.model.predict_normalized(
+            normalized_cost_op,
+            rescale_a,
             mixer=mixer,
             ansatz_circuit=ansatz_circuit,
             initial_state=initial_state,
         )
 
+        # Only when the output was denormalized at all: raw network output sits
+        # on no operator's scale, so there is nothing to undo. The predictor
+        # owns that decision, since its config carries the flag.
+        qaoa_angles = list(raw_angles)
+        if self.model.denormalizes():
+            qaoa_angles = undo_gamma_rescale(
+                qaoa_angles, p=self.model.output_dim // 2, rescale_a=rescale_a
+            )
+
+        # The hook runs *after* the un-rescaling above, never instead of it:
+        # it would otherwise be handed gammas on the normalized operator's
+        # scale and quietly return angles for the wrong Hamiltonian.
         if self.rescale is not None:
             rescaled = list(self.rescale(qaoa_angles))
             if len(rescaled) != len(qaoa_angles):

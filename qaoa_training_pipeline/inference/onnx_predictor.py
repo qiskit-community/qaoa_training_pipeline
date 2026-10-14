@@ -43,6 +43,11 @@ from qaoa_training_pipeline.inference.model_registry import (
     resolve_bundle,
 )
 from qaoa_training_pipeline.inference.onnx_inputs import INPUT_BUILDERS
+from qaoa_training_pipeline.inference.scaling import (
+    denormalize_qaoa_params_np,
+    normalize_cost_op,
+    undo_gamma_rescale,
+)
 from qaoa_training_pipeline.inference.warn_utils import warn_at_caller
 
 try:
@@ -67,20 +72,6 @@ def _strip_private_fields(value: Any) -> Any:
     if isinstance(value, list):
         return [_strip_private_fields(item) for item in value]
     return value
-
-
-def denormalize_qaoa_params_np(
-    qaoa_params_norm: np.ndarray, scale: float = math.pi / 2
-) -> np.ndarray:
-    """Denormalize predicted QAOA params by ``scale`` (default pi/2)."""
-    return qaoa_params_norm * scale
-
-
-def undo_gamma_rescale_np(angles: np.ndarray, p: int, rescale_a: float) -> np.ndarray:
-    """Undo the gamma rescaling on the second half of ``angles`` (divide gammas)."""
-    angles = np.array(angles, copy=True)
-    angles[..., p:] = angles[..., p:] / float(rescale_a)
-    return angles
 
 
 class OnnxQAOAPredictor:
@@ -310,6 +301,19 @@ class OnnxQAOAPredictor:
             metadata["output_dim"] = metadata["model_init"].get("output_dim")
         return metadata
 
+    def denormalizes(self, denormalize: bool | None = None) -> bool:
+        """Whether a ``denormalize`` argument of this value applies the config's scaling.
+
+        The two halves of the scale-invariance round trip have to agree about
+        this: when the output is not denormalized, the gammas must not be
+        un-rescaled either, or they would come back on neither the normalized
+        nor the operator's scale. Both callers ask here rather than each
+        reading the config.
+        """
+        if denormalize is None:
+            return bool(self.config.get("denormalize_output", True))
+        return bool(denormalize)
+
     def predict(
         self,
         cost_op: SparsePauliOp,
@@ -318,12 +322,63 @@ class OnnxQAOAPredictor:
         initial_state: QuantumCircuit | None = None,
         denormalize: bool | None = None,
     ) -> list[float]:
-        """Predict QAOA parameters from a cost operator (torch-free).
+        """Predict QAOA parameters for ``cost_op``, scaling included (torch-free).
+
+        The whole chain in one call: normalize the operator, run the network on
+        it, un-rescale the gammas. It is the three steps documented on
+        :class:`~qaoa_training_pipeline.inference.AIInference`, which spells
+        them out separately instead of calling this -- so a caller who has
+        already normalized, or who wants the steps apart, uses
+        :meth:`predict_normalized` and
+        :func:`undo_gamma_rescale_np` directly.
 
         ``mixer``/``ansatz_circuit``/``initial_state`` are accepted to match the
-        provider signature but are unused: the models were trained on the
-        standard max-cut ansatz, so passing a custom one warns rather than
-        being honoured silently.
+        provider signature but are unused.
+        """
+        normalized, rescale_a = normalize_cost_op(cost_op)
+        angles = self.predict_normalized(
+            normalized,
+            rescale_a,
+            mixer=mixer,
+            ansatz_circuit=ansatz_circuit,
+            initial_state=initial_state,
+            denormalize=denormalize,
+        )
+        if not self.denormalizes(denormalize):
+            # Raw network output: it is on no particular operator's scale, so
+            # there is nothing to undo.
+            return angles
+        return undo_gamma_rescale(angles, p=self.output_dim // 2, rescale_a=rescale_a)
+
+    def predict_normalized(
+        self,
+        cost_op: SparsePauliOp,
+        rescale_a: float,
+        mixer: QuantumCircuit | None = None,
+        ansatz_circuit: QuantumCircuit | None = None,
+        initial_state: QuantumCircuit | None = None,
+        denormalize: bool | None = None,
+    ) -> list[float]:
+        """Run the network on an already-normalized operator. Step two of the chain.
+
+        Everything between the two scaling steps: features, the ONNX session,
+        and the config's output denormalization. The gammas are *not*
+        un-rescaled -- the caller holds ``rescale_a`` and does that, which is
+        what makes the chain readable in one place. Use :meth:`predict` for the
+        round trip in one call.
+
+        Args:
+            cost_op: The max-cut cost operator divided by ``rescale_a``, as
+                :func:`~qaoa_training_pipeline.inference.scaling.normalize_cost_op`
+                returns it.
+            rescale_a: The scale it was divided by. Not applied to the operator
+                again; it is reported to the network as the ``rescale_a``
+                feature, which some bundles consume.
+            mixer: Unused, see :meth:`predict`.
+            ansatz_circuit: Unused, see :meth:`predict`.
+            initial_state: Unused, see :meth:`predict`.
+            denormalize: Overrides the config's ``denormalize_output``. ``False``
+                returns the raw network output.
         """
         ignored = [
             name
@@ -341,7 +396,7 @@ class OnnxQAOAPredictor:
                 "so the predicted angles do not apply to a different circuit."
             )
 
-        x_vec, features = self.feature_extractor.extract_and_pack_np(cost_op)
+        x_vec, features = self.feature_extractor.extract_and_pack_np(cost_op, rescale_a=rescale_a)
         features["x"] = x_vec
         # Some builders need model hyperparameters (e.g. graph_transformer's
         # Laplacian PE width). Surface them from model_init so the numpy feed
@@ -356,18 +411,9 @@ class OnnxQAOAPredictor:
         prediction = self.session.run(None, feed)[0]
         prediction = np.asarray(prediction, dtype=np.float32)
 
-        apply_denorm = (
-            bool(self.config.get("denormalize_output", True))
-            if denormalize is None
-            else denormalize
-        )
-        if apply_denorm:
+        if self.denormalizes(denormalize):
             scale = float(self.config.get("output_scale", math.pi / 2))
             prediction = denormalize_qaoa_params_np(prediction, scale=scale)
-            rescale_a = float(features["rescale_a"])
-            prediction = undo_gamma_rescale_np(
-                prediction, p=self.output_dim // 2, rescale_a=rescale_a
-            )
 
         output = prediction.reshape(-1).tolist()
 

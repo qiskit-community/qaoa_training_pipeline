@@ -38,6 +38,7 @@ from qiskit.quantum_info import SparsePauliOp
 import numpy as np
 
 from qaoa_training_pipeline.inference import model_registry
+from qaoa_training_pipeline.inference.scaling import normalize_cost_op, undo_gamma_rescale
 from qaoa_training_pipeline.inference.feature_extractor import MAX_CUT_PRE_FACTOR
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
@@ -423,8 +424,8 @@ class TestScaleInvariance(TrainingPipelineTestCase):
 
     SCALES = (1.0, 2.0, 10.0, 0.1)
 
-    def _predict(self, cost_op, raw, output_dim):
-        """Run the real ``predict`` with the ONNX session stubbed out."""
+    def _predictor(self, raw, output_dim):
+        """A real predictor with the ONNX session stubbed out."""
         from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor
         from qaoa_training_pipeline.inference.onnx_predictor import OnnxQAOAPredictor
 
@@ -441,7 +442,45 @@ class TestScaleInvariance(TrainingPipelineTestCase):
         predictor.session.run.return_value = [np.asarray([raw], dtype=np.float32)]
         predictor._input_names = set()  # pylint: disable=protected-access
         predictor._prepare = lambda _features: {}  # pylint: disable=protected-access
-        return predictor.predict(cost_op)
+        return predictor
+
+    def _predict(self, cost_op, raw, output_dim):
+        """Run the real ``predict`` with the ONNX session stubbed out."""
+        return self._predictor(raw, output_dim).predict(cost_op)
+
+    def test_the_one_call_wrapper_matches_the_three_explicit_steps(self):
+        """``predict`` must be exactly scale -> predict_normalized -> unscale.
+
+        AIInference runs those three itself, so the wrapper and the chain have
+        to be the same computation. If they ever diverge, one of the two entry
+        points is returning angles on the wrong scale.
+        """
+        for output_dim, raw in ((2, [0.25, 0.20]), (4, [0.25, 0.30, 0.20, 0.15])):
+            for scale in self.SCALES:
+                with self.subTest(output_dim=output_dim, scale=scale):
+                    cost_op = _max_cut_operator(10) * scale
+                    predictor = self._predictor(raw, output_dim)
+
+                    in_one_call = predictor.predict(cost_op)
+
+                    normalized, rescale_a = normalize_cost_op(cost_op)
+                    step_by_step = undo_gamma_rescale(
+                        predictor.predict_normalized(normalized, rescale_a),
+                        p=output_dim // 2,
+                        rescale_a=rescale_a,
+                    )
+                    np.testing.assert_allclose(in_one_call, step_by_step, rtol=1e-6)
+
+    def test_raw_output_is_not_un_rescaled_by_either_path(self):
+        """denormalize=False means no output scaling and no gamma un-rescale."""
+        cost_op = _max_cut_operator(10) * 4.0
+        predictor = self._predictor([0.25, 0.20], 2)
+
+        normalized, rescale_a = normalize_cost_op(cost_op)
+        self.assertEqual(
+            predictor.predict(cost_op, denormalize=False),
+            predictor.predict_normalized(normalized, rescale_a, denormalize=False),
+        )
 
     def test_betas_hold_still_and_gammas_track_the_scale(self):
         """The headline guarantee, measured at four scales for p=1 and p=2."""

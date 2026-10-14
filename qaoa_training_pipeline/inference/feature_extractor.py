@@ -17,13 +17,14 @@ graph instead of silently feeding a malformed one.
 
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import Any
 
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
+from qaoa_training_pipeline.inference.scaling import normalize_cost_op, rescaling_factor
 from qaoa_training_pipeline.inference.warn_utils import warn_at_caller
+from qaoa_training_pipeline.pre_processing.feature_extraction import BaseFeatureExtractor
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
@@ -33,10 +34,18 @@ SCALAR_FEATURES = {"num_nodes", "num_edges", "edges_per_node", "mean_degree", "s
 # operator is ``H = -0.5 * sum_{(u,v) in E} w_uv Z_u Z_v``, i.e. what
 # ``graph_to_operator(graph, pre_factor=MAX_CUT_PRE_FACTOR)`` produces. The
 # models consume edge *weights*, not Pauli coefficients, so ``extract_np``
-# divides the coefficients by this factor to recover them. An operator built
-# with a different pre-factor is not rejected -- it describes a perfectly valid
-# Hamiltonian -- but its recovered weights are off by a constant, and the
-# predicted gammas are quietly wrong.
+# divides the coefficients by this factor to recover them.
+#
+# Only the *sign* of the pre-factor matters. ``extract_np`` normalizes the
+# operator by :func:`~qaoa_training_pipeline.inference.scaling.rescaling_factor`
+# first, which is homogeneous of degree
+# one, so the magnitude divides straight back out: pre-factors of -0.5 and -2.0
+# recover identical weights, and each gets the gammas that are right for the
+# operator it was handed. A pre-factor of the opposite sign does not divide
+# out -- it normalizes to exactly the negated operator -- so its recovered
+# weights are negated and its gammas are quietly wrong. That asymmetry is why
+# :func:`warn_on_unexpected_sign_convention` exists and why normalization does
+# not make it redundant.
 MAX_CUT_PRE_FACTOR = -0.5
 
 # How far outside the training distribution a feature may land before the
@@ -58,6 +67,13 @@ def warn_on_unexpected_sign_convention(cost_op: SparsePauliOp) -> None:
     coefficients are all positive was almost certainly built with the
     ``pre_factor=1.0`` default of
     :func:`~qaoa_training_pipeline.utils.graph_utils.graph_to_operator`.
+
+    The blind spot, by construction: a graph with weights of both signs has
+    coefficients of both signs under either convention, so neither spelling of
+    it warns. Scale normalization does not close that gap -- it divides out the
+    magnitude of the pre-factor but not its sign (see
+    :data:`MAX_CUT_PRE_FACTOR`) -- so for mixed-sign weights the convention is
+    the caller's to get right.
     """
     coefficients = [
         float(np.real(term.coeffs[0])) for term in cost_op if int(sum(term.paulis[0].z)) > 1
@@ -128,8 +144,20 @@ def validate_cost_op(cost_op: SparsePauliOp) -> None:
         )
 
 
-class AIFeatureExtractor:
+class AIFeatureExtractor(BaseFeatureExtractor):
     """Extract and normalize the features the ONNX models consume.
+
+    A :class:`~qaoa_training_pipeline.pre_processing.BaseFeatureExtractor`, so
+    it carries the same ``__call__`` / :meth:`features` / config interface as
+    :class:`~qaoa_training_pipeline.pre_processing.GraphFeatureExtractor`, and
+    shares ``operator_to_graph`` with it. The bodies stay separate on purpose:
+    that extractor returns a positional tuple under its own feature names
+    (``avg_degree``, ``avg_weight``, ``density``, ``qaoa_depth``) with no
+    normalization, while the vector here is fixed by a trained contract --
+    ``sorted(in_features)`` ordering, each bundle's own mean/std from
+    ``feature_normalization``, and the edge/weight tensors the graph networks
+    read. Folding one into the other would make a published bundle's input
+    vector depend on the other extractor's defaults.
 
     Example:
         extractor = AIFeatureExtractor(in_features=["num_nodes", "mean_degree"])
@@ -166,36 +194,35 @@ class AIFeatureExtractor:
             )
 
     def rescaling_factor(self, cost_op: SparsePauliOp) -> float:
-        """Return the QAOA cost-operator rescaling factor (RMS of per-order weights).
+        """Delegate to :func:`~qaoa_training_pipeline.inference.scaling.rescaling_factor`.
 
-        The factor is used as a divisor both on input (``cost_op / rescale_a``) and
-        on output (gammas ``/ rescale_a``). For a degenerate operator with no
-        non-identity terms or all-zero coefficients the RMS is 0; we fall back to
-        ``1.0`` so normalization/denormalization is a no-op instead of dividing by
-        zero.
+        Kept because this was the public spelling. New code should call the
+        function: the factor depends on nothing but the operator, so it needs
+        no extractor, and it belongs with the rest of the scaling.
         """
-        terms = defaultdict(list)
+        return rescaling_factor(cost_op)
 
-        for p in cost_op:
-            order = sum(p.paulis[0].z)
-            terms[order].append(np.real(p.coeffs[0]) ** 2)
-
-        factor = 0
-        for squared_weights in terms.values():
-            factor += sum(squared_weights) / len(squared_weights)
-
-        factor = float(np.sqrt(factor))
-        return factor if factor > 0 else 1.0
-
-    def extract_np(self, cost_op: SparsePauliOp) -> dict[str, Any]:
+    def extract_np(self, cost_op: SparsePauliOp, rescale_a: float | None = None) -> dict[str, Any]:
         """Extract raw (unnormalized) features from a cost operator as numpy.
 
-        Rescales the operator by ``rescaling_factor``, converts to a graph, and
-        computes the same scalar/graph features used during training:
+        Converts the operator to a graph and computes the same scalar/graph
+        features used during training:
             edges         (1, M, 2) int64
             edge_weights  (1, M)    float32
             node_count    (1,)      int64
             nodes, rescale_a
+
+        Args:
+            cost_op: The max-cut cost operator, or -- when ``rescale_a`` is
+                given -- that operator already divided by it.
+            rescale_a: The scale ``cost_op`` was normalized at, when the caller
+                normalized it
+                (:func:`~qaoa_training_pipeline.inference.scaling.normalize_cost_op`).
+                Features are then
+                read off ``cost_op`` as given, and the value is reported back as
+                the ``rescale_a`` feature. Left at ``None``, this method
+                normalizes the operator itself, which is what a caller that
+                hands over a raw operator wants.
 
         ``cost_op`` must be a max-cut operator in the training convention
         ``H = -0.5 * sum_e w_e Z_i Z_j`` (see :data:`MAX_CUT_PRE_FACTOR`): the
@@ -231,11 +258,13 @@ class AIFeatureExtractor:
         validate_cost_op(cost_op)
         warn_on_unexpected_sign_convention(cost_op)
 
-        rescale_a = self.rescaling_factor(cost_op)
+        if rescale_a is None:
+            cost_op, rescale_a = normalize_cost_op(cost_op)
+
         # include_one_local is off because validate_cost_op has already refused
         # one-local terms: a self-loop here would be double-counted into the
         # degrees by the symmetrization in onnx_inputs.
-        graph = operator_to_graph(cost_op / rescale_a, include_one_local=False)
+        graph = operator_to_graph(cost_op, include_one_local=False)
 
         edge_list = list(graph.edges())
         edge_weights = [
@@ -254,6 +283,10 @@ class AIFeatureExtractor:
             "edges_per_node": num_edges / num_nodes if num_nodes else 0.0,
             "mean_degree": float(np.mean(degrees)) if degrees.size else 0.0,
             "std_degree": float(np.std(degrees)) if degrees.size else 0.0,
+            # A feature in its own right: a bundle may list it in in_features,
+            # in which case the network is told the scale it was handed a
+            # normalized problem at. The un-rescaling of the gammas reads the
+            # factor from whoever normalized, not from here.
             "rescale_a": float(rescale_a),
             "nodes": list(graph.nodes()),
             "edges": edges_arr[np.newaxis, ...],
@@ -314,8 +347,49 @@ class AIFeatureExtractor:
             )
         return np.asarray(values, dtype=np.float32)[np.newaxis, ...]
 
-    def extract_and_pack_np(self, cost_op: SparsePauliOp) -> tuple[np.ndarray, dict[str, Any]]:
-        """Extract and pack features in one call. Returns ``(x_vec, features)``."""
-        features = self.extract_np(cost_op)
+    def extract_and_pack_np(
+        self, cost_op: SparsePauliOp, rescale_a: float | None = None
+    ) -> tuple[np.ndarray, dict[str, Any]]:
+        """Extract and pack features in one call. Returns ``(x_vec, features)``.
+
+        ``rescale_a`` is passed straight to :meth:`extract_np`.
+        """
+        features = self.extract_np(cost_op, rescale_a=rescale_a)
         x_vec = self.pack_features_np(features)
         return x_vec, features
+
+    def __call__(self, cost_op: SparsePauliOp) -> tuple[np.ndarray, dict[str, Any]]:
+        """Alias of :meth:`extract_and_pack_np`, the base class's entry point."""
+        return self.extract_and_pack_np(cost_op)
+
+    def features(self) -> list[str]:
+        """The feature names, in the order the packed vector carries them.
+
+        Sorted, because that is the order :meth:`pack_features_np` packs in --
+        not the order ``in_features`` was given in, which a bundle's config is
+        free to spell differently.
+        """
+        return sorted(self.in_features)
+
+    def to_config(self) -> dict:
+        """Return a config based on the class instance."""
+        config = super().to_config()
+        config["in_features"] = list(self.in_features)
+        config["norm_stats"] = self.norm_stats
+        return config
+
+    @classmethod
+    def from_config(cls, config: dict) -> "AIFeatureExtractor":
+        """Return an instance of this class based on a config.
+
+        Both keys are required: an extractor built without ``norm_stats``
+        silently stops normalizing, which is finite, plausible and wrong rather
+        than an error.
+        """
+        missing = [key for key in ("in_features", "norm_stats") if key not in config]
+        if missing:
+            raise KeyError(
+                f"AIFeatureExtractor config is missing {missing}. Both are required: "
+                "without norm_stats the features would go to the network unnormalized."
+            )
+        return cls(in_features=list(config["in_features"]), norm_stats=config["norm_stats"])
