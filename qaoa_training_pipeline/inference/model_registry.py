@@ -27,8 +27,8 @@ caches under ``~/.cache/huggingface``, so only the first use touches the
 network. Call :func:`prefetch_bundles` to warm the cache ahead of an offline /
 air-gapped run.
 
-The repos are private while the models are unreleased, so downloads need a
-token (``hf auth login``, or ``HF_TOKEN`` in the environment).
+The published repos are public, so downloads need no token. A bundle listed
+with ``revision: null`` is not published and says so when asked for.
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ HF_DIR = Path(__file__).resolve().parent / "huggingface"
 # way to use another one is to say so explicitly via $QAOA_HF_SETUP, so a
 # checkout always resolves models the same way regardless of what else happens
 # to be lying around in this directory.
-TRACKED_SETUP = HF_DIR / "hf_setup_local.json"
+TRACKED_SETUP = HF_DIR / "hf_setup.json"
 SETUP_ENV_VAR = "QAOA_HF_SETUP"
 
 # The seven released architectures, keyed by the name used in a bundle key.
@@ -57,22 +57,24 @@ SETUP_ENV_VAR = "QAOA_HF_SETUP"
 # ``model_init.model_type`` its exported config must declare.
 #
 # This table is the verified contract. It exists because the three names drift
-# apart -- `graph_isomorphism_network` is `gin` on the Hub, and `mlp` is really
-# an `agg_transformer` -- so an unvalidated name silently resolves to the wrong
-# repo or the wrong input builder. Every name outside this table is rejected.
+# apart -- `graph_isomorphism_network` is `gin` on the Hub, `graph_transformer`
+# is `gt`, and `mlp` is really an `agg_transformer` -- so an unvalidated name
+# silently resolves to the wrong repo or the wrong input builder. Every name
+# outside this table is rejected.
 #
-# Verified: the model_type column against the p1-p5 exported configs (all seven
-# architectures, each loaded and run). The short-name column follows the
-# `qaoa_angles.max_cut.p{p}.{short}` scheme; only `gnn` has been checked against
-# a real repo, and no bundle is pinned in the shipped setup file yet, so the
-# remaining six are unverified until their upload pins a revision.
+# Both columns are verified against the published collection
+# (huggingface.co/collections/ibm-research/angles-for-quantum-approximate-optimization):
+# every repo in it was read and its `model_init.model_type` compared against the
+# model_type column, and the short-name column is the suffix its repo id
+# actually carries. The three transformers abbreviate -- `dit`, `et`, `gt` --
+# which the earlier spelled-out guesses got wrong.
 VERIFIED_ARCHITECTURES = {
-    "diffusion_transformer": ("diffusion_transformer", "diffusion_transformer"),
-    "edge_transformer": ("edge_transformer", "edge_transformer"),
+    "diffusion_transformer": ("dit", "diffusion_transformer"),
+    "edge_transformer": ("et", "edge_transformer"),
     "gcn": ("gcn", "gcn"),
     "graph_isomorphism_network": ("gin", "graph_isomorphism_network"),
     "graph_neural_network": ("gnn", "graph_neural_network"),
-    "graph_transformer": ("graph_transformer", "graph_transformer"),
+    "graph_transformer": ("gt", "graph_transformer"),
     "mlp": ("mlp", "agg_transformer"),
 }
 

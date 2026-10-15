@@ -112,10 +112,17 @@ listed here as *display name* (`bundle key architecture`): GCN (`gcn`), GIN
 (`graph_isomorphism_network`), GNN (`graph_neural_network`), graph transformer
 (`graph_transformer`), edge transformer (`edge_transformer`), diffusion
 transformer (`diffusion_transformer`) and MLP (`mlp`) — each at depths
-p = 1…5, for 35 bundle keys. Only the parenthesised name is addressable: `gin`
-and `gnn` are HuggingFace short names and are rejected by `parse_bundle_key`.
-None of the 35 is uploaded yet; `model_registry.published_bundles()` is the
-authoritative list of what can be downloaded.
+p = 1…5, for 35 bundle keys. Only the parenthesised name is addressable: the
+repo ids abbreviate (`gin`, `gnn`, `gt`, `et`, `dit`) and those spellings are
+rejected by `parse_bundle_key`.
+
+34 of the 35 are published in the
+[model collection](https://huggingface.co/collections/ibm-research/angles-for-quantum-approximate-optimization)
+and pinned in the setup file, so they download without a token.
+`graph_neural_network/p5` has no repo on the Hub, so it stays at
+`revision: null` and raises a "not published yet" error naming itself.
+`model_registry.published_bundles()` is the authoritative list of what can be
+downloaded.
 [`onnx_inputs.py`](onnx_inputs.py) holds a registry (`INPUT_BUILDERS`)
 mapping model type → how to build its numpy feed.
 
@@ -154,10 +161,9 @@ checkout always resolves models the same way.
 
 `snapshot_download` caches under `~/.cache/huggingface`, so only the first use
 touches the network. For an air-gapped run, warm the cache first with
-`model_registry.prefetch_bundles()`. The repos are private while the models are
-unreleased, so downloads need a token (`hf auth login`, or `HF_TOKEN`); a bundle
-with no pinned revision in the setup file is not published yet and raises a
-message saying so.
+`model_registry.prefetch_bundles()`. The published repos are public, so no
+token is needed; a bundle with no pinned revision in the setup file is not
+published yet and raises a message saying so.
 
 ## One-line summary
 
