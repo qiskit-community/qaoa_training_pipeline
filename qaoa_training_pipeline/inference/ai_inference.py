@@ -49,7 +49,13 @@ class AIInference(ProblemParamsProvider):
        denormalizes the output by the bundle's own ``output_scale``.
     3. **Unscale.** ``undo_gamma_rescale`` divides the gammas -- and only the
        gammas -- by the same factor, undoing step 1 for the operator the caller
-       actually passed.
+       actually passed. This step is unconditional: a provider's job is angles
+       for the operator it was handed. A bundle that set
+       ``denormalize_output: false`` would therefore get its raw output
+       un-rescaled here, which is meaningless -- but no published bundle sets
+       it, and raw output is reached through
+       :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict`
+       with ``denormalize=False``, which skips both scaling steps together.
 
     Both scaling steps are in :mod:`~qaoa_training_pipeline.inference.scaling`.
 
@@ -129,14 +135,9 @@ class AIInference(ProblemParamsProvider):
             initial_state=initial_state,
         )
 
-        # Only when the output was denormalized at all: raw network output sits
-        # on no operator's scale, so there is nothing to undo. The predictor
-        # owns that decision, since its config carries the flag.
-        qaoa_angles = list(raw_angles)
-        if self.model.denormalizes():
-            qaoa_angles = undo_gamma_rescale(
-                qaoa_angles, p=self.model.output_dim // 2, rescale_a=rescale_a
-            )
+        qaoa_angles = undo_gamma_rescale(
+            raw_angles, p=self.model.output_dim // 2, rescale_a=rescale_a
+        )
 
         # The hook runs *after* the un-rescaling above, never instead of it:
         # it would otherwise be handed gammas on the normalized operator's

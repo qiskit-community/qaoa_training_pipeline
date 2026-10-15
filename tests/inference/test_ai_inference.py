@@ -63,10 +63,6 @@ class StubPredictor:
         self.predict_calls.append({"cost_op": cost_op, "rescale_a": rescale_a, **kwargs})
         return list(self.angles)
 
-    def denormalizes(self, denormalize=None):
-        """Mimic the predictor's config-driven answer; these stubs always do."""
-        return True if denormalize is None else bool(denormalize)
-
     def metadata(self):
         """Mimic the predictor's metadata payload."""
         return {"model_type": "graph_neural_network", "output_dim": self.output_dim}
@@ -278,10 +274,11 @@ class TestProvideParams(TrainingPipelineTestCase):
         self.assertIn("predictor_metadata", payload)
 
     def test_denormalization_is_always_left_to_the_config(self):
-        """The provider must never override the config's own rescaling.
+        """The provider must never override the config's own output scaling.
 
-        Denormalization undoes the gamma rescaling, so suppressing it would
-        return gammas on the normalized operator's scale.
+        It passes no ``denormalize`` argument at all: forcing it either way
+        would overrule what the bundle declares, and suppressing it would hand
+        the un-scaling step raw network output.
         """
         for rescale in (None, lambda angles: [a + 0.0 for a in angles]):
             with self.subTest(rescale=rescale):
