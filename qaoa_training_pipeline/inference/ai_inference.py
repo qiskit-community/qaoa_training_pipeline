@@ -39,23 +39,6 @@ class AIInference(ProblemParamsProvider):
     operator. The referenced model config declares which training setting
     the checkpoint was produced under.
 
-    There is one way to address a model: ``model``, a ``<model>/p<p>`` bundle
-    key. The setup file resolves it to a HuggingFace repo at a pinned revision,
-    so every run is reproducible and every key is a verified name. A bundle
-    outside the shipped zoo (a private export, a retrain) is reached by
-    listing it in your own setup file and pointing ``$QAOA_HF_SETUP`` at it —
-    not by a second constructor argument.
-
-    The cost operator passed to :meth:`provide_params` must use the max-cut
-    convention the models were trained on, ``H = -0.5 * sum_e w_e Z_i Z_j``
-    (``graph_to_operator(graph, pre_factor=-0.5)``). What matters is the
-    *sign*: the scaling below divides the magnitude of the pre-factor straight
-    back out, so ``-2.0`` predicts the angles that are right for the operator
-    it produced, while ``+1.0`` -- the ``graph_to_operator`` default --
-    normalizes to the negated operator and predicts the wrong gammas without
-    erroring. See
-    :data:`~qaoa_training_pipeline.inference.feature_extractor.MAX_CUT_PRE_FACTOR`.
-
     **The scaling round trip.** The models are scale-invariant, and
     :meth:`provide_params` is where that is arranged, in three steps:
 
@@ -68,15 +51,7 @@ class AIInference(ProblemParamsProvider):
        gammas -- by the same factor, undoing step 1 for the operator the caller
        actually passed.
 
-    Both scaling steps live in
-    :mod:`~qaoa_training_pipeline.inference.scaling`, which needs neither
-    ``onnxruntime`` nor a bundle, so they can be read and tested on their own.
-    :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict`
-    runs the same three in one call, for a caller who is not going through this
-    class. The resulting guarantee, that ``H -> c H`` leaves the betas fixed
-    and sends ``gamma -> gamma / c``, is measured by ``TestScaleInvariance``
-    in ``tests/inference/test_onnx_inference.py`` and, through this class, by
-    ``TestProviderScaleInvariance`` in ``tests/inference/test_ai_inference.py``.
+    Both scaling steps are in :mod:`~qaoa_training_pipeline.inference.scaling`.
 
     Inference is torch-free: it runs an exported ``model.onnx`` with
     ``onnxruntime`` and numpy. Requires the optional ``onnxruntime`` dependency
@@ -143,11 +118,7 @@ class AIInference(ProblemParamsProvider):
         if self.model is None:
             raise RuntimeError("AI inference model config was not loaded.")
 
-        # Scale, predict, unscale -- the three steps of the round trip
-        # documented on the class, in the order they happen. They are spelled
-        # out here rather than delegated to OnnxQAOAPredictor.predict (which
-        # does the same three in one call) so that the chain a prediction goes
-        # through is readable in one place.
+        # Scale -> predict -> unscale
         normalized_cost_op, rescale_a = normalize_cost_op(cost_op)
 
         raw_angles = self.model.predict_normalized(
