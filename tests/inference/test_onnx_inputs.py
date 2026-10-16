@@ -60,7 +60,7 @@ def _star(n):
 
 
 def _features(cost_op, pos_enc_dim=None):
-    """Build the feature dict exactly as OnnxQAOAPredictor.predict does."""
+    """Build the feature dict as OnnxQAOAPredictor.predict_normalized does."""
     extractor = AIFeatureExtractor(in_features=sorted(SCALAR_FEATURES), norm_stats=NORM_STATS)
     x_vec, features = extractor.extract_and_pack_np(cost_op)
     features["x"] = x_vec

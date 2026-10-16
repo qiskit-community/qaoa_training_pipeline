@@ -53,11 +53,6 @@ class StubPredictor:
         self.output_dim = output_dim
         self.predict_calls = []
 
-    def predict(self, cost_op, **kwargs):
-        """The one-call round trip. Not what the provider uses; kept for parity."""
-        self.predict_calls.append({"cost_op": cost_op, **kwargs})
-        return list(self.angles)
-
     def predict_normalized(self, cost_op, rescale_a, **kwargs):
         """What the provider calls: the network step, with the scale handed in."""
         self.predict_calls.append({"cost_op": cost_op, "rescale_a": rescale_a, **kwargs})
@@ -375,19 +370,6 @@ class TestProviderScaleInvariance(TrainingPipelineTestCase):
                             places=6,
                             msg="a gamma did not track the operator scale",
                         )
-
-    def test_the_provider_chain_matches_the_predictor_round_trip(self):
-        """provide_params spells the three steps out; predict does them in one.
-
-        Both must land on the same angles, or one of the two public ways in is
-        returning gammas on the wrong scale.
-        """
-        cost_op = self._max_cut_ring(10) * 4.0
-        provider = self._provider_on_a_stubbed_network([0.25, 0.20], 2)
-
-        through_provider = list(provider.provide_params(cost_op)["optimized_params"])
-        through_predictor = provider.model.predict(cost_op)
-        np.testing.assert_allclose(through_provider, through_predictor, rtol=1e-6)
 
     def test_the_rescale_hook_does_not_break_the_round_trip(self):
         """A hook runs on top of the scaling, so the invariant must survive it."""

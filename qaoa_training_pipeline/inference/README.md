@@ -48,12 +48,15 @@ result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, g
   (which always runs). A hook that replaced denormalization would also drop the
   gamma un-rescaling described under *Rescaling of the cost operator* below, and
   so would silently return gammas on the normalized operator's scale. For the
-  raw network output, call `OnnxQAOAPredictor.predict(..., denormalize=False)`.
+  raw network output, call
+  `OnnxQAOAPredictor.predict_normalized(..., denormalize=False)`.
 
 ### 2. Predictor
 
-- [`OnnxQAOAPredictor`](onnx_predictor.py) exposes `predict()` with `output_dim`
-  validation.
+- [`OnnxQAOAPredictor`](onnx_predictor.py) exposes `predict_normalized()` with
+  `output_dim` validation. It is the network step alone: the operator reaches it
+  already normalized, and un-rescaling the gammas is the caller's step, so the
+  scaling chain exists in one place only (see below).
 - It loads the `.onnx` graph, runs it, and only feeds inputs the graph actually
   declares — so optional inputs like `edge_weights` do not break models that
   omit them.
@@ -95,11 +98,12 @@ Both scaling steps live in [`scaling.py`](scaling.py), which imports neither
 (`tests/inference/test_scaling.py`). They reproduce the scaling applied during
 training, which is what makes ONNX inference match the trained model.
 
-`OnnxQAOAPredictor.predict(cost_op)` runs the same three steps in one call, for
-a caller not going through the provider; a test asserts the two paths agree.
-Steps 1 and 3 are gated together by `denormalize_output` (default `True`) in the
-config: with it off, `predict` returns raw network output, which is on no
-operator's scale and so has nothing to un-rescale.
+Step 2 is the only thing `OnnxQAOAPredictor` does, so `AIInference` is the way
+to get angles for a cost operator; using the predictor directly means running
+steps 1 and 3 yourself, as the snippet above does.
+`denormalize_output` (default `True`) in the config governs step 2's output
+scaling, and `predict_normalized(..., denormalize=False)` returns the raw
+network output.
 
 The invariance holds for a *positive* rescaling of the operator: `rescaling_factor`
 is an RMS and so is sign-blind, and negating the cost operator describes a

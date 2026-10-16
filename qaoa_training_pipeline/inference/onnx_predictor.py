@@ -43,11 +43,7 @@ from qaoa_training_pipeline.inference.model_registry import (
     resolve_bundle,
 )
 from qaoa_training_pipeline.inference.onnx_inputs import INPUT_BUILDERS
-from qaoa_training_pipeline.inference.scaling import (
-    denormalize_qaoa_params_np,
-    normalize_cost_op,
-    undo_gamma_rescale,
-)
+from qaoa_training_pipeline.inference.scaling import denormalize_qaoa_params_np
 from qaoa_training_pipeline.inference.warn_utils import warn_at_caller
 
 try:
@@ -79,7 +75,9 @@ class OnnxQAOAPredictor:
 
     Example:
         predictor = OnnxQAOAPredictor.from_bundle("gcn/p1")
-        angles = predictor.predict(cost_op)
+        normalized, rescale_a = normalize_cost_op(cost_op)
+        raw = predictor.predict_normalized(normalized, rescale_a)
+        angles = undo_gamma_rescale(raw, p=predictor.output_dim // 2, rescale_a=rescale_a)
     """
 
     def __init__(
@@ -304,52 +302,12 @@ class OnnxQAOAPredictor:
     def denormalizes(self, denormalize: bool | None = None) -> bool:
         """Whether a ``denormalize`` argument of this value applies the config's scaling.
 
-        The two halves of the scale-invariance round trip have to agree about
-        this: when the output is not denormalized, the gammas must not be
-        un-rescaled either, or they would come back on neither the normalized
-        nor the operator's scale. Both callers ask here rather than each
-        reading the config.
+        ``False`` returns the raw network
+        output, which is in the units the model was trained to emit.
         """
         if denormalize is None:
             return bool(self.config.get("denormalize_output", True))
         return bool(denormalize)
-
-    def predict(
-        self,
-        cost_op: SparsePauliOp,
-        mixer: QuantumCircuit | None = None,
-        ansatz_circuit: QuantumCircuit | None = None,
-        initial_state: QuantumCircuit | None = None,
-        denormalize: bool | None = None,
-    ) -> list[float]:
-        """Predict QAOA parameters for ``cost_op``, scaling included (torch-free).
-
-        The whole chain in one call: normalize the operator, run the network on
-        it, un-rescale the gammas. It is the three steps documented on
-        :class:`~qaoa_training_pipeline.inference.AIInference`, which spells
-        them out separately instead of calling this -- so a caller who has
-        already normalized, or who wants the steps apart, uses
-        :meth:`predict_normalized` and
-        :func:`~qaoa_training_pipeline.inference.scaling.undo_gamma_rescale`
-        directly.
-
-        ``mixer``/``ansatz_circuit``/``initial_state`` are accepted to match the
-        provider signature but are unused.
-        """
-        normalized, rescale_a = normalize_cost_op(cost_op)
-        angles = self.predict_normalized(
-            normalized,
-            rescale_a,
-            mixer=mixer,
-            ansatz_circuit=ansatz_circuit,
-            initial_state=initial_state,
-            denormalize=denormalize,
-        )
-        if not self.denormalizes(denormalize):
-            # Raw network output: it is on no particular operator's scale, so
-            # there is nothing to undo.
-            return angles
-        return undo_gamma_rescale(angles, p=self.output_dim // 2, rescale_a=rescale_a)
 
     def predict_normalized(
         self,
@@ -363,10 +321,9 @@ class OnnxQAOAPredictor:
         """Run the network on an already-normalized operator. Step two of the chain.
 
         Everything between the two scaling steps: features, the ONNX session,
-        and the config's output denormalization. The gammas are *not*
-        un-rescaled -- the caller holds ``rescale_a`` and does that, which is
-        what makes the chain readable in one place. Use :meth:`predict` for the
-        round trip in one call.
+        and the config's output denormalization. Neither scaling step is done
+        here -- the operator arrives normalized, and the gammas are not
+        un-rescaled.
 
         Args:
             cost_op: The max-cut cost operator divided by ``rescale_a``, as
@@ -375,9 +332,10 @@ class OnnxQAOAPredictor:
             rescale_a: The scale it was divided by. Not applied to the operator
                 again; it is reported to the network as the ``rescale_a``
                 feature, which some bundles consume.
-            mixer: Unused, see :meth:`predict`.
-            ansatz_circuit: Unused, see :meth:`predict`.
-            initial_state: Unused, see :meth:`predict`.
+            mixer: Accepted to match the provider signature but unused; a
+                non-default circuit warns rather than being honoured silently.
+            ansatz_circuit: Unused, as ``mixer``.
+            initial_state: Unused, as ``mixer``.
             denormalize: Overrides the config's ``denormalize_output``. ``False``
                 returns the raw network output.
         """

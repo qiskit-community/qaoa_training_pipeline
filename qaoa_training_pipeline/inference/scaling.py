@@ -22,10 +22,9 @@ together:
 3. :func:`undo_gamma_rescale` divides the gammas -- and only the gammas -- by
    the same factor, which undoes step 1 for the operator the caller passed.
 
-:class:`~qaoa_training_pipeline.inference.AIInference` calls the three in that
-order, and
-:meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict`
-does the same for a caller who wants one call.
+:meth:`~qaoa_training_pipeline.inference.AIInference.provide_params` calls the
+three in that order, and is the only place that does: the predictor is step 2
+alone.
 
 Nothing here needs ``onnxruntime`` or a model: it is numpy and Qiskit only, so
 the scaling can be imported, tested and reasoned about without a bundle.

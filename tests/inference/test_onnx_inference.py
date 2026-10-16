@@ -127,6 +127,19 @@ class TestOnnxInference(TrainingPipelineTestCase):
 
         return OnnxQAOAPredictor.from_bundle(model_key, device="cpu")
 
+    @staticmethod
+    def _angles(predictor, cost_op, **kwargs):
+        """Finished angles for ``cost_op``: the chain AIInference runs.
+
+        The predictor is the network step alone, so a test that wants angles
+        for an operator drives the two scaling steps itself.
+        """
+        normalized, rescale_a = normalize_cost_op(cost_op)
+        raw = predictor.predict_normalized(normalized, rescale_a, **kwargs)
+        if not predictor.denormalizes(kwargs.get("denormalize")):
+            return raw
+        return undo_gamma_rescale(raw, p=predictor.output_dim // 2, rescale_a=rescale_a)
+
     def test_onnx_predictor_loads_and_predicts(self):
         """Every exported bundle loads via onnxruntime and produces 2*p angles."""
         op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
@@ -135,7 +148,7 @@ class TestOnnxInference(TrainingPipelineTestCase):
                 reason = skip_reason(model_key)
                 if reason:
                     self.skipTest(reason)
-                angles = self._predictor(model_key).predict(op)
+                angles = self._angles(self._predictor(model_key), op)
                 self.assertIsInstance(angles, list)
                 self.assertEqual(len(angles), 2 * _p_of(model_key))  # [betas..., gammas...]
                 self.assertTrue(all(isinstance(a, float) and math.isfinite(a) for a in angles))
@@ -149,7 +162,7 @@ class TestOnnxInference(TrainingPipelineTestCase):
                 if reason:
                     self.skipTest(reason)
                 predictor = self._predictor(model_key)
-                self.assertEqual(predictor.predict(op), predictor.predict(op))
+                self.assertEqual(self._angles(predictor, op), self._angles(predictor, op))
 
     def test_onnx_predictor_reacts_to_input(self):
         """Different problem graphs yield different predicted angles."""
@@ -161,7 +174,9 @@ class TestOnnxInference(TrainingPipelineTestCase):
                 if reason:
                     self.skipTest(reason)
                 predictor = self._predictor(model_key)
-                self.assertNotEqual(predictor.predict(op_triangle), predictor.predict(op_line4))
+                self.assertNotEqual(
+                    self._angles(predictor, op_triangle), self._angles(predictor, op_line4)
+                )
 
     def test_onnx_predictor_raw_vs_denormalized_differ(self):
         """denormalize=False returns the raw (unscaled) model output."""
@@ -172,8 +187,8 @@ class TestOnnxInference(TrainingPipelineTestCase):
                 if reason:
                     self.skipTest(reason)
                 predictor = self._predictor(model_key)
-                raw = predictor.predict(op, denormalize=False)
-                scaled = predictor.predict(op, denormalize=True)
+                raw = self._angles(predictor, op, denormalize=False)
+                scaled = self._angles(predictor, op, denormalize=True)
                 # config output_scale = pi/2, so scaled == raw * pi/2 for the betas
                 # (first half); the gammas additionally undergo the rescale_a
                 # division, so compare only the betas here (p=1 -> index 0).
@@ -445,41 +460,13 @@ class TestScaleInvariance(TrainingPipelineTestCase):
         return predictor
 
     def _predict(self, cost_op, raw, output_dim):
-        """Run the real ``predict`` with the ONNX session stubbed out."""
-        return self._predictor(raw, output_dim).predict(cost_op)
-
-    def test_the_one_call_wrapper_matches_the_three_explicit_steps(self):
-        """``predict`` must be exactly scale -> predict_normalized -> unscale.
-
-        AIInference runs those three itself, so the wrapper and the chain have
-        to be the same computation. If they ever diverge, one of the two entry
-        points is returning angles on the wrong scale.
-        """
-        for output_dim, raw in ((2, [0.25, 0.20]), (4, [0.25, 0.30, 0.20, 0.15])):
-            for scale in self.SCALES:
-                with self.subTest(output_dim=output_dim, scale=scale):
-                    cost_op = _max_cut_operator(10) * scale
-                    predictor = self._predictor(raw, output_dim)
-
-                    in_one_call = predictor.predict(cost_op)
-
-                    normalized, rescale_a = normalize_cost_op(cost_op)
-                    step_by_step = undo_gamma_rescale(
-                        predictor.predict_normalized(normalized, rescale_a),
-                        p=output_dim // 2,
-                        rescale_a=rescale_a,
-                    )
-                    np.testing.assert_allclose(in_one_call, step_by_step, rtol=1e-6)
-
-    def test_raw_output_is_not_un_rescaled_by_either_path(self):
-        """denormalize=False means no output scaling and no gamma un-rescale."""
-        cost_op = _max_cut_operator(10) * 4.0
-        predictor = self._predictor([0.25, 0.20], 2)
-
+        """Run the scaling chain with the ONNX session stubbed out."""
+        predictor = self._predictor(raw, output_dim)
         normalized, rescale_a = normalize_cost_op(cost_op)
-        self.assertEqual(
-            predictor.predict(cost_op, denormalize=False),
-            predictor.predict_normalized(normalized, rescale_a, denormalize=False),
+        return undo_gamma_rescale(
+            predictor.predict_normalized(normalized, rescale_a),
+            p=output_dim // 2,
+            rescale_a=rescale_a,
         )
 
     def test_betas_hold_still_and_gammas_track_the_scale(self):
