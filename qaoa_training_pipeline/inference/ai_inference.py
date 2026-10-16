@@ -54,8 +54,8 @@ class AIInference(ProblemParamsProvider):
        ``denormalize_output: false`` would therefore get its raw output
        un-rescaled here, which is meaningless -- but no published bundle sets
        it, and raw output is reached through
-       :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict`
-       with ``denormalize=False``, which skips both scaling steps together.
+       :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict_normalized`
+       with ``denormalize=False``, which skips step 2's scaling.
 
     Both scaling steps are in :mod:`~qaoa_training_pipeline.inference.scaling`.
 
@@ -90,7 +90,7 @@ class AIInference(ProblemParamsProvider):
                 to map betas from ``[0, π/2]`` onto ``[0, π]``, or pass ``None``
                 (default) for the config's scaling alone. To get the raw network
                 output instead, call
-                :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict`
+                :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict_normalized`
                 with ``denormalize=False``.
             qaoa_angles_function: Function transforming the predicted angles to
                 a different basis before use. Defaults to

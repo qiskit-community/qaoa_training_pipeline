@@ -27,7 +27,7 @@ def warn_at_caller(message: str, category: type[Warning] = UserWarning) -> None:
     operator the user built would be reported against ``feature_extractor.py``.
     Walking out of the package instead gets it right whether the caller came in
     through :class:`~qaoa_training_pipeline.inference.AIInference`,
-    :meth:`OnnxQAOAPredictor.predict` or the extractor directly.
+    :meth:`OnnxQAOAPredictor.predict_normalized` or the extractor directly.
 
     Args:
         message: The warning message.
