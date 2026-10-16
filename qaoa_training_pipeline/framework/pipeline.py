@@ -26,6 +26,7 @@ Example:
 from __future__ import annotations
 
 import argparse
+import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
@@ -34,11 +35,18 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.framework.from_config_provider import (
     FromConfigParamsProvider,
 )
+from qaoa_training_pipeline.inference import AIInference
 from qaoa_training_pipeline.training import (
     PARAMS_PROVIDERS,
     PIPELINE_COMPONENTS,
     PROBLEM_PARAMS_PROVIDERS,
 )
+
+logger = logging.getLogger(__name__)
+
+# AIInference is added here, not in training/__init__: inference imports the
+# framework, which imports training, so registering it there is circular.
+PROBLEM_PROVIDERS = dict(PROBLEM_PARAMS_PROVIDERS) | {"AIInference": AIInference}
 
 if TYPE_CHECKING:
 
@@ -117,7 +125,7 @@ class Pipeline:
         component_registry = component_registry or PIPELINE_COMPONENTS
         provider_registry = provider_registry or (
             PARAMS_PROVIDERS
-            | PROBLEM_PARAMS_PROVIDERS
+            | PROBLEM_PROVIDERS
             | {"FromConfigParamsProvider": FromConfigParamsProvider}
         )
         # Initialize the ParamsProvider object and its runtime arguments
@@ -165,7 +173,7 @@ class Pipeline:
             The final parameters obtained after executing the pipeline.
         """
         # Get initial angles from the ParamsProvider
-        if self._params_provider.__class__ in PROBLEM_PARAMS_PROVIDERS.values():
+        if isinstance(self._params_provider, tuple(PROBLEM_PROVIDERS.values())):
             provider_args.update({"cost_op": cost_op})
         params = self._params_provider.provide_params(**provider_args)
         # Update results logging dictionary with initial angles provided by the ParamsProvider
