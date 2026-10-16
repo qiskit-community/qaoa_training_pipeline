@@ -330,7 +330,8 @@ class OnnxQAOAPredictor:
         them out separately instead of calling this -- so a caller who has
         already normalized, or who wants the steps apart, uses
         :meth:`predict_normalized` and
-        :func:`undo_gamma_rescale_np` directly.
+        :func:`~qaoa_training_pipeline.inference.scaling.undo_gamma_rescale`
+        directly.
 
         ``mixer``/``ansatz_circuit``/``initial_state`` are accepted to match the
         provider signature but are unused.

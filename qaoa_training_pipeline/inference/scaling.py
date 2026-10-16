@@ -94,21 +94,12 @@ def denormalize_qaoa_params_np(
     return qaoa_params_norm * scale
 
 
-def undo_gamma_rescale_np(angles: np.ndarray, p: int, rescale_a: float) -> np.ndarray:
-    """Undo the gamma rescaling on the second half of ``angles`` (divide gammas)."""
-    angles = np.array(angles, copy=True)
-    angles[..., p:] = angles[..., p:] / float(rescale_a)
-    return angles
-
-
 def undo_gamma_rescale(angles: Sequence[float], p: int, rescale_a: float) -> list[float]:
     """Divide the gammas of ``angles`` by ``rescale_a``. Step three of the chain.
 
-    The list-in, list-out spelling of :func:`undo_gamma_rescale_np`, which is
-    what a caller holding predicted angles has. Only the gammas move: with
-    ``U = prod_k exp(-i beta_k H_B) exp(-i gamma_k H_C)``, sending
-    ``H_C -> c H_C`` preserves the state only if ``gamma -> gamma / c``, while
-    beta must not change.
+    Only the gammas move: with ``U = prod_k exp(-i beta_k H_B) exp(-i gamma_k
+    H_C)``, sending ``H_C -> c H_C`` preserves the state only if
+    ``gamma -> gamma / c``, while beta must not change.
 
     Args:
         angles: ``p`` betas followed by ``p`` gammas, as the network predicted
@@ -116,5 +107,6 @@ def undo_gamma_rescale(angles: Sequence[float], p: int, rescale_a: float) -> lis
         p: The QAOA depth, i.e. where the gammas start.
         rescale_a: The factor the operator was normalized by in step 1.
     """
-    rescaled = undo_gamma_rescale_np(np.asarray(angles, dtype=float), p=p, rescale_a=rescale_a)
-    return [float(value) for value in rescaled]
+    divisor = float(rescale_a)
+    values = [float(value) for value in angles]
+    return values[:p] + [value / divisor for value in values[p:]]

@@ -22,7 +22,6 @@ from qaoa_training_pipeline.inference.scaling import (
     normalize_cost_op,
     rescaling_factor,
     undo_gamma_rescale,
-    undo_gamma_rescale_np,
 )
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
@@ -100,15 +99,6 @@ class TestUndoGammaRescale(TrainingPipelineTestCase):
         """The provider puts these in a ParamResult, so no numpy scalars."""
         angles = undo_gamma_rescale(np.asarray([0.1, 0.4], dtype=np.float32), p=1, rescale_a=4.0)
         self.assertTrue(all(isinstance(value, float) for value in angles))
-
-    def test_agrees_with_the_numpy_spelling(self):
-        """The list form is a convenience, not a second implementation."""
-        raw = [0.1, 0.2, 0.3, 0.4]
-        np.testing.assert_allclose(
-            undo_gamma_rescale(raw, p=2, rescale_a=3.0),
-            undo_gamma_rescale_np(np.asarray(raw), p=2, rescale_a=3.0),
-            rtol=1e-6,
-        )
 
     def test_a_factor_of_one_changes_nothing(self):
         """What a degenerate operator falls back to, so it must be a no-op."""
