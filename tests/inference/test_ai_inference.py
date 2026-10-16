@@ -327,6 +327,39 @@ class TestProviderScaleInvariance(TrainingPipelineTestCase):
                         )
 
 
+class TestOptionalDependency(TrainingPipelineTestCase):
+    """Without the inference extra, constructing a provider must say so.
+
+    The provider imports without onnxruntime or huggingface_hub -- the
+    framework imports it, so it must stay importable on a core install -- and
+    the missing dependency is reported when someone actually builds one.
+    """
+
+    def test_construction_without_the_extra_names_the_extra(self):
+        """Patched rather than uninstalled: the flag is what the code branches on."""
+        from qaoa_training_pipeline.inference import ai_inference
+
+        with (
+            mock.patch.object(ai_inference, "HAS_INFERENCE", False),
+            self.assertRaises(ImportError) as ctx,
+        ):
+            AIInference(model=STUB_KEY)
+
+        message = str(ctx.exception)
+        self.assertIn("AIInference", message)
+        self.assertIn("qaoa_training_pipeline[inference]", message)
+
+    def test_the_flag_matches_the_installed_environment(self):
+        """HAS_INFERENCE must track what is actually importable."""
+        from qaoa_training_pipeline.inference.ai_inference import HAS_INFERENCE
+
+        expected = all(
+            importlib.util.find_spec(module) is not None
+            for module in ("onnxruntime", "huggingface_hub")
+        )
+        self.assertEqual(HAS_INFERENCE, expected)
+
+
 class TestPipelineRegistration(TrainingPipelineTestCase):
     """AIInference must be reachable from a pipeline config, like any provider."""
 
