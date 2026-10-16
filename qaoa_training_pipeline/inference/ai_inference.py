@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from time import time
 
 from qiskit import QuantumCircuit
@@ -27,6 +28,13 @@ from qaoa_training_pipeline.inference.scaling import (
 from qaoa_training_pipeline.training.functions import (
     BaseAnglesFunction,
     IdentityFunction,
+)
+
+
+# Whether the optional inference dependencies are installed, following the
+# HAS_QUIMB convention of qaoa_training_pipeline.evaluation.mps_evaluator.
+HAS_INFERENCE = all(
+    importlib.util.find_spec(module) is not None for module in ("onnxruntime", "huggingface_hub")
 )
 
 
@@ -90,6 +98,13 @@ class AIInference(ProblemParamsProvider):
                 :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict_normalized`
                 with ``denormalize=False``.
         """
+        if not HAS_INFERENCE:
+            raise ImportError(
+                f"{self.__class__.__name__} requires onnxruntime and huggingface_hub. "
+                "Please install the optional inference dependencies with "
+                "`pip install qaoa_training_pipeline[inference]`."
+            )
+
         super().__init__(qaoa_angles_function=qaoa_angles_function or IdentityFunction())
         # Fail here, not at download time: an unverified name must not get as
         # far as resolving to some repo.

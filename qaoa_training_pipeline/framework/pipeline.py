@@ -35,6 +35,7 @@ from qiskit.quantum_info import SparsePauliOp
 from qaoa_training_pipeline.framework.from_config_provider import (
     FromConfigParamsProvider,
 )
+from qaoa_training_pipeline.inference import AIInference
 from qaoa_training_pipeline.training import (
     PARAMS_PROVIDERS,
     PIPELINE_COMPONENTS,
@@ -43,24 +44,9 @@ from qaoa_training_pipeline.training import (
 
 logger = logging.getLogger(__name__)
 
-# The providers whose ``provide_params`` takes the cost operator. AIInference is
-# registered here rather than in ``training/__init__`` because it imports the
-# framework, which imports ``training`` -- registering it there would be a
-# circular import.
-#
-# Importing it does not pull in the optional ``inference`` extra: onnxruntime
-# and huggingface_hub are imported when a model is actually loaded, so a core
-# install can name AIInference in a config and gets a clear ImportError
-# pointing at the extra at construction time. The guard below is therefore
-# belt-and-braces, and deliberately narrow -- it must not turn a real import
-# error inside the package into a silently missing provider.
-PROBLEM_PROVIDERS = dict(PROBLEM_PARAMS_PROVIDERS)
-try:
-    from qaoa_training_pipeline.inference import AIInference
-except ImportError as _exc:  # pragma: no cover - optional dependency guard
-    logger.debug("AIInference is unavailable as a params provider: %s", _exc)
-else:
-    PROBLEM_PROVIDERS["AIInference"] = AIInference
+# AIInference is added here, not in training/__init__: inference imports the
+# framework, which imports training, so registering it there is circular.
+PROBLEM_PROVIDERS = dict(PROBLEM_PARAMS_PROVIDERS) | {"AIInference": AIInference}
 
 if TYPE_CHECKING:
 
