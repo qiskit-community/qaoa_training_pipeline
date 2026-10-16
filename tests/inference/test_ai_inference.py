@@ -9,7 +9,7 @@
 """Tests for AIInference, the provider that fronts the ONNX model zoo.
 
 Most of these run offline against a stub predictor: AIInference's own job is
-argument validation, the rescale hook, config round-tripping and the result
+argument validation, config round-tripping and the result
 payload, none of which need a real graph. The one test that does run a model is
 gated on an available bundle.
 """
@@ -18,7 +18,6 @@ import argparse
 import importlib.util
 import os
 import unittest
-import warnings
 from unittest import mock
 
 import numpy as np
@@ -220,32 +219,6 @@ class TestConfigRoundTrip(TrainingPipelineTestCase):
         # pylint: disable=protected-access
         self.assertEqual(rebuilt.qaoa_angles_function._depth, 2)
 
-    def test_a_dropped_rescale_hook_is_flagged_and_warned_about(self):
-        """A callable cannot be serialized, so the lossy round-trip must be said aloud.
-
-        The warning belongs to from_config, not to_config: ParamResult
-        serializes its trainer on every prediction, so warning on the way out
-        would fire once per predicted angle set.
-        """
-        provider, stub = _provider(rescale=lambda angles: angles)
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            config = provider.to_config()
-        self.assertNotIn("rescale", config)
-        self.assertTrue(config["rescale_hook_dropped"])
-
-        def fake_load(self):
-            self.model = stub
-
-        with (
-            mock.patch.object(AIInference, "load_model", fake_load),
-            self.assertWarns(UserWarning) as ctx,
-        ):
-            rebuilt = AIInference.from_config(config)
-        self.assertIn("rescale", str(ctx.warning))
-        self.assertIsNone(rebuilt.rescale)
-
 
 class TestProvideParams(TrainingPipelineTestCase):
     """provide_params wraps the prediction in the framework's result type."""
@@ -275,26 +248,9 @@ class TestProvideParams(TrainingPipelineTestCase):
         would overrule what the bundle declares, and suppressing it would hand
         the un-scaling step raw network output.
         """
-        for rescale in (None, lambda angles: [a + 0.0 for a in angles]):
-            with self.subTest(rescale=rescale):
-                provider, stub = _provider(rescale=rescale)
-                provider.provide_params(self.cost_op)
-                self.assertNotIn("denormalize", stub.predict_calls[0])
-
-    def test_rescale_hook_runs_after_denormalization(self):
-        """The hook post-processes the denormalized angles, not raw output."""
-        provider, _ = _provider(
-            StubPredictor(angles=(1.0, 2.0)), rescale=lambda a: [x * 3 for x in a]
-        )
-        result = provider.provide_params(self.cost_op)
-        self.assertEqual(list(result["optimized_params"]), [3.0, 6.0])
-
-    def test_rescale_hook_may_not_change_the_angle_count(self):
-        """A hook that drops angles would silently corrupt the ansatz."""
-        provider, _ = _provider(rescale=lambda a: list(a)[:1])
-        with self.assertRaises(ValueError) as ctx:
-            provider.provide_params(self.cost_op)
-        self.assertIn("changed the number of angles", str(ctx.exception))
+        provider, stub = _provider()
+        provider.provide_params(self.cost_op)
+        self.assertNotIn("denormalize", stub.predict_calls[0])
 
     def test_unloaded_model_is_reported(self):
         """A provider without a model must fail loudly, not return garbage."""
@@ -310,8 +266,7 @@ class TestProviderScaleInvariance(TrainingPipelineTestCase):
 
     ``TestScaleInvariance`` in ``test_onnx_inference.py`` measures this on the
     predictor. This measures it where a caller meets it: through
-    ``provide_params``, which adds the angles function and the rescale hook on
-    top of the predictor's round trip. The network is stubbed -- a scale-
+    ``provide_params``, which runs the two scaling steps around the predictor. The network is stubbed -- a scale-
     invariant model returns the same raw output at every scale -- so what is
     under test is the transformation layer, not the weights.
     """
@@ -370,18 +325,6 @@ class TestProviderScaleInvariance(TrainingPipelineTestCase):
                             places=6,
                             msg="a gamma did not track the operator scale",
                         )
-
-    def test_the_rescale_hook_does_not_break_the_round_trip(self):
-        """A hook runs on top of the scaling, so the invariant must survive it."""
-        cost_op = self._max_cut_ring(8)
-        provider = self._provider_on_a_stubbed_network([0.25, 0.20], 2)
-        hooked = self._provider_on_a_stubbed_network([0.25, 0.20], 2)
-        hooked.rescale = lambda angles: [value * 2.0 for value in angles]
-
-        plain = list(provider.provide_params(cost_op * 4.0)["optimized_params"])
-        scaled = list(hooked.provide_params(cost_op * 4.0)["optimized_params"])
-        self.assertAlmostEqual(scaled[0], plain[0] * 2.0, places=6)
-        self.assertAlmostEqual(scaled[1], plain[1] * 2.0, places=6)
 
 
 class TestPipelineRegistration(TrainingPipelineTestCase):

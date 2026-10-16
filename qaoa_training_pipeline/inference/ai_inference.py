@@ -10,8 +10,6 @@
 
 from __future__ import annotations
 
-import warnings
-from collections.abc import Callable, Sequence
 from time import time
 
 from qiskit import QuantumCircuit
@@ -69,7 +67,6 @@ class AIInference(ProblemParamsProvider):
         self,
         model: str,
         device: str = "cpu",
-        rescale: Callable[[Sequence[float]], Sequence[float]] | None = None,
         qaoa_angles_function: BaseAnglesFunction | None = None,
     ) -> None:
         """Initialize the AI inference trainer.
@@ -83,18 +80,15 @@ class AIInference(ProblemParamsProvider):
             device: Device for inference ("cpu", "cuda", "cuda:<index>" or
                 "gpu"). An unknown device is rejected rather than quietly
                 falling back to the CPU.
-            rescale: Optional post-processing hook applied to the predicted
-                angles *after* the config's own denormalization, which always
-                runs. Receives the denormalized angle list and must return a
-                same-length sequence. Use e.g. ``lambda a: [x * 2 for x in a]``
-                to map betas from ``[0, π/2]`` onto ``[0, π]``, or pass ``None``
-                (default) for the config's scaling alone. To get the raw network
-                output instead, call
-                :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict_normalized`
-                with ``denormalize=False``.
             qaoa_angles_function: Function transforming the predicted angles to
                 a different basis before use. Defaults to
-                :class:`IdentityFunction` (no transformation).
+                :class:`IdentityFunction` (no transformation). This is the way
+                to post-process predicted angles -- a scaling, a change of
+                basis -- because unlike a bare callable it serializes, so
+                :meth:`to_config` / :meth:`from_config` round-trips keep it.
+                For the raw network output instead, call
+                :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict_normalized`
+                with ``denormalize=False``.
         """
         super().__init__(qaoa_angles_function=qaoa_angles_function or IdentityFunction())
         # Fail here, not at download time: an unverified name must not get as
@@ -103,7 +97,6 @@ class AIInference(ProblemParamsProvider):
 
         self.model_key = model
         self.device = str(device)
-        self.rescale = rescale
         self.model = None
 
         self.load_model()
@@ -139,18 +132,6 @@ class AIInference(ProblemParamsProvider):
             raw_angles, p=self.model.output_dim // 2, rescale_a=rescale_a
         )
 
-        # The hook runs *after* the un-rescaling above, never instead of it:
-        # it would otherwise be handed gammas on the normalized operator's
-        # scale and quietly return angles for the wrong Hamiltonian.
-        if self.rescale is not None:
-            rescaled = list(self.rescale(qaoa_angles))
-            if len(rescaled) != len(qaoa_angles):
-                raise ValueError(
-                    f"rescale hook changed the number of angles: "
-                    f"{len(qaoa_angles)} -> {len(rescaled)}."
-                )
-            qaoa_angles = [float(value) for value in rescaled]
-
         energy = None
 
         result = ParamResult(qaoa_angles, time() - start, self, energy)
@@ -172,16 +153,6 @@ class AIInference(ProblemParamsProvider):
                 f"Available: {', '.join(available_bundles())}."
             )
 
-        if config.get("rescale_hook_dropped") and config.get("rescale") is None:
-            warnings.warn(
-                "This config was serialized from a provider with a rescale hook, which is a "
-                "callable and could not be stored. The rebuilt provider has no hook, so its "
-                "angles will differ from the original's. Pass rescale= yourself, or fold the "
-                "scaling into qaoa_angles_function, which does serialize.",
-                UserWarning,
-                stacklevel=2,
-            )
-
         # Rebuild the angles function from its config when serialized; default
         # to the identity transformation otherwise.
         angles_function = None
@@ -195,7 +166,6 @@ class AIInference(ProblemParamsProvider):
         return cls(
             model=str(config["model"]),
             device=str(config.get("device", "cpu")),
-            rescale=config.get("rescale"),
             qaoa_angles_function=angles_function,
         )
 
@@ -217,13 +187,6 @@ class AIInference(ProblemParamsProvider):
             "qaoa_angles_function_init": angles_function_config,
             "predictor_metadata": self.model.metadata(),
         }
-
-        if self.rescale is not None:
-            # A callable has no JSON form, so the hook cannot be carried. Record
-            # that it was dropped rather than emitting a config that looks
-            # complete; from_config warns when it reads this back, which is the
-            # point at which the angles actually change.
-            config["rescale_hook_dropped"] = True
 
         return config
 

@@ -44,11 +44,10 @@ result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, g
 
 - Runs the exported `model.onnx` via `onnxruntime` + numpy — no torch, no
   checkpoint needed.
-- An optional `rescale` hook, applied **after** the config's denormalization
-  (which always runs). A hook that replaced denormalization would also drop the
-  gamma un-rescaling described under *Rescaling of the cost operator* below, and
-  so would silently return gammas on the normalized operator's scale. For the
-  raw network output, call
+- An optional `qaoa_angles_function` to post-process the predicted angles — a
+  scaling, a change of basis. It is the framework's own mechanism and it
+  serializes, so a `to_config()` / `from_config()` round trip keeps it. For the
+  raw network output instead, call
   `OnnxQAOAPredictor.predict_normalized(..., denormalize=False)`.
 
 ### 2. Predictor
