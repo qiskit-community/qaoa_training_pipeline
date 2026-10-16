@@ -127,6 +127,21 @@ class TestOnnxInference(TrainingPipelineTestCase):
 
         return OnnxQAOAPredictor.from_bundle(model_key, device="cpu")
 
+    def _runnable(self, model_keys):
+        """The keys whose bundle can be loaded, skipping this test if none can.
+
+        The skip has to be the *test's* outcome rather than every subtest's. A
+        test whose subtests all skip reports no status of its own, and stestr
+        reads a started-but-statusless test as a worker that segfaulted: the run
+        then fails with "exited without returning a status" while reporting zero
+        failures. That is what CI saw once the zoo was published and every
+        subtest here started skipping on "set QTP_HF_TESTS=1".
+        """
+        runnable = [key for key in model_keys if skip_reason(key) is None]
+        if not runnable:
+            self.skipTest(f"no bundle available to run against: {skip_reason(model_keys[0])}")
+        return runnable
+
     @staticmethod
     def _angles(predictor, cost_op, **kwargs):
         """Finished angles for ``cost_op``: the chain AIInference runs.
@@ -143,11 +158,8 @@ class TestOnnxInference(TrainingPipelineTestCase):
     def test_onnx_predictor_loads_and_predicts(self):
         """Every exported bundle loads via onnxruntime and produces 2*p angles."""
         op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
-        for model_key in MODEL_KEYS:
+        for model_key in self._runnable(MODEL_KEYS):
             with self.subTest(model=model_key):
-                reason = skip_reason(model_key)
-                if reason:
-                    self.skipTest(reason)
                 angles = self._angles(self._predictor(model_key), op)
                 self.assertIsInstance(angles, list)
                 self.assertEqual(len(angles), 2 * _p_of(model_key))  # [betas..., gammas...]
@@ -156,11 +168,8 @@ class TestOnnxInference(TrainingPipelineTestCase):
     def test_onnx_predictor_is_deterministic(self):
         """Inference is deterministic: same input -> identical output."""
         op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
-        for model_key in BEHAVIORAL_KEYS:
+        for model_key in self._runnable(BEHAVIORAL_KEYS):
             with self.subTest(model=model_key):
-                reason = skip_reason(model_key)
-                if reason:
-                    self.skipTest(reason)
                 predictor = self._predictor(model_key)
                 self.assertEqual(self._angles(predictor, op), self._angles(predictor, op))
 
@@ -168,11 +177,8 @@ class TestOnnxInference(TrainingPipelineTestCase):
         """Different problem graphs yield different predicted angles."""
         op_triangle = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
         op_line4 = SparsePauliOp.from_list([("ZZII", 1.0), ("IZZI", 1.0), ("IIZZ", 1.0)])
-        for model_key in BEHAVIORAL_KEYS:
+        for model_key in self._runnable(BEHAVIORAL_KEYS):
             with self.subTest(model=model_key):
-                reason = skip_reason(model_key)
-                if reason:
-                    self.skipTest(reason)
                 predictor = self._predictor(model_key)
                 self.assertNotEqual(
                     self._angles(predictor, op_triangle), self._angles(predictor, op_line4)
@@ -181,11 +187,8 @@ class TestOnnxInference(TrainingPipelineTestCase):
     def test_onnx_predictor_raw_vs_denormalized_differ(self):
         """denormalize=False returns the raw (unscaled) model output."""
         op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
-        for model_key in BEHAVIORAL_KEYS:
+        for model_key in self._runnable(BEHAVIORAL_KEYS):
             with self.subTest(model=model_key):
-                reason = skip_reason(model_key)
-                if reason:
-                    self.skipTest(reason)
                 predictor = self._predictor(model_key)
                 raw = self._angles(predictor, op, denormalize=False)
                 scaled = self._angles(predictor, op, denormalize=True)
