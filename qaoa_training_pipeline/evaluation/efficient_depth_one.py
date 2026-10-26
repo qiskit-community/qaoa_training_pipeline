@@ -14,7 +14,7 @@ from itertools import pairwise
 import networkx as nx
 import numpy as np
 from qiskit import QuantumCircuit
-from qiskit.circuit import ParameterExpression
+from qiskit.circuit import ParameterExpression, Gate
 from qiskit.quantum_info import Operator, SparsePauliOp
 from scipy import sparse
 
@@ -35,6 +35,9 @@ _BITS = np.arange(2)
 _S_IDX = _BITS.reshape(2, 1, 1, 1) - _BITS.reshape(1, 1, 2, 1) + 1
 _T_IDX = _BITS.reshape(1, 2, 1, 1) - _BITS.reshape(1, 1, 1, 2) + 1
 
+# (counts, k, w_ik) and (counts, k, w_ik, w_jk); see _node_neighbours and _edge_neighbours.
+_NodeNeighbours = tuple[np.ndarray, np.ndarray, np.ndarray]
+_EdgeNeighbours = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
 @dataclass
 class _Structure:
@@ -62,8 +65,8 @@ class _Structure:
     diag_weights: np.ndarray
 
     # Cached neighbour data. Only filled for the edges if everything fits in a single chunk.
-    edge_pairs: dict[int, tuple] = field(default_factory=dict)
-    diag_pairs: tuple | None = None
+    edge_pairs: dict[int, _EdgeNeighbours] = field(default_factory=dict)
+    diag_pairs: _NodeNeighbours | None = None
 
 
 class EfficientDepthOneEvaluator(BaseEvaluator):
@@ -122,13 +125,13 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         # The caches. The keys hold references to the arguments of `evaluate` so that
         # their ids cannot be reused by other objects while they are cached.
-        self._structure_key: tuple | None = None
+        self._structure_key: tuple[SparsePauliOp, QuantumCircuit | SparsePauliOp | None] | None = None
         self._structure: _Structure | None = None
-        self._initial_state_key: tuple | None = None
+        self._initial_state_key: tuple[QuantumCircuit | None] | None = None
         self._amplitudes: np.ndarray | None = None
-        self._mixer_key: tuple | None = None
+        self._mixer_key: tuple[QuantumCircuit] | None = None
         self._mixer_gates: list[list] | None = None
-        self._observables_key: tuple | None = None
+        self._observables_key: tuple[QuantumCircuit | None] | None = None
         self._observables_beta: float | None = None
         self._observables: np.ndarray | None = None
 
@@ -210,7 +213,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         return mixer
 
     @staticmethod
-    def _is_cached(key: tuple | None, *objects) -> bool:
+    def _is_cached(key: tuple[object, ...] | None, *objects) -> bool:
         """Return True if the key was created from exactly these objects."""
         return (
             key is not None
@@ -477,19 +480,19 @@ def _to_csr(graph: nx.Graph, num_qubits: int) -> sparse.csr_array:
     )
 
 
-def _prepare_gates(circuit: QuantumCircuit) -> list:
+def _prepare_gates(circuit: QuantumCircuit) -> list[np.ndarray | Gate]:
     """Precompute the matrices of the gates of a single-qubit circuit that have no parameters.
 
     Returns:
         The gates in circuit order. Each entry is either a 2x2 matrix or a parameterized gate.
     """
     return [
-        gate if gate.is_parameterized() else Operator(gate).data
+        gate if gate.is_parameterized() else np.asarray(Operator(gate).data)
         for gate in (inst.operation for inst in circuit.data)
     ]
 
 
-def _gates_to_matrix(gates: list, value: float) -> np.ndarray:
+def _gates_to_matrix(gates: list[np.ndarray | Gate], value: float) -> np.ndarray:
     """Multiply the gates of a single-qubit circuit with all its parameters set to `value`."""
     matrix = np.eye(2, dtype=complex)
 
@@ -525,7 +528,7 @@ def _concatenated_ranges(starts: np.ndarray, lengths: np.ndarray) -> np.ndarray:
     return np.repeat(starts, lengths) + offsets
 
 
-def _node_neighbours(neighbours: sparse.csr_array, nodes: np.ndarray) -> tuple:
+def _node_neighbours(neighbours: sparse.csr_array, nodes: np.ndarray) -> _NodeNeighbours:
     """List the neighbours k of each node i together with the weight w_ik.
 
     Returns:
@@ -538,7 +541,7 @@ def _node_neighbours(neighbours: sparse.csr_array, nodes: np.ndarray) -> tuple:
     return counts, neighbours.indices[positions], neighbours.data[positions]
 
 
-def _edge_neighbours(neighbours: sparse.csr_array, rows: np.ndarray, cols: np.ndarray) -> tuple:
+def _edge_neighbours(neighbours: sparse.csr_array, rows: np.ndarray, cols: np.ndarray) -> _EdgeNeighbours:
     """List the neighbours k of each edge (i, j), i.e., k in N(i) or N(j) with k != i, j.
 
     Returns:
