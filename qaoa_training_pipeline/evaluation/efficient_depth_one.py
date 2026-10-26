@@ -332,7 +332,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         if mixer is None:
             mixers = self.mixer(beta)[None, :, :]
-        elif isinstance(mixer, QuantumCircuit):
+        else:
             if mixer.num_parameters > 1:
                 raise ValueError(
                     f"The mixer must have a single parameter. It has {mixer.num_parameters}."
@@ -349,11 +349,6 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
                 )
 
             mixers = np.array([_gates_to_matrix(gates, beta) for gates in self._mixer_gates])
-        else:
-            raise NotImplementedError(
-                f"Mixer of type {type(mixer).__name__} is not supported. "
-                "Only QuantumCircuit mixers are supported."
-            )
 
         observables = np.einsum("eba,b,ebc->eac", mixers.conj(), _Z, mixers)
 
