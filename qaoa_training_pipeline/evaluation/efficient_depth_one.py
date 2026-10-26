@@ -39,6 +39,7 @@ _T_IDX = _BITS.reshape(1, 2, 1, 1) - _BITS.reshape(1, 1, 1, 2) + 1
 _NodeNeighbours = tuple[np.ndarray, np.ndarray, np.ndarray]
 _EdgeNeighbours = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
+
 @dataclass
 class _Structure:
     """Data that only depends on the cost operator and the ansatz circuit."""
@@ -125,7 +126,9 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         # The caches. The keys hold references to the arguments of `evaluate` so that
         # their ids cannot be reused by other objects while they are cached.
-        self._structure_key: tuple[SparsePauliOp, QuantumCircuit | SparsePauliOp | None] | None = None
+        self._structure_key: tuple[SparsePauliOp, QuantumCircuit | SparsePauliOp | None] | None = (
+            None
+        )
         self._structure: _Structure | None = None
         self._initial_state_key: tuple[QuantumCircuit | None] | None = None
         self._amplitudes: np.ndarray | None = None
@@ -541,7 +544,9 @@ def _node_neighbours(neighbours: sparse.csr_array, nodes: np.ndarray) -> _NodeNe
     return counts, neighbours.indices[positions], neighbours.data[positions]
 
 
-def _edge_neighbours(neighbours: sparse.csr_array, rows: np.ndarray, cols: np.ndarray) -> _EdgeNeighbours:
+def _edge_neighbours(
+    neighbours: sparse.csr_array, rows: np.ndarray, cols: np.ndarray
+) -> _EdgeNeighbours:
     """List the neighbours k of each edge (i, j), i.e., k in N(i) or N(j) with k != i, j.
 
     Returns:
