@@ -305,7 +305,9 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
                     f"has {num_qubits}."
                 )
 
-            amplitudes = np.array([Operator(sub_circuit).data[:, 0] for sub_circuit in splits])
+            amplitudes = np.array(
+                [np.asarray(Operator(sub_circuit).data)[:, 0] for sub_circuit in splits]
+            )
 
         self._amplitudes = amplitudes
         self._initial_state_key = (initial_state,)
