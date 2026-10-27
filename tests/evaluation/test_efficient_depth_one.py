@@ -8,6 +8,8 @@
 
 """Tests for the efficient depth-one evaluator."""
 
+from qiskit.circuit.quantumcircuit import QuantumCircuit
+from qiskit.quantum_info.operators.symplectic.sparse_pauli_op import SparsePauliOp
 import numpy as np
 from ddt import data, ddt, unpack
 from qiskit import QuantumCircuit, transpile
@@ -337,7 +339,7 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         self.assertAlmostEqual(float(energy), expected_energy)
 
     @staticmethod
-    def random_quadratic_op(num_qubits, density, seed):
+    def random_quadratic_op(num_qubits, density, seed) -> SparsePauliOp:
         """Create a random operator with weighted ZiZj and Zi terms."""
         rng = np.random.default_rng(seed)
         terms = []
@@ -351,7 +353,7 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         return SparsePauliOp.from_sparse_list(terms, num_qubits=num_qubits)
 
     @staticmethod
-    def warm_start_circuits(num_qubits, seed):
+    def warm_start_circuits(num_qubits, seed) -> tuple[QuantumCircuit, QuantumCircuit]:
         """Create a warm-start initial state and the matching per-qubit mixer."""
         thetas = np.random.default_rng(seed).uniform(0, np.pi, num_qubits)
         beta = Parameter("beta")
