@@ -220,7 +220,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         return mixer
 
     @staticmethod
-    def _is_cached(key: tuple[object, ...] | None, *objects) -> bool:
+    def _is_cached(key: tuple[object, ...] | None, *objects: object) -> bool:
         """Return True if the key was created from exactly these objects."""
         return (
             key is not None
