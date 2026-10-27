@@ -16,9 +16,11 @@ from qiskit.circuit.library import PauliEvolutionGate, qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import Operator, Pauli, SparsePauliOp, Statevector
 from qiskit_aer import Aer
+from scipy import sparse
 
 from qaoa_training_pipeline.evaluation.efficient_depth_one import (
     EfficientDepthOneEvaluator,
+    _edge_neighbours,
 )
 from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
@@ -449,6 +451,35 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         for max_pairs in [1, 7, 30]:
             evaluator = EfficientDepthOneEvaluator(max_pairs=max_pairs)
             self.assertAlmostEqual(evaluator.evaluate(cost_op, params, mixer, init), expected)
+
+    @data((8, 0.3, 7), (8, 1.0, 8), (12, 0.5, 9))
+    @unpack
+    def test_edge_neighbours(self, num_nodes, density, seed):
+        """Test that each neighbour of an edge is listed exactly once with the right weights."""
+        rng = np.random.default_rng(seed)
+        weights = np.triu(rng.normal(size=(num_nodes, num_nodes)), k=1)
+        weights *= np.triu(rng.random((num_nodes, num_nodes)) < density, k=1)
+        weights = weights + weights.T
+        neighbours = sparse.csr_array(weights)
+
+        rows, cols = np.tril_indices(num_nodes, k=-1)
+        side_i, side_j = _edge_neighbours(neighbours, rows, cols)
+
+        listed = [[] for _ in rows]
+        for counts, k, w_ik, w_jk in (side_i, side_j):
+            self.assertEqual(len(counts), len(rows))
+            self.assertEqual(counts.sum(), len(k))
+            edges = np.repeat(np.arange(len(rows)), counts)
+            for edge, k_, w_ik_, w_jk_ in zip(edges, k, w_ik, w_jk):
+                listed[edge].append((int(k_), float(w_ik_), float(w_jk_)))
+
+        for edge, (i, j) in enumerate(zip(rows, cols)):
+            expected = sorted(
+                (k, weights[i, k], weights[j, k])
+                for k in range(num_nodes)
+                if k not in (i, j) and (weights[i, k] != 0.0 or weights[j, k] != 0.0)
+            )
+            self.assertEqual(sorted(listed[edge]), expected)
 
     def test_caching(self):
         """Test that repeated evaluations with new arguments do not reuse stale cached data."""

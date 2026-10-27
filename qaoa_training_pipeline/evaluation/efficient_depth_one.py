@@ -36,8 +36,10 @@ _S_IDX = _BITS.reshape(2, 1, 1, 1) - _BITS.reshape(1, 1, 2, 1) + 1
 _T_IDX = _BITS.reshape(1, 2, 1, 1) - _BITS.reshape(1, 1, 1, 2) + 1
 
 # (counts, k, w_ik) and (counts, k, w_ik, w_jk); see _node_neighbours and _edge_neighbours.
+# The neighbours of an edge are split into two sides, those of i and the remaining ones of j.
 _NodeNeighbours = tuple[np.ndarray, np.ndarray, np.ndarray]
 _EdgeNeighbours = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+_EdgeSides = tuple[_EdgeNeighbours, _EdgeNeighbours]
 
 
 @dataclass
@@ -70,7 +72,7 @@ class _Structure:
     # This makes _Structure do double duty as both a data container and a cache.
     # The struct can change between calls to evaluate() when new chunk indices are encountered
     # for the first time.
-    edge_pairs: dict[int, _EdgeNeighbours] = field(default_factory=dict)
+    edge_pairs: dict[int, _EdgeSides] = field(default_factory=dict)
     diag_pairs: _NodeNeighbours | None = None
 
 
@@ -389,16 +391,13 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             if num_edges == 0:
                 continue
 
-            counts, k, w_ik, w_jk = _get_edge_pairs(structure, chunk_idx, edges_i, edges_j)
-
             # Neighbour products P(s, t) for (s, t) in (1, 0), (0, 1), (1, 1), and (1, -1).
-            # The other combinations are complex conjugates, and P(0, 0) = 1.
-            c_k = prob_1[k][:, None]
-            phase_i, phase_j = np.exp(-4.0j * gamma * w_ik), np.exp(-4.0j * gamma * w_jk)
-            phases = np.stack(
-                [phase_i, phase_j, phase_i * phase_j, phase_i * phase_j.conj()], axis=1
-            )
-            products = _segment_prod((1.0 - c_k) + c_k * phases, counts)
+            # The other combinations are complex conjugates, and P(0, 0) = 1. The product
+            # over the neighbours is the product over the two sides of the edge.
+            products = np.ones((num_edges, 4), dtype=complex)
+            for counts, k, w_ik, w_jk in _get_edge_pairs(structure, chunk_idx, edges_i, edges_j):
+                factors = _neighbour_factors(prob_1[k], gamma, w_ik, w_jk)
+                products *= _segment_prod(factors, counts)
 
             # Neighbour products indexed by [s + 1, t + 1].
             p_st = np.ones((num_edges, 3, 3), dtype=complex)
@@ -526,12 +525,10 @@ def _lookup(matrix: sparse.csr_array, rows: np.ndarray, cols: np.ndarray) -> np.
     return np.asarray(matrix[rows, cols], dtype=float).ravel()
 
 
-def _concatenated_ranges(starts: np.ndarray, n_candidates: np.ndarray) -> np.ndarray:
+def _concatenated_ranges(starts: np.ndarray, lengths: np.ndarray) -> np.ndarray:
     """Return the concatenation of range(start, start + length) for all starts and lengths."""
-    offsets = np.arange(n_candidates.sum()) - np.repeat(
-        np.cumsum(n_candidates) - n_candidates, n_candidates
-    )
-    return np.repeat(starts, n_candidates) + offsets
+    offsets = np.arange(lengths.sum()) - np.repeat(np.cumsum(lengths) - lengths, lengths)
+    return np.repeat(starts, lengths) + offsets
 
 
 def _node_neighbours(neighbours: sparse.csr_array, nodes: np.ndarray) -> _NodeNeighbours:
@@ -547,7 +544,7 @@ def _node_neighbours(neighbours: sparse.csr_array, nodes: np.ndarray) -> _NodeNe
     return counts, neighbours.indices[positions], neighbours.data[positions]
 
 
-def _get_edge_pairs(structure: _Structure, chunk_idx: int, edges_i, edges_j) -> _EdgeNeighbours:
+def _get_edge_pairs(structure: _Structure, chunk_idx: int, edges_i, edges_j) -> _EdgeSides:
     """Cache look-up."""
     pairs = structure.edge_pairs.get(chunk_idx)
     if pairs is None:
@@ -559,46 +556,56 @@ def _get_edge_pairs(structure: _Structure, chunk_idx: int, edges_i, edges_j) -> 
 
 def _edge_neighbours(
     neighbours: sparse.csr_array, rows: np.ndarray, cols: np.ndarray
-) -> _EdgeNeighbours:
+) -> _EdgeSides:
     """List the neighbours k of each edge (i, j), i.e., k in N(i) or N(j) with k != i, j.
 
+    Each neighbour k is listed exactly once. The first side lists all k in N(i) except j and
+    the second side the k in N(j) that are neither i nor in N(i).
+
     Returns:
-        The number of neighbours per edge and, grouped by edge, the neighbours k and
-        the weights w_ik and w_jk. At least one of the weights is non-zero.
+        Two sides that each hold the number of neighbours per edge and, grouped by edge, the
+        neighbours k and the weights w_ik and w_jk. At least one of the weights is non-zero.
     """
-    indptr = neighbours.indptr
-    deg_i = np.diff(indptr)[rows]
-    deg_j = np.diff(indptr)[cols]
+    edge_ids = np.arange(len(rows))
 
-    # Each edge gets a segment with first the neighbours of i and then those of j.
-    n_candidates = deg_i + deg_j
-    edge_of_candidate = np.repeat(np.arange(len(rows)), n_candidates)
-    index_in_segment = np.arange(n_candidates.sum()) - np.repeat(
-        np.cumsum(n_candidates) - n_candidates, n_candidates
+    # Neighbours of i except j. The weight w_jk is non-zero only for common neighbours.
+    counts_i, k_i, w_ik_i = _node_neighbours(neighbours, rows)
+    edge_i = np.repeat(edge_ids, counts_i)
+    keep_i = k_i != cols[edge_i]
+    edge_i, k_i, w_ik_i = edge_i[keep_i], k_i[keep_i], w_ik_i[keep_i]
+    w_jk_i = _lookup(neighbours, cols[edge_i], k_i)
+
+    # Neighbours of j except i and the common neighbours, which the first side already lists.
+    # The ansatz graph stores no explicit zeros, so w_ik == 0 means that k is not in N(i).
+    counts_j, k_j, w_jk_j = _node_neighbours(neighbours, cols)
+    edge_j = np.repeat(edge_ids, counts_j)
+    w_ik_j = _lookup(neighbours, rows[edge_j], k_j)
+    keep_j = (k_j != rows[edge_j]) & (w_ik_j == 0.0)
+
+    side_i = (np.bincount(edge_i, minlength=len(rows)), k_i, w_ik_i, w_jk_i)
+    side_j = (
+        np.bincount(edge_j[keep_j], minlength=len(rows)),
+        k_j[keep_j],
+        w_ik_j[keep_j],
+        w_jk_j[keep_j],
     )
-    is_neighbour_of_i = index_in_segment < deg_i[edge_of_candidate]
 
-    source_endpoint = np.where(is_neighbour_of_i, rows[edge_of_candidate], cols[edge_of_candidate])
-    other_endpoint = np.where(is_neighbour_of_i, cols[edge_of_candidate], rows[edge_of_candidate])
-    positions = indptr[source_endpoint] + np.where(
-        is_neighbour_of_i, index_in_segment, index_in_segment - deg_i[edge_of_candidate]
-    )
+    return side_i, side_j
 
-    k = neighbours.indices[positions]
-    w_source_k = neighbours.data[positions]
-    w_other_k = _lookup(neighbours, other_endpoint, k)
 
-    # Drop the edge itself, i.e., k == j for i and vice versa. Neighbours of j that are
-    # also neighbours of i have already been listed with the neighbours of i.
-    keep = (k != other_endpoint) & (
-        is_neighbour_of_i | (w_other_k == 0.0)
-    )  # exact zero means no edge
+def _neighbour_factors(
+    c_k: np.ndarray, gamma: float, w_ik: np.ndarray, w_jk: np.ndarray
+) -> np.ndarray:
+    """The factors (1 - c_k) + c_k exp(-4i gamma (s w_ik + t w_jk)) of the neighbour products.
 
-    w_ik = np.where(is_neighbour_of_i, w_source_k, w_other_k)[keep]
-    w_jk = np.where(is_neighbour_of_i, w_other_k, w_source_k)[keep]
-    counts = np.bincount(edge_of_candidate[keep], minlength=len(rows))
+    Returns:
+        An array with one row per neighbour and one column per (s, t) in (1, 0), (0, 1),
+        (1, 1), and (1, -1).
+    """
+    phase_i, phase_j = np.exp(-4.0j * gamma * w_ik), np.exp(-4.0j * gamma * w_jk)
+    phases = np.stack([phase_i, phase_j, phase_i * phase_j, phase_i * phase_j.conj()], axis=1)
 
-    return counts, k[keep], w_ik, w_jk
+    return (1.0 - c_k[:, None]) + c_k[:, None] * phases
 
 
 def _segment_prod(values: np.ndarray, counts: np.ndarray) -> np.ndarray:
