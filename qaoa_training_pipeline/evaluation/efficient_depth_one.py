@@ -364,8 +364,8 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         return self._observables
 
+    @staticmethod
     def _two_local_energy(
-        self,
         structure: _Structure,
         amplitudes: np.ndarray,
         prob_1: np.ndarray,
@@ -428,8 +428,8 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         return energy
 
+    @staticmethod
     def _one_local_energy(
-        self,
         structure: _Structure,
         amplitudes: np.ndarray,
         prob_1: np.ndarray,
