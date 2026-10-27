@@ -526,10 +526,12 @@ def _lookup(matrix: sparse.csr_array, rows: np.ndarray, cols: np.ndarray) -> np.
     return np.asarray(matrix[rows, cols], dtype=float).ravel()
 
 
-def _concatenated_ranges(starts: np.ndarray, lengths: np.ndarray) -> np.ndarray:
+def _concatenated_ranges(starts: np.ndarray, n_candidates: np.ndarray) -> np.ndarray:
     """Return the concatenation of range(start, start + length) for all starts and lengths."""
-    offsets = np.arange(lengths.sum()) - np.repeat(np.cumsum(lengths) - lengths, lengths)
-    return np.repeat(starts, lengths) + offsets
+    offsets = np.arange(n_candidates.sum()) - np.repeat(
+        np.cumsum(n_candidates) - n_candidates, n_candidates
+    )
+    return np.repeat(starts, n_candidates) + offsets
 
 
 def _node_neighbours(neighbours: sparse.csr_array, nodes: np.ndarray) -> _NodeNeighbours:
@@ -569,26 +571,32 @@ def _edge_neighbours(
     deg_j = np.diff(indptr)[cols]
 
     # Each edge gets a segment with first the neighbours of i and then those of j.
-    lengths = deg_i + deg_j
-    edge = np.repeat(np.arange(len(rows)), lengths)
-    offset = np.arange(lengths.sum()) - np.repeat(np.cumsum(lengths) - lengths, lengths)
-    from_i = offset < deg_i[edge]
+    n_candidates = deg_i + deg_j
+    edge_of_candidate = np.repeat(np.arange(len(rows)), n_candidates)
+    index_in_segment = np.arange(n_candidates.sum()) - np.repeat(
+        np.cumsum(n_candidates) - n_candidates, n_candidates
+    )
+    is_neighbour_of_i = index_in_segment < deg_i[edge_of_candidate]
 
-    own = np.where(from_i, rows[edge], cols[edge])
-    other = np.where(from_i, cols[edge], rows[edge])
-    positions = indptr[own] + np.where(from_i, offset, offset - deg_i[edge])
+    source_endpoint = np.where(is_neighbour_of_i, rows[edge_of_candidate], cols[edge_of_candidate])
+    other_endpoint = np.where(is_neighbour_of_i, cols[edge_of_candidate], rows[edge_of_candidate])
+    positions = indptr[source_endpoint] + np.where(
+        is_neighbour_of_i, index_in_segment, index_in_segment - deg_i[edge_of_candidate]
+    )
 
     k = neighbours.indices[positions]
-    w_own = neighbours.data[positions]
-    w_other = _lookup(neighbours, other, k)
+    w_source_k = neighbours.data[positions]
+    w_other_k = _lookup(neighbours, other_endpoint, k)
 
     # Drop the edge itself, i.e., k == j for i and vice versa. Neighbours of j that are
     # also neighbours of i have already been listed with the neighbours of i.
-    keep = (k != other) & (from_i | (w_other == 0.0))  # exact zero means no edge
+    keep = (k != other_endpoint) & (
+        is_neighbour_of_i | (w_other_k == 0.0)
+    )  # exact zero means no edge
 
-    w_ik = np.where(from_i, w_own, w_other)[keep]
-    w_jk = np.where(from_i, w_other, w_own)[keep]
-    counts = np.bincount(edge[keep], minlength=len(rows))
+    w_ik = np.where(is_neighbour_of_i, w_source_k, w_other_k)[keep]
+    w_jk = np.where(is_neighbour_of_i, w_other_k, w_source_k)[keep]
+    counts = np.bincount(edge_of_candidate[keep], minlength=len(rows))
 
     return counts, k[keep], w_ik, w_jk
 
