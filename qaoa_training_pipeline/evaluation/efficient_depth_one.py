@@ -376,7 +376,10 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         observables: np.ndarray,
         gamma: float,
     ) -> float:
-        """Compute the energy of the ZiZj terms of the cost operator."""
+        """Compute the energy of the ZiZj terms of the cost operator.
+
+        This function is the core of the vectorized computation.
+        """
         energy = 0.0
 
         for chunk_idx, chunk in enumerate(structure.chunks):
@@ -386,13 +389,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             if num_edges == 0:
                 continue
 
-            pairs = structure.edge_pairs.get(chunk_idx)
-            if pairs is None:
-                pairs = _edge_neighbours(structure.neighbours, edges_i, edges_j)
-                if len(structure.chunks) == 1:
-                    structure.edge_pairs[chunk_idx] = pairs
-
-            counts, k, w_ik, w_jk = pairs
+            counts, k, w_ik, w_jk = _get_edge_pairs(structure, chunk_idx, edges_i, edges_j)
 
             # Neighbour products P(s, t) for (s, t) in (1, 0), (0, 1), (1, 1), and (1, -1).
             # The other combinations are complex conjugates, and P(0, 0) = 1.
@@ -546,6 +543,16 @@ def _node_neighbours(neighbours: sparse.csr_array, nodes: np.ndarray) -> _NodeNe
     positions = _concatenated_ranges(neighbours.indptr[nodes], counts)
 
     return counts, neighbours.indices[positions], neighbours.data[positions]
+
+
+def _get_edge_pairs(structure: _Structure, chunk_idx: int, edges_i, edges_j) -> _EdgeNeighbours:
+    """Cache look-up."""
+    pairs = structure.edge_pairs.get(chunk_idx)
+    if pairs is None:
+        pairs = _edge_neighbours(structure.neighbours, edges_i, edges_j)
+        if len(structure.chunks) == 1:
+            structure.edge_pairs[chunk_idx] = pairs
+    return pairs
 
 
 def _edge_neighbours(
