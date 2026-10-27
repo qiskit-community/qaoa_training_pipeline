@@ -66,6 +66,10 @@ class _Structure:
     diag_weights: np.ndarray
 
     # Cached neighbour data. Only filled for the edges if everything fits in a single chunk.
+    # These variables are mutated after construction to store chunk-level cached computation.
+    # This makes _Structure do double duty as both a data container and a cache.
+    # The struct can change between calls to evaluate() when new chunk indices are encountered
+    # for the first time.
     edge_pairs: dict[int, _EdgeNeighbours] = field(default_factory=dict)
     diag_pairs: _NodeNeighbours | None = None
 
