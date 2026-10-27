@@ -255,7 +255,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
 
         # The two-local and one-local terms of the cost operator.
         lower = sparse.tril(cost_graph, k=-1, format="coo")
-        keep = lower.data != 0.0
+        keep = lower.data != 0.0  # exact zero means no edge
         edges_i, edges_j = lower.row[keep].astype(np.int64), lower.col[keep].astype(np.int64)
         cost_diag = cost_graph.diagonal()
         diag_idx = np.flatnonzero(cost_diag)
@@ -263,7 +263,7 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
         # Split the ansatz graph into the Rz gates (diagonal) and the Rzz gates (off-diagonal).
         row_sums = np.asarray(circuit_graph.sum(axis=1)).ravel()
         coo = circuit_graph.tocoo()
-        off_diag = (coo.row != coo.col) & (coo.data != 0.0)
+        off_diag = (coo.row != coo.col) & (coo.data != 0.0)  # exact zero means no edge
         neighbours = sparse.csr_array(
             (coo.data[off_diag], (coo.row[off_diag], coo.col[off_diag])),
             shape=(num_qubits, num_qubits),
@@ -577,7 +577,7 @@ def _edge_neighbours(
 
     # Drop the edge itself, i.e., k == j for i and vice versa. Neighbours of j that are
     # also neighbours of i have already been listed with the neighbours of i.
-    keep = (k != other) & (from_i | (w_other == 0.0))
+    keep = (k != other) & (from_i | (w_other == 0.0))  # exact zero means no edge
 
     w_ik = np.where(from_i, w_own, w_other)[keep]
     w_jk = np.where(from_i, w_other, w_own)[keep]

@@ -8,8 +8,6 @@
 
 """Tests for the efficient depth-one evaluator."""
 
-from qiskit.circuit.quantumcircuit import QuantumCircuit
-from qiskit.quantum_info.operators.symplectic.sparse_pauli_op import SparsePauliOp
 import numpy as np
 from ddt import data, ddt, unpack
 from qiskit import QuantumCircuit, transpile
