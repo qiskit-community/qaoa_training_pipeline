@@ -30,21 +30,10 @@ from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 SCALAR_FEATURES = {"num_nodes", "num_edges", "edges_per_node", "mean_degree", "std_degree"}
 
-# The convention every shipped model was trained under, i.e. what
-# ``graph_to_operator(graph, pre_factor=MAX_CUT_PRE_FACTOR)`` produces. The
-# models consume edge *weights*, so ``extract_np`` divides the coefficients by
-# this factor to recover them. Only the sign matters: normalization divides the
-# magnitude back out, but the opposite sign normalizes to the negated operator
-# and predicts the wrong gammas -- hence
-# :func:`warn_on_unexpected_sign_convention`.
+# The convention every shipped model was trained under
 MAX_CUT_PRE_FACTOR = -0.5
 
-# How far outside the training distribution a feature may land before the
-# prediction is flagged. The bundles carry the per-feature mean and standard
-# deviation of their training set, so "far" is measurable: at 3 sigma the shipped
-# models cover roughly 1-150 nodes, which is the range they were trained on.
-# Beyond it the networks extrapolate, and extrapolate silently -- the angles come
-# back finite and plausible with nothing to say they are guesses.
+# How far outside the training distribution a feature may land before the prediction is flagged.
 OUT_OF_DISTRIBUTION_SIGMA = 3.0
 
 
@@ -52,12 +41,7 @@ def warn_on_unexpected_sign_convention(cost_op: SparsePauliOp) -> None:
     """Warn when ``cost_op`` looks like it was built with the wrong pre-factor.
 
     Nothing in an operator records which pre-factor produced it, so the general
-    case cannot be detected. The common mistake can be: under
-    :data:`MAX_CUT_PRE_FACTOR` a graph with positive edge weights gives
-    *negative* quadratic coefficients, so an operator whose quadratic
-    coefficients are all positive was almost certainly built with the
-    ``pre_factor=1.0`` default of
-    :func:`~qaoa_training_pipeline.utils.graph_utils.graph_to_operator`.
+    case cannot be detected.
 
     The blind spot, by construction: a graph with weights of both signs has
     coefficients of both signs under either convention, so neither spelling of
