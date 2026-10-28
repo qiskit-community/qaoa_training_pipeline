@@ -260,9 +260,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
 
     @classmethod
     def from_config(cls, config: dict) -> "AIFeatureExtractor":
-        """Return an instance of this class based on a config.
-
-        """
+        """Return an instance of this class based on a config."""
         missing = [key for key in ("in_features", "norm_stats") if key not in config]
         if missing:
             raise KeyError(

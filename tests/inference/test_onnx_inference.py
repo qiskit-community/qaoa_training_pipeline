@@ -276,7 +276,7 @@ class TestBundleResolution(TrainingPipelineTestCase):
             model_registry.download_bundle("org/some-bundle")
         self.assertEqual(download.call_args.kwargs["revision"], "main")
 
-    def test_uncached_bundle_offline_points_at_prefetch(self):
+    def test_uncached_bundle_offline_explains_the_cache(self):
         """The Hub's own offline error says nothing about warming the cache."""
         from huggingface_hub.errors import LocalEntryNotFoundError
 
@@ -287,34 +287,9 @@ class TestBundleResolution(TrainingPipelineTestCase):
             self.assertRaises(RuntimeError) as ctx,
         ):
             model_registry.download_bundle("org/some-bundle")
-        self.assertIn("prefetch_bundles", str(ctx.exception))
-
-    def test_prefetch_defaults_to_published_bundles(self):
-        """Prefetching without arguments warms exactly the published bundles.
-
-        The published set is mocked rather than read from the setup file: the
-        shipped zoo has no pinned revisions yet, so against the real setup both
-        sides of the assertion would be zero and the test would pass vacuously.
-        """
-        keys = ["graph_neural_network/p1", "gcn/p2"]
-        with (
-            mock.patch.object(model_registry, "published_bundles", return_value=keys),
-            mock.patch.object(
-                model_registry, "resolve_bundle", return_value=Path("/tmp/snapshot")
-            ) as resolve,
-        ):
-            paths = model_registry.prefetch_bundles()
-
-        self.assertEqual(len(paths), len(keys))
-        self.assertEqual([call.args[0] for call in resolve.call_args_list], keys)
-
-    def test_prefetch_of_an_explicit_list_resolves_exactly_those(self):
-        """An explicit list overrides the published set."""
-        with mock.patch.object(
-            model_registry, "resolve_bundle", return_value=Path("/tmp/snapshot")
-        ) as resolve:
-            model_registry.prefetch_bundles(["gcn/p3"])
-        self.assertEqual([call.args[0] for call in resolve.call_args_list], ["gcn/p3"])
+        message = str(ctx.exception)
+        self.assertIn("not in the local HuggingFace cache", message)
+        self.assertIn("HF_HUB_OFFLINE", message)
 
     def test_resolution_failure_names_the_bundle_key(self):
         """The caller passed a key, so the error must speak in keys."""

@@ -65,9 +65,7 @@ PRIVATE_CONFIG_FIELDS = ("checkpoint",)
 
 
 def setup_path() -> Path:
-    """The setup file in use: $QAOA_HF_SETUP if set, else the packaged one.
-
-    """
+    """The setup file in use: $QAOA_HF_SETUP if set, else the packaged one."""
     override = os.environ.get(SETUP_ENV_VAR)
     if not override:
         return TRACKED_SETUP.resolve()
@@ -177,9 +175,7 @@ def validate_setup(setup: dict[str, Any], source: Path) -> None:
 
 @lru_cache(maxsize=4)
 def _load_setup_file(source: Path, _stamp: tuple[int, int]) -> dict[str, Any]:
-    """Load and validate one setup file, caching the result per path and stamp.
-
-    """
+    """Load and validate one setup file, caching the result per path and stamp."""
     if not source.is_file():
         raise FileNotFoundError(
             f"HF setup file not found: {source}. The packaged setup file is "
@@ -264,9 +260,7 @@ def _snapshot_download():
 
 
 def download_bundle(repo_id: str, revision: str = "main") -> Path:
-    """Download a bundle repo and return the local directory holding its files.
-
-    """
+    """Download a bundle repo and return the local directory holding its files."""
     setup = load_setup()
     snapshot_download = _snapshot_download()
     from huggingface_hub.errors import LocalEntryNotFoundError, OfflineModeIsEnabled
@@ -283,9 +277,8 @@ def download_bundle(repo_id: str, revision: str = "main") -> Path:
         # Raised when the bundle is not cached and cannot be fetched
         raise RuntimeError(
             f"Bundle repo {repo_id} at revision {revision} is not in the local HuggingFace "
-            "cache and could not be downloaded (offline mode, or no network). Warm the cache from "
-            "a networked run first with "
-            "qaoa_training_pipeline.inference.model_registry.prefetch_bundles(), or allow "
+            "cache and could not be downloaded (offline mode, or no network). Resolve the "
+            "bundles you need from a networked run first so they land in the cache, or allow "
             "network access (unset HF_HUB_OFFLINE)."
         ) from exc
     logger.debug("Bundle repo %s available at %s", repo_id, path)
@@ -309,13 +302,3 @@ def resolve_bundle(bundle_key: str) -> Path:
         return download_bundle(entry["repo_id"], revision=entry["revision"])
     except RuntimeError as exc:
         raise RuntimeError(f"Could not resolve model bundle {bundle_key!r}. {exc}") from exc
-
-
-def prefetch_bundles(bundle_keys: list[str] | None = None) -> list[Path]:
-    """Download and cache the given bundles (all published ones if ``None``).
-
-    Useful to warm the cache before running in an air-gapped / offline setting.
-    Returns the local bundle directories.
-    """
-    keys = bundle_keys if bundle_keys is not None else published_bundles()
-    return [resolve_bundle(key) for key in keys]

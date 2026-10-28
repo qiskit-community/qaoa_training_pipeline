@@ -169,10 +169,10 @@ The setup file in use is `$QAOA_HF_SETUP` when set, and the packaged
 checkout always resolves models the same way.
 
 `snapshot_download` caches under `~/.cache/huggingface`, so only the first use
-touches the network. For an air-gapped run, warm the cache first with
-`model_registry.prefetch_bundles()`. The published repos are public, so no
-token is needed; a bundle with no pinned revision in the setup file is not
-published yet and raises a message saying so.
+touches the network; for an air-gapped run, load the bundles you need once from
+a networked run first. The published repos are public, so no token is needed; a
+bundle with no pinned revision in the setup file is not published yet and raises
+a message saying so.
 
 ## One-line summary
 
