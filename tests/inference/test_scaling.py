@@ -27,24 +27,10 @@ from qaoa_training_pipeline.inference.scaling import (
 from ..training_pipeline_test_case import TrainingPipelineTestCase
 
 
-def make_extractor():
-    """An extractor whose rescaling_factor method must track the function."""
-    from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor
-
-    return AIFeatureExtractor(in_features=[], norm_stats={})
-
-
 class TestRescalingFactor(TrainingPipelineTestCase):
     """The factor is a function of the operator alone, and homogeneous in it."""
 
     OPERATOR = SparsePauliOp.from_list([("ZZI", -0.5), ("IZZ", -1.5), ("ZIZ", -0.25)])
-
-    def test_the_function_and_the_method_agree(self):
-        """The method is kept as a delegate, so it must not drift from it."""
-        self.assertEqual(
-            rescaling_factor(self.OPERATOR),
-            make_extractor().rescaling_factor(self.OPERATOR),
-        )
 
     def test_homogeneous_of_degree_one(self):
         """What makes the normalized features scale-independent."""

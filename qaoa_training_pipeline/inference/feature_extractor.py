@@ -22,7 +22,7 @@ from typing import Any
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.inference.scaling import normalize_cost_op, rescaling_factor
+from qaoa_training_pipeline.inference.scaling import normalize_cost_op
 from qaoa_training_pipeline.inference.warn_utils import warn_at_caller
 from qaoa_training_pipeline.pre_processing.feature_extraction import BaseFeatureExtractor
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
@@ -184,15 +184,6 @@ class AIFeatureExtractor(BaseFeatureExtractor):
                 f"Available stats: {sorted(norm_stats)}"
             )
 
-    def rescaling_factor(self, cost_op: SparsePauliOp) -> float:
-        """Delegate to :func:`~qaoa_training_pipeline.inference.scaling.rescaling_factor`.
-
-        Kept because this was the public spelling. New code should call the
-        function: the factor depends on nothing but the operator, so it needs
-        no extractor, and it belongs with the rest of the scaling.
-        """
-        return rescaling_factor(cost_op)
-
     def extract_np(self, cost_op: SparsePauliOp, rescale_a: float | None = None) -> dict[str, Any]:
         """Extract raw (unnormalized) features from a cost operator as numpy.
 
@@ -274,11 +265,9 @@ class AIFeatureExtractor(BaseFeatureExtractor):
             "edges_per_node": num_edges / num_nodes if num_nodes else 0.0,
             "mean_degree": float(np.mean(degrees)) if degrees.size else 0.0,
             "std_degree": float(np.std(degrees)) if degrees.size else 0.0,
-            # A feature in its own right: a bundle may list it in in_features,
-            # in which case the network is told the scale it was handed a
-            # normalized problem at. The un-rescaling of the gammas reads the
-            # factor from whoever normalized, not from here.
-            "rescale_a": float(rescale_a),
+            "rescale_a": float(
+                rescale_a
+            ),  # Can be a feature in its own right: a bundle may list it in in_features
             "nodes": list(graph.nodes()),
             "edges": edges_arr[np.newaxis, ...],
             "edge_weights": weights_arr[np.newaxis, ...],
