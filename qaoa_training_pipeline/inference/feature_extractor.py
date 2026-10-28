@@ -199,9 +199,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
                 std = float(stats["std"])
                 if std <= 1e-12:
                     # The feature was constant across the training set, so a
-                    # sigma distance is not defined. Normalizing by 1.0 keeps
-                    # the value finite; report the difference as such rather
-                    # than dressing it up as a number of standard deviations.
+                    # sigma distance is not defined. Normalizing by 1.0 to keep value finite
                     v = raw - mean
                     if abs(v) > 0.0:
                         extrapolated.append(
@@ -249,9 +247,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
     def features(self) -> list[str]:
         """The feature names, in the order the packed vector carries them.
 
-        Sorted, because that is the order :meth:`pack_features_np` packs in --
-        not the order ``in_features`` was given in, which a bundle's config is
-        free to spell differently.
+        Sorted, because that is the order :meth:`pack_features_np` packs in
         """
         return sorted(self.in_features)
 
@@ -266,9 +262,6 @@ class AIFeatureExtractor(BaseFeatureExtractor):
     def from_config(cls, config: dict) -> "AIFeatureExtractor":
         """Return an instance of this class based on a config.
 
-        Both keys are required: an extractor built without ``norm_stats``
-        silently stops normalizing, which is finite, plausible and wrong rather
-        than an error.
         """
         missing = [key for key in ("in_features", "norm_stats") if key not in config]
         if missing:
