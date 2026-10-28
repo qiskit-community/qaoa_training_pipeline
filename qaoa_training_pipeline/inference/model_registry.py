@@ -12,23 +12,6 @@ The model zoo lives entirely on the Hub: each bundle is a self-contained repo
 holding ``model_config.json``, ``model.onnx`` and ``model.onnx.data`` at its
 root. This package ships no model artifacts — only ``hf_setup.json``, which
 maps a *bundle key* to the repo and the pinned revision it is served from.
-
-A bundle key is ``<model>/p<p>`` (e.g. ``"gcn/p3"``): it is the *only* way to
-address a model — used by :class:`~qaoa_training_pipeline.inference.AIInference`,
-the tests and the tooling — and is independent of how the repos happen to be
-named. Keys are verified against :data:`VERIFIED_ARCHITECTURES`, so a typo
-fails loudly instead of resolving to the wrong repo, and the revision is
-pinned by the setup file, so a run is reproducible. A bundle outside the shipped
-zoo is reached by listing it in your own setup file and pointing
-``$QAOA_HF_SETUP`` at it, not by passing a raw repo id.
-
-:func:`resolve_bundle` downloads a bundle with ``snapshot_download``, which
-caches under ``~/.cache/huggingface``, so only the first use touches the
-network. Call :func:`prefetch_bundles` to warm the cache ahead of an offline /
-air-gapped run.
-
-The published repos are public, so downloads need no token. A bundle listed
-with ``revision: null`` is not published and says so when asked for.
 """
 
 from __future__ import annotations
@@ -45,26 +28,11 @@ logger = logging.getLogger(__name__)
 
 HF_DIR = Path(__file__).resolve().parent / "huggingface"
 
-# The setup file that ships with the package is the source of truth. The only
-# way to use another one is to say so explicitly via $QAOA_HF_SETUP, so a
-# checkout always resolves models the same way regardless of what else happens
-# to be lying around in this directory.
 TRACKED_SETUP = HF_DIR / "hf_setup.json"
 SETUP_ENV_VAR = "QAOA_HF_SETUP"
-
-# The setup-file layout this version understands; validate_setup rejects any
-# other value rather than half-reading a file written for a different one.
 SETUP_SCHEMA = 2
 
 # The seven released architectures, keyed by the name used in a bundle key.
-# For each: the short name the HuggingFace repo id ends with, and the
-# ``model_init.model_type`` its exported config must declare.
-#
-# This table is the verified contract: the three names drift apart --
-# `graph_isomorphism_network` is `gin` on the Hub, `graph_transformer` is `gt`,
-# and `mlp` is really an `agg_transformer` -- so an unvalidated name silently
-# resolves to the wrong repo or input builder. Both columns are checked against
-# the published collection; every name outside the table is rejected.
 VERIFIED_ARCHITECTURES = {
     "diffusion_transformer": ("dit", "diffusion_transformer"),
     "edge_transformer": ("et", "edge_transformer"),
@@ -89,22 +57,16 @@ ONNX_FILENAME = "model.onnx"
 ONNX_WEIGHTS_FILENAME = "model.onnx.data"
 
 # Passed as snapshot_download allow_patterns so a repo gaining unrelated files
-# (a README, a license) does not enlarge the download. The .onnx references its
-# .data sidecar by relative filename, so both must land in the same directory —
-# a snapshot always co-locates them.
+# (a README, a license) does not enlarge the download.
 BUNDLE_FILES = (CONFIG_FILENAME, ONNX_FILENAME, ONNX_WEIGHTS_FILENAME)
 
-# Config fields that must not leave the private training environment. Stripped
-# on upload, and again on load: a bundle published before the upload-side strip
-# existed still carries them, and re-publishing cannot unpublish the old commit.
+# Config fields that must not leave the private training environment.
 PRIVATE_CONFIG_FIELDS = ("checkpoint",)
 
 
 def setup_path() -> Path:
     """The setup file in use: $QAOA_HF_SETUP if set, else the packaged one.
 
-    Resolved, so two spellings of one file (a relative path, a symlink) share a
-    cache entry instead of being loaded and validated twice.
     """
     override = os.environ.get(SETUP_ENV_VAR)
     if not override:
@@ -145,8 +107,7 @@ def parse_bundle_key(bundle_key: str) -> tuple[str, int]:
         )
 
     # A full match on p<digits> with no leading zero, so "p01" and "p1x" are
-    # rejected rather than resolving to p1: the key is also a cache and repo
-    # identity, so two spellings of one depth must not both be valid.
+    # rejected rather than resolving to p1
     match = re.fullmatch(r"p([1-9][0-9]*)", depth)
     if not match or int(match.group(1)) not in P_VALUES:
         raise ValueError(
@@ -170,10 +131,6 @@ def expected_repo_suffix(bundle_key: str) -> str:
 
 def validate_setup(setup: dict[str, Any], source: Path) -> None:
     """Reject a setup file whose keys or repo names are not the verified ones.
-
-    A typo here is not a loud failure by itself -- it is a download of some
-    other repo, or of nothing -- so the names are checked up front rather than
-    at the point of use.
 
     Raises:
         ValueError: On a malformed key, an unverified architecture or depth, a
@@ -205,9 +162,7 @@ def validate_setup(setup: dict[str, Any], source: Path) -> None:
                 f"{'.' + suffix!r} -- the key and the repo name disagree about the model."
             )
 
-        # A pinned revision must be a commit sha. A branch or tag name would
-        # resolve today and to different weights tomorrow, which defeats the
-        # point of pinning: the run would stop being reproducible silently.
+        # A pinned revision must be a commit sha
         revision = entry.get("revision")
         if revision is not None and not re.fullmatch(r"[0-9a-f]{40}", str(revision)):
             problems.append(
@@ -224,9 +179,6 @@ def validate_setup(setup: dict[str, Any], source: Path) -> None:
 def _load_setup_file(source: Path, _stamp: tuple[int, int]) -> dict[str, Any]:
     """Load and validate one setup file, caching the result per path and stamp.
 
-    ``_stamp`` is not used in the body: it is part of the cache key, so that a
-    file edited in place misses the cache instead of serving its old contents
-    (see :func:`load_setup`).
     """
     if not source.is_file():
         raise FileNotFoundError(
@@ -277,6 +229,7 @@ def bundle_entry(bundle_key: str) -> dict[str, Any]:
         KeyError: If the key is not in the setup file.
         RuntimeError: If the bundle has no pinned revision (not yet uploaded).
     """
+
     # Validate the name before touching the setup file, so a wrong name fails
     # here with the verified set rather than as a download of the wrong repo.
     parse_bundle_key(bundle_key)
@@ -313,11 +266,6 @@ def _snapshot_download():
 def download_bundle(repo_id: str, revision: str = "main") -> Path:
     """Download a bundle repo and return the local directory holding its files.
 
-    The download step of :func:`resolve_bundle`, which is what callers use: it
-    takes the repo and revision from the setup file, so a bundle is always
-    addressed by its key rather than by a raw repo id. To use a bundle outside
-    the shipped zoo, list it in your own setup file and point ``$QAOA_HF_SETUP``
-    at it.
     """
     setup = load_setup()
     snapshot_download = _snapshot_download()
@@ -332,10 +280,7 @@ def download_bundle(repo_id: str, revision: str = "main") -> Path:
             allow_patterns=list(setup.get("bundle_files", BUNDLE_FILES)),
         )
     except (OfflineModeIsEnabled, LocalEntryNotFoundError) as exc:
-        # Raised when the bundle is not cached and cannot be fetched -- offline
-        # mode, or no reachable network. Either way the Hub's own message says
-        # nothing about how to have the bundle ready beforehand, which is the
-        # one thing the caller needs to know.
+        # Raised when the bundle is not cached and cannot be fetched
         raise RuntimeError(
             f"Bundle repo {repo_id} at revision {revision} is not in the local HuggingFace "
             "cache and could not be downloaded (offline mode, or no network). Warm the cache from "
