@@ -52,22 +52,19 @@ HF_DIR = Path(__file__).resolve().parent / "huggingface"
 TRACKED_SETUP = HF_DIR / "hf_setup.json"
 SETUP_ENV_VAR = "QAOA_HF_SETUP"
 
+# The setup-file layout this version understands; validate_setup rejects any
+# other value rather than half-reading a file written for a different one.
+SETUP_SCHEMA = 2
+
 # The seven released architectures, keyed by the name used in a bundle key.
 # For each: the short name the HuggingFace repo id ends with, and the
 # ``model_init.model_type`` its exported config must declare.
 #
-# This table is the verified contract. It exists because the three names drift
-# apart -- `graph_isomorphism_network` is `gin` on the Hub, `graph_transformer`
-# is `gt`, and `mlp` is really an `agg_transformer` -- so an unvalidated name
-# silently resolves to the wrong repo or the wrong input builder. Every name
-# outside this table is rejected.
-#
-# Both columns are verified against the published collection
-# (huggingface.co/collections/ibm-research/angles-for-quantum-approximate-optimization):
-# every repo in it was read and its `model_init.model_type` compared against the
-# model_type column, and the short-name column is the suffix its repo id
-# actually carries. The three transformers abbreviate -- `dit`, `et`, `gt` --
-# which the earlier spelled-out guesses got wrong.
+# This table is the verified contract: the three names drift apart --
+# `graph_isomorphism_network` is `gin` on the Hub, `graph_transformer` is `gt`,
+# and `mlp` is really an `agg_transformer` -- so an unvalidated name silently
+# resolves to the wrong repo or input builder. Both columns are checked against
+# the published collection; every name outside the table is rejected.
 VERIFIED_ARCHITECTURES = {
     "diffusion_transformer": ("dit", "diffusion_transformer"),
     "edge_transformer": ("et", "edge_transformer"),
@@ -183,6 +180,13 @@ def validate_setup(setup: dict[str, Any], source: Path) -> None:
             repo id that disagrees with the key about which model it holds, or a
             revision that is not a commit sha.
     """
+    schema = setup.get("schema")
+    if schema != SETUP_SCHEMA:
+        raise ValueError(
+            f"HF setup file {source} declares schema {schema!r}, but this version reads "
+            f"schema {SETUP_SCHEMA}. The file was written for a different layout."
+        )
+
     bundles = setup.get("bundles", {})
     if not bundles:
         raise ValueError(f"HF setup file {source} declares no bundles.")

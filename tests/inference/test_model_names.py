@@ -24,6 +24,7 @@ from unittest import mock
 
 from qaoa_training_pipeline.inference import ai_inference
 from qaoa_training_pipeline.inference.model_registry import (
+    SETUP_SCHEMA,
     P_VALUES,
     SETUP_ENV_VAR,
     TRACKED_SETUP,
@@ -149,6 +150,15 @@ class TestSetupVerification(TrainingPipelineTestCase):
         """The setup that ships with the package passes validation."""
         validate_setup(json.loads(TRACKED_SETUP.read_text(encoding="utf-8")), TRACKED_SETUP)
 
+    def test_a_setup_of_another_schema_is_rejected(self):
+        """The schema is what says the file matches the layout this version reads."""
+        setup = json.loads(TRACKED_SETUP.read_text(encoding="utf-8"))
+        for schema in (None, SETUP_SCHEMA - 1, SETUP_SCHEMA + 1, str(SETUP_SCHEMA)):
+            with self.subTest(schema=schema):
+                with self.assertRaises(ValueError) as ctx:
+                    validate_setup({**setup, "schema": schema}, TRACKED_SETUP)
+                self.assertIn("schema", str(ctx.exception))
+
     def test_setup_defaults_to_the_packaged_one(self):
         """Without $QAOA_HF_SETUP, resolution uses the packaged setup only."""
         with mock.patch.dict(os.environ, {}, clear=True):
@@ -169,9 +179,10 @@ class TestSetupVerification(TrainingPipelineTestCase):
     def test_repo_id_disagreeing_with_the_key_is_rejected(self):
         """A key pointing at another model's repo is a hard failure."""
         setup = {
+            "schema": SETUP_SCHEMA,
             "bundles": {
                 "gcn/p1": {"repo_id": "ibm-research/qaoa_angles.max_cut.p1.gin"},
-            }
+            },
         }
         with self.assertRaises(ValueError) as ctx:
             validate_setup(setup, Path("test.json"))
@@ -179,12 +190,18 @@ class TestSetupVerification(TrainingPipelineTestCase):
 
     def test_unverified_key_in_a_setup_is_rejected(self):
         """An unverified name in the setup fails at load, not at use."""
-        setup = {"bundles": {"gnn/p1": {"repo_id": "ibm-research/x.p1.gnn"}}}
+        setup = {
+            "schema": SETUP_SCHEMA,
+            "bundles": {"gnn/p1": {"repo_id": "ibm-research/x.p1.gnn"}},
+        }
         self.assertRaises(ValueError, validate_setup, setup, Path("test.json"))
 
     def test_empty_setup_is_rejected(self):
         """A setup with no bundles is invalid rather than silently empty."""
-        self.assertRaises(ValueError, validate_setup, {"bundles": {}}, Path("test.json"))
+        setup = {"schema": SETUP_SCHEMA, "bundles": {}}
+        with self.assertRaises(ValueError) as ctx:
+            validate_setup(setup, Path("test.json"))
+        self.assertIn("no bundles", str(ctx.exception))
 
     def test_repo_ids_are_unique(self):
         """No two bundles may point at the same repo (a copy-paste guard)."""
@@ -208,12 +225,13 @@ class TestSetupVerification(TrainingPipelineTestCase):
         """
         for revision in ("main", "v1.0", "3720aaf", "3720AAFFEC4E2C47F3A27ACB01A231F2A109B534"):
             setup = {
+                "schema": SETUP_SCHEMA,
                 "bundles": {
                     "gcn/p1": {
                         "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gcn",
                         "revision": revision,
                     }
-                }
+                },
             }
             with self.subTest(revision=revision), self.assertRaises(ValueError) as ctx:
                 validate_setup(setup, Path("test.json"))
@@ -222,12 +240,13 @@ class TestSetupVerification(TrainingPipelineTestCase):
     def test_a_commit_sha_revision_is_accepted(self):
         """The counterpart: a real sha passes, so the check is not blanket-rejecting."""
         setup = {
+            "schema": SETUP_SCHEMA,
             "bundles": {
                 "gcn/p1": {
                     "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gcn",
                     "revision": "3720aaffec4e2c47f3a27acb01a231f2a109b534",
                 }
-            }
+            },
         }
         validate_setup(setup, Path("test.json"))
 

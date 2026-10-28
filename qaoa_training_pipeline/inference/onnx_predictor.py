@@ -156,12 +156,9 @@ class OnnxQAOAPredictor:
             self.session.get_providers(),
         )
 
-        norm_stats = (
-            self.config.get("feature_normalization") or self.model_init.get("norm_stats") or {}
-        )
         self.feature_extractor = AIFeatureExtractor(
             in_features=self.in_features,
-            norm_stats=norm_stats,
+            norm_stats=self.config.get("feature_normalization") or {},
         )
 
     @staticmethod

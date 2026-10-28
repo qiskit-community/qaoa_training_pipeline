@@ -30,22 +30,13 @@ from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 SCALAR_FEATURES = {"num_nodes", "num_edges", "edges_per_node", "mean_degree", "std_degree"}
 
-# The convention every shipped model was trained under: the max-cut cost
-# operator is ``H = -0.5 * sum_{(u,v) in E} w_uv Z_u Z_v``, i.e. what
+# The convention every shipped model was trained under, i.e. what
 # ``graph_to_operator(graph, pre_factor=MAX_CUT_PRE_FACTOR)`` produces. The
-# models consume edge *weights*, not Pauli coefficients, so ``extract_np``
-# divides the coefficients by this factor to recover them.
-#
-# Only the *sign* of the pre-factor matters. ``extract_np`` normalizes the
-# operator by :func:`~qaoa_training_pipeline.inference.scaling.rescaling_factor`
-# first, which is homogeneous of degree
-# one, so the magnitude divides straight back out: pre-factors of -0.5 and -2.0
-# recover identical weights, and each gets the gammas that are right for the
-# operator it was handed. A pre-factor of the opposite sign does not divide
-# out -- it normalizes to exactly the negated operator -- so its recovered
-# weights are negated and its gammas are quietly wrong. That asymmetry is why
-# :func:`warn_on_unexpected_sign_convention` exists and why normalization does
-# not make it redundant.
+# models consume edge *weights*, so ``extract_np`` divides the coefficients by
+# this factor to recover them. Only the sign matters: normalization divides the
+# magnitude back out, but the opposite sign normalizes to the negated operator
+# and predicts the wrong gammas -- hence
+# :func:`warn_on_unexpected_sign_convention`.
 MAX_CUT_PRE_FACTOR = -0.5
 
 # How far outside the training distribution a feature may land before the

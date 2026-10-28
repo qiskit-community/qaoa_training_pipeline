@@ -6,28 +6,14 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""The scale-invariance round trip: normalize the operator, un-rescale the gammas.
+"""The two scaling steps that make the inference models scale-invariant.
 
-The inference models are scale-invariant, and this module is where that is
-arranged. A prediction passes through three steps -- scale, predict, unscale --
-and the two scaling ones live here so they can be read, and reasoned about,
-together:
+:func:`normalize_cost_op` divides the operator before the network sees it, and
+:func:`undo_gamma_rescale` divides the gammas by the same factor afterwards.
+:meth:`~qaoa_training_pipeline.inference.AIInference.provide_params` runs both,
+around the network step, and is the only place that does.
 
-1. :func:`normalize_cost_op` divides the cost operator by
-   :func:`rescaling_factor`, so the network always sees the same normalized
-   problem whatever the operator's scale.
-2. The network predicts for that normalized problem (the predictor's job), and
-   its output is denormalized by the bundle's own output scale
-   (:func:`denormalize_qaoa_params_np`).
-3. :func:`undo_gamma_rescale` divides the gammas -- and only the gammas -- by
-   the same factor, which undoes step 1 for the operator the caller passed.
-
-:meth:`~qaoa_training_pipeline.inference.AIInference.provide_params` calls the
-three in that order, and is the only place that does: the predictor is step 2
-alone.
-
-Nothing here needs ``onnxruntime`` or a model: it is numpy and Qiskit only, so
-the scaling can be imported, tested and reasoned about without a bundle.
+Needs no model and no ``onnxruntime``: numpy and Qiskit only.
 """
 
 from __future__ import annotations
@@ -43,18 +29,10 @@ from qiskit.quantum_info import SparsePauliOp
 def rescaling_factor(cost_op: SparsePauliOp) -> float:
     """Return the QAOA cost-operator rescaling factor (RMS of per-order weights).
 
-    The one quantity the round trip computes: the same factor divides the
-    operator in step 1 and the gammas in step 3.
-
-    It is homogeneous of degree one -- ``rescaling_factor(c * H) ==
-    c * rescaling_factor(H)`` for ``c > 0`` -- which is what makes the
-    normalized operator, and hence the network's raw output, the same at every
-    scale. It also makes normalizing twice a no-op, since the second factor
-    comes out as 1.0.
-
-    For a degenerate operator with no non-identity terms or all-zero
-    coefficients the RMS is 0; it falls back to ``1.0``, so normalization and
-    denormalization become no-ops instead of dividing by zero.
+    Homogeneous of degree one, which is what makes the normalized operator --
+    and hence the network's output -- the same at every scale. A degenerate
+    operator (no non-identity terms, or all-zero coefficients) gives 0 and
+    falls back to ``1.0`` rather than dividing by zero.
     """
     terms = defaultdict(list)
 
@@ -71,11 +49,10 @@ def rescaling_factor(cost_op: SparsePauliOp) -> float:
 
 
 def normalize_cost_op(cost_op: SparsePauliOp) -> tuple[SparsePauliOp, float]:
-    """Divide ``cost_op`` by its :func:`rescaling_factor`. Step one of the chain.
+    """Divide ``cost_op`` by its :func:`rescaling_factor`.
 
-    Returns ``(normalized_cost_op, rescale_a)``. The factor comes back with the
-    operator because the later steps need it: the features report it, and
-    :func:`undo_gamma_rescale` divides the gammas by it.
+    Returns ``(normalized_cost_op, rescale_a)``; the factor comes back because
+    the later steps need it.
     """
     rescale_a = rescaling_factor(cost_op)
     return cost_op / rescale_a, rescale_a
@@ -86,9 +63,9 @@ def denormalize_qaoa_params_np(
 ) -> np.ndarray:
     """Denormalize predicted QAOA params by ``scale`` (default pi/2).
 
-    Part of step two, not of the operator scaling: this undoes the output
-    normalization the model was trained with, which the bundle's config
-    declares as ``output_scale``.
+    The models emit angles in normalized units rather than radians; this is the
+    bundle's own ``output_scale``, unrelated to the operator's scale, and it
+    applies to betas and gammas alike.
     """
     return qaoa_params_norm * scale
 

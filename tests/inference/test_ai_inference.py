@@ -365,9 +365,9 @@ class TestPipelineRegistration(TrainingPipelineTestCase):
 
     def test_registered_as_a_problem_params_provider(self):
         """Being in this registry is what makes the pipeline pass the cost operator."""
-        from qaoa_training_pipeline.framework.pipeline import PROBLEM_PROVIDERS
+        from qaoa_training_pipeline.training import PROBLEM_PARAMS_PROVIDERS
 
-        self.assertIs(PROBLEM_PROVIDERS.get("AIInference"), AIInference)
+        self.assertIs(PROBLEM_PARAMS_PROVIDERS.get("AIInference"), AIInference)
 
     def test_a_config_naming_it_builds_a_provider(self):
         """The name in a pipeline config resolves without touching the Hub."""

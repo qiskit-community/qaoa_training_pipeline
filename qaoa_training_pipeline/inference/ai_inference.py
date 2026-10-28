@@ -16,7 +16,10 @@ from time import time
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.framework import ParamResult, ProblemParamsProvider
+from qaoa_training_pipeline.framework.param_result import ParamResult
+from qaoa_training_pipeline.framework.problem_params_provider import (
+    ProblemParamsProvider,
+)
 from qaoa_training_pipeline.inference.model_registry import (
     available_bundles,
     parse_bundle_key,
@@ -41,9 +44,9 @@ HAS_INFERENCE = all(
 class AIInference(ProblemParamsProvider):
     """AI-based inference for QAOA angle prediction.
 
-    Loads a pre-trained AI model and predicts QAOA angles from a cost
-    operator. The referenced model config declares which training setting
-    the checkpoint was produced under.
+    Loads a pre-trained model from the HuggingFace Hub by its ``<model>/p<p>``
+    bundle key and predicts the QAOA angles for a cost operator in one forward
+    pass, with no circuit evaluations.
 
     **The scaling round trip.** The models are scale-invariant, and
     :meth:`provide_params` is where that is arranged, in three steps:
@@ -55,13 +58,7 @@ class AIInference(ProblemParamsProvider):
        denormalizes the output by the bundle's own ``output_scale``.
     3. **Unscale.** ``undo_gamma_rescale`` divides the gammas -- and only the
        gammas -- by the same factor, undoing step 1 for the operator the caller
-       actually passed. This step is unconditional: a provider's job is angles
-       for the operator it was handed. A bundle that set
-       ``denormalize_output: false`` would therefore get its raw output
-       un-rescaled here, which is meaningless -- but no published bundle sets
-       it, and raw output is reached through
-       :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict_normalized`
-       with ``denormalize=False``, which skips step 2's scaling.
+       actually passed.
 
     Both scaling steps are in :mod:`~qaoa_training_pipeline.inference.scaling`.
 
