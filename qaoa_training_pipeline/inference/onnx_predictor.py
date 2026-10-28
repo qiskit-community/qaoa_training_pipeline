@@ -26,6 +26,7 @@ import copy
 import json
 import logging
 import math
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -44,7 +45,6 @@ from qaoa_training_pipeline.inference.model_registry import (
 )
 from qaoa_training_pipeline.inference.onnx_inputs import INPUT_BUILDERS
 from qaoa_training_pipeline.inference.scaling import denormalize_qaoa_params_np
-from qaoa_training_pipeline.inference.warn_utils import warn_at_caller
 
 try:
     import onnxruntime as ort
@@ -346,10 +346,12 @@ class OnnxQAOAPredictor:
             if circuit is not None
         ]
         if ignored:
-            warn_at_caller(
+            warnings.warn(
                 f"{', '.join(ignored)} ignored: the inference models were trained on the "
                 "standard max-cut QAOA ansatz with the X mixer and the |+> initial state, "
-                "so the predicted angles do not apply to a different circuit."
+                "so the predicted angles do not apply to a different circuit.",
+                UserWarning,
+                stacklevel=2,
             )
 
         x_vec, features = self.feature_extractor.extract_and_pack_np(cost_op, rescale_a=rescale_a)

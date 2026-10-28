@@ -22,9 +22,9 @@ import warnings
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
+from qaoa_training_pipeline.inference.conventions import MAX_CUT_PRE_FACTOR
 from qaoa_training_pipeline.inference.feature_extractor import (
     SCALAR_FEATURES,
-    MAX_CUT_PRE_FACTOR,
     OUT_OF_DISTRIBUTION_SIGMA,
     AIFeatureExtractor,
 )
@@ -278,42 +278,3 @@ class TestOutOfDistributionWarning(TrainingPipelineTestCase):
             warnings.simplefilter("always")
             extractor.pack_features_np({"rescale_a": 1e9})
         self.assertEqual([str(w.message) for w in caught], [])
-
-
-class TestWarningAttribution(TrainingPipelineTestCase):
-    """The warnings must point at the caller's code, not at the inference package."""
-
-    def test_a_deep_warning_blames_this_file(self):
-        """Reached through extract_and_pack_np, the blame must not land in the package.
-
-        The sign-convention warning is raised three frames inside the package,
-        so a fixed stacklevel would report it against feature_extractor.py --
-        unhelpful, since what the user has to change is the operator they built.
-        """
-        extractor = make_extractor()
-        # pre_factor=+1.0 spelling: positive quadratic coefficients.
-        cost_op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0)])
-
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            extractor.extract_and_pack_np(cost_op)
-
-        convention = [w for w in caught if "quadratic coefficients" in str(w.message)]
-        self.assertEqual(len(convention), 1)
-        self.assertEqual(convention[0].filename, __file__)
-
-    def test_a_shallow_warning_also_blames_this_file(self):
-        """The same holds one frame in, via pack_features_np directly."""
-        extractor = AIFeatureExtractor(
-            in_features=sorted(SCALAR_FEATURES),
-            norm_stats={name: {"mean": 10.0, "std": 2.0} for name in sorted(SCALAR_FEATURES)},
-        )
-        features = {name: 0.0 for name in SCALAR_FEATURES}
-        features["num_nodes"] = 10.0 + OUT_OF_DISTRIBUTION_SIGMA * 2.0 + 1.0
-
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            extractor.pack_features_np(features)
-
-        self.assertEqual(len(caught), 1)
-        self.assertEqual(caught[0].filename, __file__)

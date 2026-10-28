@@ -71,6 +71,13 @@ It produces scalar features (num_nodes, degrees, …), a graph (edges,
 edge_weights), and reports back the `rescale_a` it was normalized at — the
 normalization itself belongs to [`scaling.py`](scaling.py), see below.
 
+Which operators are acceptable is [`conventions.py`](conventions.py):
+`MAX_CUT_PRE_FACTOR`, `validate_cost_op` (rejects complex coefficients, local
+fields and terms above second order) and `warn_on_unexpected_sign_convention`.
+That last one has a blind spot by construction: a graph with weights of both
+signs has mixed coefficients under either convention, so nothing warns and the
+convention is the caller's to get right.
+
 ## Rescaling of the cost operator
 
 Scale-invariance is a three-step chain, and `AIInference.provide_params` runs it

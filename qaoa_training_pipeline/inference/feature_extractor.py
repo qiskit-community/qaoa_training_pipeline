@@ -9,114 +9,34 @@
 """Extraction of the graph features the inference models consume.
 
 The models take a scale-normalized max-cut graph, not a cost operator, so this
-module turns one into the other: it normalizes the operator, recovers the edge
-weights from the Pauli coefficients, computes the scalar features the networks
-were trained on, and rejects the operators that cannot be expressed as such a
-graph instead of silently feeding a malformed one.
+module turns one into the other: it recovers the edge weights from the Pauli
+coefficients and computes the scalar features the networks were trained on.
+Which operators are acceptable in the first place is
+:mod:`~qaoa_training_pipeline.inference.conventions`.
 """
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
+from qaoa_training_pipeline.inference.conventions import (
+    MAX_CUT_PRE_FACTOR,
+    validate_cost_op,
+    warn_on_unexpected_sign_convention,
+)
 from qaoa_training_pipeline.inference.scaling import normalize_cost_op
-from qaoa_training_pipeline.inference.warn_utils import warn_at_caller
 from qaoa_training_pipeline.pre_processing.feature_extraction import BaseFeatureExtractor
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
 
 SCALAR_FEATURES = {"num_nodes", "num_edges", "edges_per_node", "mean_degree", "std_degree"}
 
-# The convention every shipped model was trained under
-MAX_CUT_PRE_FACTOR = -0.5
-
 # How far outside the training distribution a feature may land before the prediction is flagged.
 OUT_OF_DISTRIBUTION_SIGMA = 3.0
-
-
-def warn_on_unexpected_sign_convention(cost_op: SparsePauliOp) -> None:
-    """Warn when ``cost_op`` looks like it was built with the wrong pre-factor.
-
-    Nothing in an operator records which pre-factor produced it, so the general
-    case cannot be detected.
-
-    The blind spot, by construction: a graph with weights of both signs has
-    coefficients of both signs under either convention, so neither spelling of
-    it warns. Scale normalization does not close that gap -- it divides out the
-    magnitude of the pre-factor but not its sign (see
-    :data:`MAX_CUT_PRE_FACTOR`) -- so for mixed-sign weights the convention is
-    the caller's to get right.
-    """
-    coefficients = [
-        float(np.real(term.coeffs[0])) for term in cost_op if int(sum(term.paulis[0].z)) > 1
-    ]
-    if coefficients and all(coefficient > 0.0 for coefficient in coefficients):
-        warn_at_caller(
-            "All quadratic coefficients of cost_op are positive. The inference models "
-            f"expect a max-cut operator in the convention H = {MAX_CUT_PRE_FACTOR} * "
-            "sum_e w_e Z_i Z_j -- graph_to_operator(graph, "
-            f"pre_factor={MAX_CUT_PRE_FACTOR}) -- under which positive edge weights "
-            "give negative coefficients. An operator built with the pre_factor=1.0 "
-            "default still yields finite angles, but the predicted gammas are wrong. "
-            "Pass pre_factor=-0.5, or ignore this warning if your edge weights really "
-            "are negative."
-        )
-
-
-def validate_cost_op(cost_op: SparsePauliOp) -> None:
-    """Reject operators the models cannot be given as a max-cut graph.
-
-    Each rejection is something that would otherwise produce finite, plausible
-    and wrong angles rather than an error:
-
-    * **Non-real coefficients.** The graph conversion takes ``np.real`` of every
-      coefficient, so a non-Hermitian operator would be read as a graph with
-      the imaginary parts discarded -- a purely imaginary coefficient becomes a
-      zero-weight edge.
-    * **One-local ``Z`` terms.** The networks take edge weights only; there is
-      no input for a local field. ``operator_to_graph`` would turn each such
-      term into a self-loop, which the symmetrization then double-counts into
-      the node degrees.
-    * **Terms above second order.** No graph represents them.
-
-    Raises:
-        ValueError: On any of the above.
-    """
-    imaginary = [
-        (str(term.paulis[0]), complex(term.coeffs[0]))
-        for term in cost_op
-        if abs(complex(term.coeffs[0]).imag) > 1e-12
-    ]
-    if imaginary:
-        raise ValueError(
-            f"cost_op has non-real coefficients: {imaginary}. The inference models take a "
-            "real-weighted max-cut graph; a complex coefficient would be silently truncated "
-            "to its real part."
-        )
-
-    one_local, higher_order = [], []
-    for term in cost_op:
-        order = int(sum(term.paulis[0].z))
-        if order == 1:
-            one_local.append(str(term.paulis[0]))
-        elif order > 2:
-            higher_order.append(str(term.paulis[0]))
-
-    if one_local:
-        raise ValueError(
-            f"cost_op has one-local Z terms: {one_local}. The inference models predict angles "
-            "for a max-cut graph and have no input for a local field, so such a term cannot be "
-            "represented: it would become a self-loop and distort the node degrees the model "
-            "reads. Drop the linear terms, or use a trainer that supports them."
-        )
-    if higher_order:
-        raise ValueError(
-            f"cost_op has terms above second order: {higher_order}. The inference models take a "
-            "quadratic max-cut operator, H = -0.5 * sum_e w_e Z_i Z_j."
-        )
 
 
 class AIFeatureExtractor(BaseFeatureExtractor):
@@ -301,13 +221,15 @@ class AIFeatureExtractor(BaseFeatureExtractor):
 
         if extrapolated and not self._warned_out_of_distribution:
             self._warned_out_of_distribution = True
-            warn_at_caller(
+            warnings.warn(
                 "This problem is outside the distribution the model was trained on: "
                 + "; ".join(extrapolated)
                 + f". The threshold is {OUT_OF_DISTRIBUTION_SIGMA:g} sigma, taken from the "
                 "bundle's own feature_normalization. The predicted angles are an "
                 "extrapolation; treat them as a starting point for optimization rather "
-                "than as trained-quality parameters."
+                "than as trained-quality parameters.",
+                UserWarning,
+                stacklevel=2,
             )
         return np.asarray(values, dtype=np.float32)[np.newaxis, ...]
 

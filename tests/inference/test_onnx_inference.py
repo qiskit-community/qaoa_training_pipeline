@@ -39,7 +39,7 @@ import numpy as np
 
 from qaoa_training_pipeline.inference import model_registry
 from qaoa_training_pipeline.inference.scaling import normalize_cost_op, undo_gamma_rescale
-from qaoa_training_pipeline.inference.feature_extractor import MAX_CUT_PRE_FACTOR
+from qaoa_training_pipeline.inference.conventions import MAX_CUT_PRE_FACTOR
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
 
