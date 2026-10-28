@@ -90,12 +90,8 @@ class AIInference(ProblemParamsProvider):
             )
 
         # The angles function defines the basis a trainer *optimizes* in; this
-        # provider runs no optimization, so it is the identity, as in the other
-        # providers that only hand over a point. To use another basis, put a
-        # trainer after this provider in the pipeline.
+        # provider runs no optimization, so it is the identity.
         super().__init__(qaoa_angles_function=IdentityFunction())
-        # Fail here, not at download time: an unverified name must not get as
-        # far as resolving to some repo.
         parse_bundle_key(model)
 
         self.model_key = model
