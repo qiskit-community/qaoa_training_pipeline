@@ -105,7 +105,7 @@
     },
     "graph_neural_network/p5": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p5.gnn",
-      "revision": null
+      "revision": "3d422995799b56be0404741bea5f0ee976976b04"
     },
     "graph_transformer/p1": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gt",

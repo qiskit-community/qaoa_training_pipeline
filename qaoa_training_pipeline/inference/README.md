@@ -119,13 +119,12 @@ p = 1…5, for 35 bundle keys. Only the parenthesised name is addressable: the
 repo ids abbreviate (`gin`, `gnn`, `gt`, `et`, `dit`) and those spellings are
 rejected by `parse_bundle_key`.
 
-34 of the 35 are published in the
+All 35 are published in the
 [model collection](https://huggingface.co/collections/ibm-research/angles-for-quantum-approximate-optimization)
-and pinned in the setup file, so they download without a token.
-`graph_neural_network/p5` has no repo on the Hub, so it stays at
-`revision: null` and raises a "not published yet" error naming itself.
+and pinned to a commit in the setup file, so they download without a token.
 `model_registry.published_bundles()` is the authoritative list of what can be
-downloaded.
+downloaded; an entry with `revision: null` is not published and raises a "not
+published yet" error naming itself.
 [`onnx_inputs.py`](onnx_inputs.py) holds a registry (`INPUT_BUILDERS`)
 mapping model type → how to build its numpy feed.
 
