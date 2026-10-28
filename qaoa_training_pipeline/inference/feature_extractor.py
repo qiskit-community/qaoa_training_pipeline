@@ -169,9 +169,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
             "edges_per_node": num_edges / num_nodes if num_nodes else 0.0,
             "mean_degree": float(np.mean(degrees)) if degrees.size else 0.0,
             "std_degree": float(np.std(degrees)) if degrees.size else 0.0,
-            "rescale_a": float(
-                rescale_a
-            ),  # Can be a feature in its own right: a bundle may list it in in_features
+            "rescale_a": float(rescale_a),  # Can be a feature (a bundle may list it in in_features)
             "nodes": list(graph.nodes()),
             "edges": edges_arr[np.newaxis, ...],
             "edge_weights": weights_arr[np.newaxis, ...],
