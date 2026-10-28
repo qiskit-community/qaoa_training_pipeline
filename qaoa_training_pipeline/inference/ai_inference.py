@@ -28,10 +28,7 @@ from qaoa_training_pipeline.inference.scaling import (
     normalize_cost_op,
     undo_gamma_rescale,
 )
-from qaoa_training_pipeline.training.functions import (
-    BaseAnglesFunction,
-    IdentityFunction,
-)
+from qaoa_training_pipeline.training.functions import IdentityFunction
 
 
 # Whether the optional inference dependencies are installed, following the
@@ -72,7 +69,6 @@ class AIInference(ProblemParamsProvider):
         self,
         model: str,
         device: str = "cpu",
-        qaoa_angles_function: BaseAnglesFunction | None = None,
     ) -> None:
         """Initialize the AI inference trainer.
 
@@ -85,15 +81,6 @@ class AIInference(ProblemParamsProvider):
             device: Device for inference ("cpu", "cuda", "cuda:<index>" or
                 "gpu"). An unknown device is rejected rather than quietly
                 falling back to the CPU.
-            qaoa_angles_function: Function transforming the predicted angles to
-                a different basis before use. Defaults to
-                :class:`IdentityFunction` (no transformation). This is the way
-                to post-process predicted angles -- a scaling, a change of
-                basis -- because unlike a bare callable it serializes, so
-                :meth:`to_config` / :meth:`from_config` round-trips keep it.
-                For the raw network output instead, call
-                :meth:`~qaoa_training_pipeline.inference.onnx_predictor.OnnxQAOAPredictor.predict_normalized`
-                with ``denormalize=False``.
         """
         if not HAS_INFERENCE:
             raise ImportError(
@@ -102,7 +89,11 @@ class AIInference(ProblemParamsProvider):
                 "`pip install qaoa_training_pipeline[inference]`."
             )
 
-        super().__init__(qaoa_angles_function=qaoa_angles_function or IdentityFunction())
+        # The angles function defines the basis a trainer *optimizes* in; this
+        # provider runs no optimization, so it is the identity, as in the other
+        # providers that only hand over a point. To use another basis, put a
+        # trainer after this provider in the pipeline.
+        super().__init__(qaoa_angles_function=IdentityFunction())
         # Fail here, not at download time: an unverified name must not get as
         # far as resolving to some repo.
         parse_bundle_key(model)
@@ -165,42 +156,20 @@ class AIInference(ProblemParamsProvider):
                 f"Available: {', '.join(available_bundles())}."
             )
 
-        # Rebuild the angles function from its config when serialized; default
-        # to the identity transformation otherwise.
-        angles_function = None
-        if "qaoa_angles_function" in config:
-            from qaoa_training_pipeline.training.functions import FUNCTIONS
-
-            angles_function = FUNCTIONS[config["qaoa_angles_function"]](
-                **config.get("qaoa_angles_function_init", {})
-            )
-
         return cls(
             model=str(config["model"]),
             device=str(config.get("device", "cpu")),
-            qaoa_angles_function=angles_function,
         )
 
     def to_config(self) -> dict:
         """Create a serializable dictionary describing the instance."""
-        # Serialize the model's Hub address, never the local snapshot
-        # directory: that path is specific to one machine's HF cache and would
-        # not round-trip elsewhere.
-        # The function's own config carries its init arguments (e.g. a Fourier
-        # depth); from_config feeds them back as keyword arguments, so dropping
-        # them would rebuild a differently-configured function.
-        angles_function_config = dict(self.qaoa_angles_function.to_config())
-        angles_function_config.pop("function_name", None)
-
-        config = {
+        # The model's Hub address, never the local snapshot directory: that
+        # path is specific to one machine's HF cache.
+        return {
             **self.model.source(),
             "device": self.device,
-            "qaoa_angles_function": self.qaoa_angles_function.__class__.__name__,
-            "qaoa_angles_function_init": angles_function_config,
             "predictor_metadata": self.model.metadata(),
         }
-
-        return config
 
     def load_model(self) -> None:
         """Download the bundle from the Hub and wrap it in an ONNX predictor."""

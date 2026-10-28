@@ -44,10 +44,10 @@ result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, g
 
 - Runs the exported `model.onnx` via `onnxruntime` + numpy — no torch, no
   checkpoint needed.
-- An optional `qaoa_angles_function` to post-process the predicted angles — a
-  scaling, a change of basis. It is the framework's own mechanism and it
-  serializes, so a `to_config()` / `from_config()` round trip keeps it. For the
-  raw network output instead, call
+- No angle post-processing: the `qaoa_angles_function` every provider carries is
+  fixed to the identity here, since this provider predicts rather than
+  optimizes and there is no basis to choose. Put a trainer after it in the
+  pipeline to refine or re-basis its angles. For the raw network output, call
   `OnnxQAOAPredictor.predict_normalized(..., denormalize=False)`.
 
 ### 2. Predictor

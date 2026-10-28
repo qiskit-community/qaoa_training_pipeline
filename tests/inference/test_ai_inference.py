@@ -164,17 +164,12 @@ class TestConfigRoundTrip(TrainingPipelineTestCase):
         def fake_load(self):
             self.model = stub
 
-        config = {
-            "model": STUB_KEY,
-            "device": "cuda",
-            "qaoa_angles_function": "IdentityFunction",
-        }
+        config = {"model": STUB_KEY, "device": "cuda"}
         with mock.patch.object(AIInference, "load_model", fake_load):
             provider = AIInference.from_config(config)
 
         self.assertEqual(provider.model_key, STUB_KEY)
         self.assertEqual(provider.device, "cuda")
-        self.assertIsInstance(provider.qaoa_angles_function, IdentityFunction)
 
     def test_to_config_carries_the_bundle_key(self):
         """The config addresses the model the one supported way."""
@@ -202,22 +197,21 @@ class TestConfigRoundTrip(TrainingPipelineTestCase):
         self.assertEqual(rebuilt.model_key, provider.model_key)
         self.assertEqual(rebuilt.device, provider.device)
         self.assertIsInstance(rebuilt.qaoa_angles_function, IdentityFunction)
+        self.assertNotIn("qaoa_angles_function", provider.to_config())
 
-    def test_to_config_carries_the_angles_function_init(self):
-        """An angles function's own arguments must survive the round-trip."""
-        provider, stub = _provider(qaoa_angles_function=FourierFunction(depth=2))
+    def test_the_angles_function_is_always_the_identity(self):
+        """This provider predicts, it does not optimize, so there is no basis to pick.
 
-        config = provider.to_config()
-        self.assertEqual(config["qaoa_angles_function"], "FourierFunction")
-        self.assertEqual(config["qaoa_angles_function_init"], {"depth": 2})
-
-        def fake_load(self):
-            self.model = stub
-
-        with mock.patch.object(AIInference, "load_model", fake_load):
-            rebuilt = AIInference.from_config(config)
-        # pylint: disable=protected-access
-        self.assertEqual(rebuilt.qaoa_angles_function._depth, 2)
+        The base class requires an angles function and ``ParamResult`` applies
+        it to every result, so one is supplied -- but a non-identity one would
+        change ``optimized_qaoa_angles`` while leaving ``optimized_params``, the
+        value the pipeline passes on, as predicted. A different basis belongs to
+        a trainer placed after this provider.
+        """
+        provider, _ = _provider()
+        self.assertIsInstance(provider.qaoa_angles_function, IdentityFunction)
+        with self.assertRaises(TypeError):
+            AIInference(model=STUB_KEY, qaoa_angles_function=FourierFunction(depth=2))
 
 
 class TestProvideParams(TrainingPipelineTestCase):
