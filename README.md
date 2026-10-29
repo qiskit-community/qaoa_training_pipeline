@@ -137,24 +137,13 @@ The `qaoa_training_pipeline.inference` subpackage predicts QAOA angles from a
 cost operator using pre-trained models, without training. `AIInference` is a
 `ProblemParamsProvider`, so it plugs into the framework like any other provider.
 
-Inference is **torch-free**: it runs an exported ONNX graph with
-`onnxruntime` + numpy and needs neither PyTorch nor the original training
-checkpoint. Bundles for seven architectures at QAOA depths `p = 1…5` (35 in
-total) are registered in the packaged setup file, but **none is uploaded to the
-HuggingFace Hub yet**: `model_registry.published_bundles()` returns the bundles
-that can actually be downloaded, and naming an unpublished one raises a
-`RuntimeError` saying so. No model artifacts ship in the package: a published
-bundle is downloaded on first use and cached under `~/.cache/huggingface`, so
-later runs are offline. Name one by its bundle key, `<architecture>/p<p>`.
-
 Install the (optional) runtime dependency and predict:
 
 ```bash
 pip install -e ".[inference]"    # adds onnxruntime + huggingface_hub; no torch
 ```
 
-The snippet below works once `graph_neural_network/p1` is uploaded; until then
-it raises a `RuntimeError` naming the unpublished bundle.
+
 
 ```python
 import networkx as nx
@@ -168,12 +157,6 @@ cost_op = graph_to_operator(nx.cycle_graph(3), pre_factor=-0.5)
 ai = AIInference(model="graph_neural_network/p1")
 angles = ai.provide_params(cost_op)["optimized_params"]  # p=1 -> [beta, gamma]
 ```
-
-`model_registry.available_bundles()` lists the bundle keys, which are the only
-way to address a model. While the model repos are private, downloading needs a
-HuggingFace token (`hf auth login`, or `HF_TOKEN` in the environment). See
-[`qaoa_training_pipeline/inference/README.md`](qaoa_training_pipeline/inference/README.md)
-for how to serve a bundle outside the shipped zoo.
 
 ## Installation
 
