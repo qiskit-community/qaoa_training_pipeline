@@ -35,6 +35,10 @@ from qaoa_training_pipeline.inference.onnx_inputs import (
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
 
+# The convention the shipped bundles declare; stated explicitly
+# because the package keeps no default.
+MAX_CUT = -0.5
+
 
 # The builders never look at the scalar normalization, only at its output shape, so
 # unit stats keep the packed vector equal to the raw features and the tests readable.
@@ -61,7 +65,9 @@ def _star(n):
 
 def _features(cost_op, pos_enc_dim=None):
     """Build the feature dict as OnnxQAOAPredictor.predict_normalized does."""
-    extractor = AIFeatureExtractor(in_features=sorted(SCALAR_FEATURES), norm_stats=NORM_STATS)
+    extractor = AIFeatureExtractor(
+        in_features=sorted(SCALAR_FEATURES), norm_stats=NORM_STATS, prefactor=MAX_CUT
+    )
     x_vec, features = extractor.extract_and_pack_np(cost_op)
     features["x"] = x_vec
     if pos_enc_dim is not None:

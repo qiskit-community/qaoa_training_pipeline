@@ -14,7 +14,7 @@ inference backend uses, so it is the one exercised here.
 
 The operators below use negative ``ZZ`` coefficients because that is what the
 max-cut convention the models were trained on produces for positive edge
-weights (see ``MAX_CUT_PRE_FACTOR``).
+weights (see each bundle's declared ``prefactor``).
 """
 
 import warnings
@@ -22,7 +22,6 @@ import warnings
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
-from qaoa_training_pipeline.inference.conventions import MAX_CUT_PRE_FACTOR
 from qaoa_training_pipeline.inference.feature_extractor import (
     SCALAR_FEATURES,
     OUT_OF_DISTRIBUTION_SIGMA,
@@ -30,6 +29,10 @@ from qaoa_training_pipeline.inference.feature_extractor import (
 )
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
+
+# The convention the shipped bundles declare; tests state it explicitly
+# because the package keeps no default.
+MAX_CUT = -0.5
 
 
 # Identity-ish norm stats (mean 0, std 1) so normalized == raw for easy checks.
@@ -39,7 +42,9 @@ IDENTITY_STATS = {name: {"mean": 0.0, "std": 1.0} for name in sorted(SCALAR_FEAT
 def make_extractor(norm_stats=None):
     """Build an extractor over all scalar features."""
     return AIFeatureExtractor(
-        in_features=sorted(SCALAR_FEATURES), norm_stats=norm_stats or IDENTITY_STATS
+        in_features=sorted(SCALAR_FEATURES),
+        norm_stats=norm_stats or IDENTITY_STATS,
+        prefactor=MAX_CUT,
     )
 
 
@@ -52,6 +57,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
             AIFeatureExtractor(
                 in_features=sorted(SCALAR_FEATURES),
                 norm_stats={"num_nodes": {"mean": 0.0, "std": 1.0}},
+                prefactor=MAX_CUT,
             )
 
     def test_extract_triangle_graph_topology(self):
@@ -92,7 +98,9 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
         """(v - mean) / std is applied per feature."""
         op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
         stats = {name: {"mean": 1.0, "std": 2.0} for name in SCALAR_FEATURES}
-        ext = AIFeatureExtractor(in_features=sorted(SCALAR_FEATURES), norm_stats=stats)
+        ext = AIFeatureExtractor(
+            in_features=sorted(SCALAR_FEATURES), norm_stats=stats, prefactor=MAX_CUT
+        )
         feats = ext.extract_np(op)
         x = ext.pack_features_np(feats).squeeze(0)
         expected = [(float(feats[name]) - 1.0) / 2.0 for name in sorted(SCALAR_FEATURES)]
@@ -102,7 +110,9 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
         """A zero std must not produce inf/nan (guarded to std=1)."""
         op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
         stats = {name: {"mean": 0.0, "std": 0.0} for name in SCALAR_FEATURES}
-        ext = AIFeatureExtractor(in_features=sorted(SCALAR_FEATURES), norm_stats=stats)
+        ext = AIFeatureExtractor(
+            in_features=sorted(SCALAR_FEATURES), norm_stats=stats, prefactor=MAX_CUT
+        )
         x = ext.pack_features_np(ext.extract_np(op))
         self.assertTrue(np.isfinite(x).all())
 
@@ -164,7 +174,7 @@ class TestCostOperatorConvention(TrainingPipelineTestCase):
         feats = make_extractor().extract_np(op)
         # The operator is normalized by rescaling_factor first, so compare the
         # weights to the normalized coefficients divided by the pre-factor.
-        expected = (-0.5 / feats["rescale_a"]) / MAX_CUT_PRE_FACTOR
+        expected = (-0.5 / feats["rescale_a"]) / MAX_CUT
         np.testing.assert_allclose(feats["edge_weights"].squeeze(0), [expected] * 3, rtol=1e-6)
 
 
@@ -213,20 +223,65 @@ class TestPreFactorSignAndMagnitude(TrainingPipelineTestCase):
                 self.assertEqual([str(w.message) for w in caught], [])
 
 
+class TestDeclaredPrefactor(TrainingPipelineTestCase):
+    """The convention comes from the bundle's setup entry, not from a constant."""
+
+    OPERATOR = SparsePauliOp.from_list([("ZZI", -0.5), ("IZZ", -0.5), ("ZIZ", -0.5)])
+
+    def _weights(self, prefactor):
+        """Recovered edge weights when the bundle declares ``prefactor``."""
+        extractor = AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=prefactor)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return extractor.extract_np(self.OPERATOR)["edge_weights"].squeeze(0)
+
+    def test_the_declared_prefactor_divides_the_coefficients(self):
+        """Halving the prefactor doubles the recovered weights."""
+        np.testing.assert_allclose(self._weights(-0.25), self._weights(-0.5) * 2.0, rtol=1e-6)
+
+    def test_the_prefactor_is_required(self):
+        """There is no default convention to fall back on."""
+        with self.assertRaises(TypeError):
+            AIFeatureExtractor(in_features=[], norm_stats={})  # no prefactor
+
+    def test_a_zero_prefactor_is_refused(self):
+        """It is a divisor, so zero would make every weight infinite."""
+        with self.assertRaises(ValueError) as ctx:
+            AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=0.0)
+        self.assertIn("non-zero", str(ctx.exception))
+
+    def test_the_warning_follows_the_declared_sign(self):
+        """A positive-prefactor model must not be warned about positive coefficients."""
+        positive = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0)])
+        extractor = AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=1.0)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            extractor.extract_np(positive)
+        self.assertEqual([str(w.message) for w in caught], [])
+
+    def test_the_prefactor_survives_a_config_round_trip(self):
+        """A rebuilt extractor must recover the same weights."""
+        extractor = AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=-2.0)
+        rebuilt = AIFeatureExtractor.from_config(extractor.to_config())
+        self.assertEqual(rebuilt.prefactor, -2.0)
+
+
 class TestExtractorInterface(TrainingPipelineTestCase):
     """AIFeatureExtractor is a BaseFeatureExtractor, so it answers that interface."""
 
     def test_features_are_reported_in_packing_order(self):
         """features() must be the order pack_features_np actually packs in."""
         extractor = AIFeatureExtractor(
-            in_features=["num_nodes", "mean_degree"], norm_stats=IDENTITY_STATS
+            in_features=["num_nodes", "mean_degree"],
+            norm_stats=IDENTITY_STATS,
+            prefactor=MAX_CUT,
         )
         self.assertEqual(extractor.features(), ["mean_degree", "num_nodes"])
 
     def test_config_round_trip(self):
         """A rebuilt extractor packs the same vector as the original."""
         extractor = AIFeatureExtractor(
-            in_features=sorted(SCALAR_FEATURES), norm_stats=IDENTITY_STATS
+            in_features=sorted(SCALAR_FEATURES), norm_stats=IDENTITY_STATS, prefactor=MAX_CUT
         )
         rebuilt = AIFeatureExtractor.from_config(extractor.to_config())
         op = SparsePauliOp.from_list([("ZZI", -0.5), ("IZZ", -0.5), ("ZIZ", -0.5)])
@@ -247,7 +302,9 @@ class TestOutOfDistributionWarning(TrainingPipelineTestCase):
         """An extractor whose training set was 'num_nodes around 10 +- 2'."""
         stats = {name: {"mean": 0.0, "std": 1.0} for name in SCALAR_FEATURES}
         stats["num_nodes"] = {"mean": 10.0, "std": 2.0}
-        return AIFeatureExtractor(in_features=sorted(SCALAR_FEATURES), norm_stats=stats)
+        return AIFeatureExtractor(
+            in_features=sorted(SCALAR_FEATURES), norm_stats=stats, prefactor=MAX_CUT
+        )
 
     def test_in_distribution_is_silent(self):
         """A problem the model was trained on must not warn."""
@@ -273,7 +330,9 @@ class TestOutOfDistributionWarning(TrainingPipelineTestCase):
 
     def test_a_feature_without_stats_cannot_trigger_it(self):
         """With no mean/std there is no distribution to be outside of."""
-        extractor = AIFeatureExtractor(in_features=["rescale_a"], norm_stats=IDENTITY_STATS)
+        extractor = AIFeatureExtractor(
+            in_features=["rescale_a"], norm_stats=IDENTITY_STATS, prefactor=MAX_CUT
+        )
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             extractor.pack_features_np({"rescale_a": 1e9})

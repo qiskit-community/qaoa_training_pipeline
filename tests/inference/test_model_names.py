@@ -181,7 +181,7 @@ class TestSetupVerification(TrainingPipelineTestCase):
         setup = {
             "schema": SETUP_SCHEMA,
             "bundles": {
-                "gcn/p1": {"repo_id": "ibm-research/qaoa_angles.max_cut.p1.gin"},
+                "gcn/p1": {"repo_id": "ibm-research/qaoa_angles.max_cut.p1.gin", "prefactor": -0.5},
             },
         }
         with self.assertRaises(ValueError) as ctx:
@@ -230,6 +230,7 @@ class TestSetupVerification(TrainingPipelineTestCase):
                     "gcn/p1": {
                         "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gcn",
                         "revision": revision,
+                        "prefactor": -0.5,
                     }
                 },
             }
@@ -245,6 +246,7 @@ class TestSetupVerification(TrainingPipelineTestCase):
                 "gcn/p1": {
                     "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gcn",
                     "revision": "3720aaffec4e2c47f3a27acb01a231f2a109b534",
+                    "prefactor": -0.5,
                 }
             },
         }

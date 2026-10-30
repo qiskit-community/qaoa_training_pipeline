@@ -22,12 +22,13 @@ import warnings
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
-# The convention every shipped model was trained under
-MAX_CUT_PRE_FACTOR = -0.5
 
-
-def warn_on_unexpected_sign_convention(cost_op: SparsePauliOp) -> None:
+def warn_on_unexpected_sign_convention(cost_op: SparsePauliOp, prefactor: float) -> None:
     """Warn when ``cost_op`` looks like it was built with the wrong pre-factor.
+
+    ``prefactor`` is the convention the bundle declares in the setup file. It is
+    required: this package holds no default, so a model trained under another
+    convention is checked against its own rather than against max-cut's.
 
     Nothing in an operator records which pre-factor produced it, so the general
     case cannot be detected.
@@ -40,16 +41,19 @@ def warn_on_unexpected_sign_convention(cost_op: SparsePauliOp) -> None:
     coefficients = [
         float(np.real(term.coeffs[0])) for term in cost_op if int(sum(term.paulis[0].z)) > 1
     ]
-    if coefficients and all(coefficient > 0.0 for coefficient in coefficients):
+    # Under a negative prefactor, positive edge weights give negative
+    # coefficients -- so all-positive ones mean the opposite sign was used.
+    wrong_sign = (
+        all(c > 0.0 for c in coefficients) if prefactor < 0 else all(c < 0.0 for c in coefficients)
+    )
+    if coefficients and wrong_sign:
         warnings.warn(
-            "All quadratic coefficients of cost_op are positive. The inference models "
-            f"expect a max-cut operator in the convention H = {MAX_CUT_PRE_FACTOR} * "
-            "sum_e w_e Z_i Z_j -- graph_to_operator(graph, "
-            f"pre_factor={MAX_CUT_PRE_FACTOR}) -- under which positive edge weights "
-            "give negative coefficients. An operator built with the pre_factor=1.0 "
-            "default still yields finite angles, but the predicted gammas are wrong. "
-            "Pass pre_factor=-0.5, or ignore this warning if your edge weights really "
-            "are negative.",
+            "The quadratic coefficients of cost_op all have the sign opposite to this "
+            f"model's convention, H = {prefactor} * sum_e w_e Z_i Z_j, i.e. "
+            f"graph_to_operator(graph, pre_factor={prefactor}). The operator was most "
+            "likely built with the pre_factor=1.0 default; it still yields finite "
+            f"angles, but the predicted gammas are wrong. Pass pre_factor={prefactor}, "
+            "or ignore this warning if your edge weights really are negative.",
             UserWarning,
             stacklevel=2,
         )
@@ -103,6 +107,6 @@ def validate_cost_op(cost_op: SparsePauliOp) -> None:
         )
     if higher_order:
         raise ValueError(
-            f"cost_op has terms above second order: {higher_order}. The inference models take a "
-            "quadratic max-cut operator, H = -0.5 * sum_e w_e Z_i Z_j."
+            f"cost_op has terms above second order: {higher_order}. The inference models take "
+            "a quadratic operator, H = prefactor * sum_e w_e Z_i Z_j."
         )

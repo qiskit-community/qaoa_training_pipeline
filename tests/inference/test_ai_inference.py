@@ -32,6 +32,10 @@ from qaoa_training_pipeline.training.functions import FourierFunction, IdentityF
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
 
+# The convention the shipped bundles declare; tests state it explicitly
+# because the package keeps no default.
+MAX_CUT = -0.5
+
 HF_TESTS_ENABLED = os.environ.get("QTP_HF_TESTS") == "1"
 
 # The provider itself is importable without the inference extra; only the ONNX
@@ -282,7 +286,9 @@ class TestProviderScaleInvariance(TrainingPipelineTestCase):
         predictor.model_init = {"output_dim": output_dim}
         predictor.output_dim = output_dim
         predictor.bundle_key = STUB_KEY
-        predictor.feature_extractor = AIFeatureExtractor(in_features=[], norm_stats={})
+        predictor.feature_extractor = AIFeatureExtractor(
+            in_features=[], norm_stats={}, prefactor=MAX_CUT
+        )
         predictor.session = mock.Mock()
         predictor.session.run.return_value = [np.asarray([raw], dtype=np.float32)]
         # pylint: disable=protected-access

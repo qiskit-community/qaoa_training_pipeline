@@ -9,143 +9,178 @@
   "bundles": {
     "diffusion_transformer/p1": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p1.dit",
-      "revision": "756b98d0a1fc2eabf092f09af89094097d4b6873"
+      "revision": "756b98d0a1fc2eabf092f09af89094097d4b6873",
+      "prefactor": -0.5
     },
     "diffusion_transformer/p2": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p2.dit",
-      "revision": "116507adaa5aa3aed017d70954afb0c0711ab5e2"
+      "revision": "116507adaa5aa3aed017d70954afb0c0711ab5e2",
+      "prefactor": -0.5
     },
     "diffusion_transformer/p3": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p3.dit",
-      "revision": "bcaac7592142be4d09a3d91f6b0018e6afea9cb9"
+      "revision": "bcaac7592142be4d09a3d91f6b0018e6afea9cb9",
+      "prefactor": -0.5
     },
     "diffusion_transformer/p4": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p4.dit",
-      "revision": "1af5901d2f44fb1bc1005a5b2b50da1a34cf6cff"
+      "revision": "1af5901d2f44fb1bc1005a5b2b50da1a34cf6cff",
+      "prefactor": -0.5
     },
     "diffusion_transformer/p5": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p5.dit",
-      "revision": "f46d0841da1981588d6113b10f500aa369d537f2"
+      "revision": "f46d0841da1981588d6113b10f500aa369d537f2",
+      "prefactor": -0.5
     },
     "edge_transformer/p1": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p1.et",
-      "revision": "2945df3fc67f3aa5a05018f2855f26081482a2c4"
+      "revision": "2945df3fc67f3aa5a05018f2855f26081482a2c4",
+      "prefactor": -0.5
     },
     "edge_transformer/p2": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p2.et",
-      "revision": "b8125c8730196a5fc9f236c1f9ac68423bee6122"
+      "revision": "b8125c8730196a5fc9f236c1f9ac68423bee6122",
+      "prefactor": -0.5
     },
     "edge_transformer/p3": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p3.et",
-      "revision": "c07401f5cd5e5a3f11ece2807532250a8343f835"
+      "revision": "c07401f5cd5e5a3f11ece2807532250a8343f835",
+      "prefactor": -0.5
     },
     "edge_transformer/p4": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p4.et",
-      "revision": "bf85ca1801574687f75e44b01eae68f0cff69213"
+      "revision": "bf85ca1801574687f75e44b01eae68f0cff69213",
+      "prefactor": -0.5
     },
     "edge_transformer/p5": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p5.et",
-      "revision": "50729ea97942b75909e5960d978c20760252ed40"
+      "revision": "50729ea97942b75909e5960d978c20760252ed40",
+      "prefactor": -0.5
     },
     "gcn/p1": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gcn",
-      "revision": "bf4a3aa83f1142a134bb7d21ec7606971e435575"
+      "revision": "bf4a3aa83f1142a134bb7d21ec7606971e435575",
+      "prefactor": -0.5
     },
     "gcn/p2": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p2.gcn",
-      "revision": "777aa7a20c5274cc9737f24fc22cf183e8e22fa7"
+      "revision": "777aa7a20c5274cc9737f24fc22cf183e8e22fa7",
+      "prefactor": -0.5
     },
     "gcn/p3": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p3.gcn",
-      "revision": "5d6ced1e41361e4ca154ed698651912a2e6bcd69"
+      "revision": "5d6ced1e41361e4ca154ed698651912a2e6bcd69",
+      "prefactor": -0.5
     },
     "gcn/p4": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p4.gcn",
-      "revision": "be93ebfdc27a75498a0fe11f9c4f2a4c141ecf27"
+      "revision": "be93ebfdc27a75498a0fe11f9c4f2a4c141ecf27",
+      "prefactor": -0.5
     },
     "gcn/p5": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p5.gcn",
-      "revision": "f2519163786f6b66a80df6e9538d08e137da501f"
+      "revision": "f2519163786f6b66a80df6e9538d08e137da501f",
+      "prefactor": -0.5
     },
     "graph_isomorphism_network/p1": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gin",
-      "revision": "d55415959a3be7c8d131417941022a31dc949534"
+      "revision": "d55415959a3be7c8d131417941022a31dc949534",
+      "prefactor": -0.5
     },
     "graph_isomorphism_network/p2": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p2.gin",
-      "revision": "87fc48ed21dedb5b8dd3b01fb1103f83f0c734c3"
+      "revision": "87fc48ed21dedb5b8dd3b01fb1103f83f0c734c3",
+      "prefactor": -0.5
     },
     "graph_isomorphism_network/p3": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p3.gin",
-      "revision": "b7f0f42feb7c36014f7357a25fbb57e251613e1c"
+      "revision": "b7f0f42feb7c36014f7357a25fbb57e251613e1c",
+      "prefactor": -0.5
     },
     "graph_isomorphism_network/p4": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p4.gin",
-      "revision": "a6959aaa2c3c43017f01bf491d5b5dfb928883d7"
+      "revision": "a6959aaa2c3c43017f01bf491d5b5dfb928883d7",
+      "prefactor": -0.5
     },
     "graph_isomorphism_network/p5": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p5.gin",
-      "revision": "65855877fea6bf148e011fed9d5cdb6757afb7d8"
+      "revision": "65855877fea6bf148e011fed9d5cdb6757afb7d8",
+      "prefactor": -0.5
     },
     "graph_neural_network/p1": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gnn",
-      "revision": "7d369ea21589d8d1b943d48a3148d620a8ffbeb5"
+      "revision": "7d369ea21589d8d1b943d48a3148d620a8ffbeb5",
+      "prefactor": -0.5
     },
     "graph_neural_network/p2": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p2.gnn",
-      "revision": "c5970cc62a665d27b7fea4994f8ab658763a06a3"
+      "revision": "c5970cc62a665d27b7fea4994f8ab658763a06a3",
+      "prefactor": -0.5
     },
     "graph_neural_network/p3": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p3.gnn",
-      "revision": "6713ebb104fda941e82341ae850117161d801d87"
+      "revision": "6713ebb104fda941e82341ae850117161d801d87",
+      "prefactor": -0.5
     },
     "graph_neural_network/p4": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p4.gnn",
-      "revision": "1dc310bc6955f288c8c8ae9dab7aa76597ea63be"
+      "revision": "1dc310bc6955f288c8c8ae9dab7aa76597ea63be",
+      "prefactor": -0.5
     },
     "graph_neural_network/p5": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p5.gnn",
-      "revision": "3d422995799b56be0404741bea5f0ee976976b04"
+      "revision": "3d422995799b56be0404741bea5f0ee976976b04",
+      "prefactor": -0.5
     },
     "graph_transformer/p1": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p1.gt",
-      "revision": "bc92d910d44ae508c821960e16e0b1aeb4e8e946"
+      "revision": "bc92d910d44ae508c821960e16e0b1aeb4e8e946",
+      "prefactor": -0.5
     },
     "graph_transformer/p2": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p2.gt",
-      "revision": "02db390ab8489a0c2006f85ab26f682d3b696234"
+      "revision": "02db390ab8489a0c2006f85ab26f682d3b696234",
+      "prefactor": -0.5
     },
     "graph_transformer/p3": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p3.gt",
-      "revision": "747fc8e91c6172c21e0a9569c62b3e71e5a4d9d8"
+      "revision": "747fc8e91c6172c21e0a9569c62b3e71e5a4d9d8",
+      "prefactor": -0.5
     },
     "graph_transformer/p4": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p4.gt",
-      "revision": "f6dcfe16aabe4b457e15b96d0f8db1089ca8456c"
+      "revision": "f6dcfe16aabe4b457e15b96d0f8db1089ca8456c",
+      "prefactor": -0.5
     },
     "graph_transformer/p5": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p5.gt",
-      "revision": "b34728ddfd5f576150164a16401d3497eb9e2029"
+      "revision": "b34728ddfd5f576150164a16401d3497eb9e2029",
+      "prefactor": -0.5
     },
     "mlp/p1": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p1.mlp",
-      "revision": "ae12afbf9f2b6d682d25178564eb64b38439a20d"
+      "revision": "ae12afbf9f2b6d682d25178564eb64b38439a20d",
+      "prefactor": -0.5
     },
     "mlp/p2": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p2.mlp",
-      "revision": "6ea572c0d0f31175041b6e1993404bad10a38b5f"
+      "revision": "6ea572c0d0f31175041b6e1993404bad10a38b5f",
+      "prefactor": -0.5
     },
     "mlp/p3": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p3.mlp",
-      "revision": "cb7b3719b0e6d1c4e51f4c11b85657ff7498e718"
+      "revision": "cb7b3719b0e6d1c4e51f4c11b85657ff7498e718",
+      "prefactor": -0.5
     },
     "mlp/p4": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p4.mlp",
-      "revision": "6b30b3e7baf365183101476a0bcee69c59c3f490"
+      "revision": "6b30b3e7baf365183101476a0bcee69c59c3f490",
+      "prefactor": -0.5
     },
     "mlp/p5": {
       "repo_id": "ibm-research/qaoa_angles.max_cut.p5.mlp",
-      "revision": "14ec77ae2b579930ceb45691e64fea94f7514341"
+      "revision": "14ec77ae2b579930ceb45691e64fea94f7514341",
+      "prefactor": -0.5
     }
   }
 }

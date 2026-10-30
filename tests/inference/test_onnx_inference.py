@@ -38,10 +38,13 @@ from qiskit.quantum_info import SparsePauliOp
 import numpy as np
 
 from qaoa_training_pipeline.inference import model_registry
-from qaoa_training_pipeline.inference.scaling import normalize_cost_op, undo_gamma_rescale
-from qaoa_training_pipeline.inference.conventions import MAX_CUT_PRE_FACTOR
+from qaoa_training_pipeline.inference.scaling import normalize_cost_op, undo_cost_op_normalization
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
+
+# The convention the shipped bundles declare; tests state it explicitly
+# because the package keeps no default.
+MAX_CUT = -0.5
 
 # Distinguishes "output_dim absent" from "output_dim is None" in the tests below.
 _ABSENT = object()
@@ -55,7 +58,7 @@ def _max_cut_operator(num_nodes: int) -> SparsePauliOp:
         label[node] = "Z"
         label[(node + 1) % num_nodes] = "Z"
         terms.append("".join(reversed(label)))
-        coeffs.append(MAX_CUT_PRE_FACTOR)
+        coeffs.append(MAX_CUT)
     return SparsePauliOp(terms, coeffs=coeffs).simplify()
 
 
@@ -153,7 +156,7 @@ class TestOnnxInference(TrainingPipelineTestCase):
         raw = predictor.predict_normalized(normalized, rescale_a, **kwargs)
         if not predictor.denormalizes(kwargs.get("denormalize")):
             return raw
-        return undo_gamma_rescale(raw, p=predictor.output_dim // 2, rescale_a=rescale_a)
+        return undo_cost_op_normalization(raw, p=predictor.output_dim // 2, rescale_a=rescale_a)
 
     def test_onnx_predictor_loads_and_predicts(self):
         """Every exported bundle loads via onnxruntime and produces 2*p angles."""
@@ -426,7 +429,9 @@ class TestScaleInvariance(TrainingPipelineTestCase):
         predictor.config = {"denormalize_output": True, "output_scale": math.pi / 2}
         predictor.model_init = {"output_dim": output_dim}
         predictor.output_dim = output_dim
-        predictor.feature_extractor = AIFeatureExtractor(in_features=[], norm_stats={})
+        predictor.feature_extractor = AIFeatureExtractor(
+            in_features=[], norm_stats={}, prefactor=MAX_CUT
+        )
         # A scale-invariant network: the features it is fed are already
         # normalized, so a correct model returns the same raw output at every
         # scale. Any scale dependence in the result is therefore the
@@ -441,7 +446,7 @@ class TestScaleInvariance(TrainingPipelineTestCase):
         """Run the scaling chain with the ONNX session stubbed out."""
         predictor = self._predictor(raw, output_dim)
         normalized, rescale_a = normalize_cost_op(cost_op)
-        return undo_gamma_rescale(
+        return undo_cost_op_normalization(
             predictor.predict_normalized(normalized, rescale_a),
             p=output_dim // 2,
             rescale_a=rescale_a,
@@ -475,7 +480,7 @@ class TestScaleInvariance(TrainingPipelineTestCase):
         cost_op = _max_cut_operator(8)
         from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor
 
-        extractor = AIFeatureExtractor(in_features=[], norm_stats={})
+        extractor = AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=MAX_CUT)
         base = extractor.extract_np(cost_op)["rescale_a"]
         scaled = extractor.extract_np(cost_op * 4.0)["rescale_a"]
         # The rescaling factor is homogeneous of degree one, which is what

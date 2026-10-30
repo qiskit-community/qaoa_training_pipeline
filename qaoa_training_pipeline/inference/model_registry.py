@@ -160,6 +160,27 @@ def validate_setup(setup: dict[str, Any], source: Path) -> None:
                 f"{'.' + suffix!r} -- the key and the repo name disagree about the model."
             )
 
+        # The convention the bundle was trained under. Required: the package
+        # keeps no default, so a missing or zero prefactor is caught here
+        # rather than surfacing as wrong weights or a division by zero.
+        if "prefactor" not in entry:
+            problems.append(
+                f"bundle {bundle_key!r} declares no prefactor. Every entry must state the "
+                "cost-operator convention its model was trained under, "
+                "H = prefactor * sum_e w_e Z_i Z_j (-0.5 for the shipped max-cut models)."
+            )
+        else:
+            try:
+                numeric = float(entry["prefactor"])
+            except (TypeError, ValueError):
+                numeric = 0.0
+            if numeric == 0.0:
+                problems.append(
+                    f"bundle {bundle_key!r} declares prefactor {entry['prefactor']!r}, which "
+                    "must be a non-zero number: it is what the Pauli coefficients are divided "
+                    "by to recover the edge weights the model consumes."
+                )
+
         # A pinned revision must be a commit sha
         revision = entry.get("revision")
         if revision is not None and not re.fullmatch(r"[0-9a-f]{40}", str(revision)):

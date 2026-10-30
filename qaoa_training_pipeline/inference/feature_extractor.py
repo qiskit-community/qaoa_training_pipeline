@@ -24,7 +24,6 @@ import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.inference.conventions import (
-    MAX_CUT_PRE_FACTOR,
     validate_cost_op,
     warn_on_unexpected_sign_convention,
 )
@@ -63,6 +62,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
         self,
         in_features: list[str],
         norm_stats: dict[str, dict[str, float]],
+        prefactor: float,
     ) -> None:
         """Initialize the feature extractor.
 
@@ -71,9 +71,25 @@ class AIFeatureExtractor(BaseFeatureExtractor):
                 model's input vector expects them.
             norm_stats: Per-feature ``{"mean": ..., "std": ...}`` normalization
                 statistics, taken from the bundle's own training set.
+            prefactor: The cost-operator convention this bundle was trained
+                under, ``H = prefactor * sum_e w_e Z_i Z_j``, as its setup entry
+                declares it. The models consume edge *weights*, so the Pauli
+                coefficients are divided by it to recover them. Required: the
+                convention belongs to the bundle, so this package keeps no
+                default that could silently apply to the wrong model.
+
+        Raises:
+            ValueError: If ``prefactor`` is zero, which would make every
+                recovered edge weight infinite.
         """
         self.in_features = list(in_features)
         self.norm_stats = norm_stats
+        self.prefactor = float(prefactor)
+        if self.prefactor == 0.0:
+            raise ValueError(
+                "prefactor must be non-zero: it is what the Pauli coefficients are divided "
+                "by to recover the edge weights the model consumes."
+            )
         # One out-of-distribution warning per extractor, not per call: a size
         # sweep would otherwise emit a paragraph on every iteration.
         self._warned_out_of_distribution = False
@@ -111,7 +127,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
                 hands over a raw operator wants.
 
         ``cost_op`` must be a max-cut operator in the training convention
-        ``H = -0.5 * sum_e w_e Z_i Z_j`` (see :data:`MAX_CUT_PRE_FACTOR`): the
+        ``H = prefactor * sum_e w_e Z_i Z_j`` (see :attr:`prefactor`): the
         edge weights the models were trained on are recovered by dividing the
         coefficients by that pre-factor. An operator built differently predicts
         finite but wrong angles, so the obvious case of it is warned about.
@@ -142,7 +158,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
             )
 
         validate_cost_op(cost_op)
-        warn_on_unexpected_sign_convention(cost_op)
+        warn_on_unexpected_sign_convention(cost_op, self.prefactor)
 
         if rescale_a is None:
             cost_op, rescale_a = normalize_cost_op(cost_op)
@@ -153,9 +169,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
         graph = operator_to_graph(cost_op, include_one_local=False)
 
         edge_list = list(graph.edges())
-        edge_weights = [
-            graph.edges[u, v].get("weight", 1.0) / MAX_CUT_PRE_FACTOR for u, v in edge_list
-        ]
+        edge_weights = [graph.edges[u, v].get("weight", 1.0) / self.prefactor for u, v in edge_list]
         degrees = np.asarray([deg for node, deg in graph.degree()])
         num_nodes = int(graph.number_of_nodes())
         num_edges = int(graph.number_of_edges())
@@ -256,6 +270,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
         config = super().to_config()
         config["in_features"] = list(self.in_features)
         config["norm_stats"] = self.norm_stats
+        config["prefactor"] = self.prefactor
         return config
 
     @classmethod
@@ -264,7 +279,12 @@ class AIFeatureExtractor(BaseFeatureExtractor):
         missing = [key for key in ("in_features", "norm_stats") if key not in config]
         if missing:
             raise KeyError(
-                f"AIFeatureExtractor config is missing {missing}. Both are required: "
-                "without norm_stats the features would go to the network unnormalized."
+                f"AIFeatureExtractor config is missing {missing}. All are required: "
+                "without norm_stats the features would go to the network unnormalized, "
+                "and the prefactor is the bundle's own cost-operator convention."
             )
-        return cls(in_features=list(config["in_features"]), norm_stats=config["norm_stats"])
+        return cls(
+            in_features=list(config["in_features"]),
+            norm_stats=config["norm_stats"],
+            prefactor=config["prefactor"],
+        )

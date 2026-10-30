@@ -44,7 +44,6 @@ from qaoa_training_pipeline.inference.model_registry import (
     resolve_bundle,
 )
 from qaoa_training_pipeline.inference.onnx_inputs import INPUT_BUILDERS
-from qaoa_training_pipeline.inference.scaling import denormalize_qaoa_params_np
 
 try:
     import onnxruntime as ort
@@ -73,11 +72,17 @@ def _strip_private_fields(value: Any) -> Any:
 class OnnxQAOAPredictor:
     """Torch-free predictor backed by an exported ONNX model.
 
+    The network step alone: it applies the bundle's ``output_scale`` (output
+    units -> radians) but does not scale the cost operator or un-rescale the
+    gammas, which :class:`~qaoa_training_pipeline.inference.AIInference` owns.
+
     Example:
         predictor = OnnxQAOAPredictor.from_bundle("gcn/p1")
         normalized, rescale_a = normalize_cost_op(cost_op)
         raw = predictor.predict_normalized(normalized, rescale_a)
-        angles = undo_gamma_rescale(raw, p=predictor.output_dim // 2, rescale_a=rescale_a)
+        angles = undo_cost_op_normalization(
+            raw, p=predictor.output_dim // 2, rescale_a=rescale_a
+        )
     """
 
     def __init__(
@@ -87,6 +92,7 @@ class OnnxQAOAPredictor:
         repo_id: str,
         revision: str,
         device: str = "cpu",
+        prefactor: float | None = None,
     ) -> None:
         """Wrap an already-downloaded bundle snapshot.
 
@@ -100,6 +106,9 @@ class OnnxQAOAPredictor:
             repo_id: HuggingFace repo the snapshot came from.
             revision: Revision (commit sha or branch) it was downloaded at.
             device: Device for inference ("cpu", "cuda", ...).
+            prefactor: The cost-operator convention this bundle was trained
+                under, from its setup entry's ``prefactor``. Required; there is
+                no default, since the convention belongs to the bundle.
         """
         self.bundle_dir = Path(bundle_dir)
         self.device = self._normalize_device(device)
@@ -156,9 +165,16 @@ class OnnxQAOAPredictor:
             self.session.get_providers(),
         )
 
+        if prefactor is None:
+            raise ValueError(
+                f"No prefactor given for bundle {self.bundle_key!r}. It is the cost-operator "
+                "convention the model was trained under and must come from the bundle's "
+                "setup entry; this package has no default to fall back on."
+            )
         self.feature_extractor = AIFeatureExtractor(
             in_features=self.in_features,
             norm_stats=self.config.get("feature_normalization") or {},
+            prefactor=prefactor,
         )
 
     @staticmethod
@@ -248,6 +264,9 @@ class OnnxQAOAPredictor:
         :mod:`~qaoa_training_pipeline.inference.model_registry`).
         """
         entry = bundle_entry(bundle_key)
+        # The convention travels with the bundle, so a model trained under a
+        # different one needs only its setup entry changed, not this code.
+        kwargs.setdefault("prefactor", entry.get("prefactor"))
         return cls(
             bundle_dir=resolve_bundle(bundle_key),
             repo_id=entry["repo_id"],
@@ -370,8 +389,10 @@ class OnnxQAOAPredictor:
         prediction = np.asarray(prediction, dtype=np.float32)
 
         if self.denormalizes(denormalize):
-            scale = float(self.config.get("output_scale", math.pi / 2))
-            prediction = denormalize_qaoa_params_np(prediction, scale=scale)
+            # The network emits angles in normalized units; output_scale maps
+            # them back to radians. Unrelated to the operator's scale, and it
+            # applies to betas and gammas alike.
+            prediction = prediction * float(self.config.get("output_scale", math.pi / 2))
 
         output = prediction.reshape(-1).tolist()
 
