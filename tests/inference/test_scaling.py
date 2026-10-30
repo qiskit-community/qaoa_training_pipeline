@@ -18,10 +18,9 @@ import numpy as np
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.inference.scaling import (
-    denormalize_qaoa_params_np,
     normalize_cost_op,
     rescaling_factor,
-    undo_gamma_rescale,
+    undo_cost_op_normalization,
 )
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
@@ -78,24 +77,16 @@ class TestUndoGammaRescale(TrainingPipelineTestCase):
 
     def test_only_the_second_half_moves(self):
         """The split is what output_dim decides: p betas, then p gammas."""
-        angles = undo_gamma_rescale([0.1, 0.2, 0.3, 0.4], p=2, rescale_a=2.0)
+        angles = undo_cost_op_normalization([0.1, 0.2, 0.3, 0.4], p=2, rescale_a=2.0)
         self.assertEqual(angles, [0.1, 0.2, 0.15, 0.2])
 
     def test_returns_plain_floats(self):
         """The provider puts these in a ParamResult, so no numpy scalars."""
-        angles = undo_gamma_rescale(np.asarray([0.1, 0.4], dtype=np.float32), p=1, rescale_a=4.0)
+        angles = undo_cost_op_normalization(
+            np.asarray([0.1, 0.4], dtype=np.float32), p=1, rescale_a=4.0
+        )
         self.assertTrue(all(isinstance(value, float) for value in angles))
 
     def test_a_factor_of_one_changes_nothing(self):
         """What a degenerate operator falls back to, so it must be a no-op."""
-        self.assertEqual(undo_gamma_rescale([0.1, 0.9], p=1, rescale_a=1.0), [0.1, 0.9])
-
-
-class TestOutputDenormalization(TrainingPipelineTestCase):
-    """The bundle's own output scaling, which is part of the predict step."""
-
-    def test_scales_every_angle(self):
-        """Unlike the gamma un-rescale, this one applies to betas too."""
-        np.testing.assert_allclose(
-            denormalize_qaoa_params_np(np.asarray([1.0, 2.0]), scale=0.5), [0.5, 1.0], rtol=1e-6
-        )
+        self.assertEqual(undo_cost_op_normalization([0.1, 0.9], p=1, rescale_a=1.0), [0.1, 0.9])

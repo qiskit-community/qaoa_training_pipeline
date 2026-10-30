@@ -9,7 +9,7 @@
 """The two scaling steps that make the inference models scale-invariant.
 
 :func:`normalize_cost_op` divides the operator before the network sees it, and
-:func:`undo_gamma_rescale` divides the gammas by the same factor afterwards.
+:func:`undo_cost_op_normalization` divides the gammas by the same factor afterwards.
 :meth:`~qaoa_training_pipeline.inference.AIInference.provide_params` runs both,
 around the network step, and is the only place that does.
 
@@ -18,7 +18,6 @@ Needs no model and no ``onnxruntime``: numpy and Qiskit only.
 
 from __future__ import annotations
 
-import math
 from collections import defaultdict
 from collections.abc import Sequence
 
@@ -58,19 +57,7 @@ def normalize_cost_op(cost_op: SparsePauliOp) -> tuple[SparsePauliOp, float]:
     return cost_op / rescale_a, rescale_a
 
 
-def denormalize_qaoa_params_np(
-    qaoa_params_norm: np.ndarray, scale: float = math.pi / 2
-) -> np.ndarray:
-    """Denormalize predicted QAOA params by ``scale`` (default pi/2).
-
-    The models emit angles in normalized units rather than radians; this is the
-    bundle's own ``output_scale``, unrelated to the operator's scale, and it
-    applies to betas and gammas alike.
-    """
-    return qaoa_params_norm * scale
-
-
-def undo_gamma_rescale(angles: Sequence[float], p: int, rescale_a: float) -> list[float]:
+def undo_cost_op_normalization(angles: Sequence[float], p: int, rescale_a: float) -> list[float]:
     """Divide the gammas of ``angles`` by ``rescale_a``. Step three of the chain.
 
     Only the gammas move: with ``U = prod_k exp(-i beta_k H_B) exp(-i gamma_k

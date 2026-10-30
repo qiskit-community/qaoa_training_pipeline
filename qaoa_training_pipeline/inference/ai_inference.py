@@ -26,7 +26,7 @@ from qaoa_training_pipeline.inference.model_registry import (
 )
 from qaoa_training_pipeline.inference.scaling import (
     normalize_cost_op,
-    undo_gamma_rescale,
+    undo_cost_op_normalization,
 )
 from qaoa_training_pipeline.training.functions import IdentityFunction
 
@@ -45,19 +45,17 @@ class AIInference(ProblemParamsProvider):
     bundle key and predicts the QAOA angles for a cost operator in one forward
     pass, with no circuit evaluations.
 
-    **The scaling round trip.** The models are scale-invariant, and
-    :meth:`provide_params` is where that is arranged, in three steps:
+    **Two independent normalizations**, easy to confuse:
 
-    1. **Scale.** ``normalize_cost_op(cost_op)`` divides the operator by the
-       RMS of its coefficients, so the network sees the same normalized problem
-       whatever the operator's scale.
-    2. **Predict.** ``predict_normalized`` runs the network on it and
-       denormalizes the output by the bundle's own ``output_scale``.
-    3. **Unscale.** ``undo_gamma_rescale`` divides the gammas -- and only the
-       gammas -- by the same factor, undoing step 1 for the operator the caller
-       actually passed.
+    * **The problem's scale**, owned here: the operator is divided by the RMS of
+      its coefficients, and afterwards the gammas -- only the gammas, since beta
+      multiplies the unscaled mixer -- are divided by the same factor.
+    * **The output units**, owned by the predictor: the network emits angles in
+      units of the bundle's ``output_scale`` rather than radians. Unrelated to
+      the operator, and it applies to betas and gammas alike.
 
-    Both scaling steps are in :mod:`~qaoa_training_pipeline.inference.scaling`.
+    :meth:`provide_params` performs that in the open: ``normalize_cost_op`` ->
+    ``predict_normalized`` -> ``undo_cost_op_normalization``.
 
     Inference is torch-free: it runs an exported ``model.onnx`` with
     ``onnxruntime`` and numpy. Requires the optional ``onnxruntime`` dependency
@@ -127,7 +125,7 @@ class AIInference(ProblemParamsProvider):
             initial_state=initial_state,
         )
 
-        qaoa_angles = undo_gamma_rescale(
+        qaoa_angles = undo_cost_op_normalization(
             raw_angles, p=self.model.output_dim // 2, rescale_a=rescale_a
         )
 

@@ -100,30 +100,23 @@ raw_angles = predictor.predict_normalized(normalized_cost_op, rescale_a)  # 2. p
 angles = undo_cost_op_normalization(raw_angles, p, rescale_a)               # 3. unscale
 ```
 
-**There are two independent normalizations here.** They are easy to conflate,
-so, before the steps:
+**Two independent normalizations**, easy to conflate:
 
-| | what it normalizes | factor | applies to | owned by |
+| | normalizes | factor | applies to | owned by |
 |---|---|---|---|---|
 | **A** | the problem's scale | `rescale_a`, the operator's own RMS | gammas only | `AIInference` |
-| **B** | the network's output units | `output_scale` from the bundle config | betas and gammas | `OnnxQAOAPredictor` |
+| **B** | the network's output units | `output_scale`, from the bundle config | betas and gammas | `OnnxQAOAPredictor` |
 
-A exists because the models were trained on unit-scale operators; it is undone
-on the way out, and only for the gammas, because gamma multiplies the cost
-Hamiltonian while beta multiplies the mixer, which was never scaled. B exists
-because the models emit angles in normalized units rather than radians; it has
-nothing to do with the operator. The three steps then are:
+A is undone on the way out, and only for the gammas, because gamma multiplies
+the cost Hamiltonian while beta multiplies the unscaled mixer. So:
 
 1. **Scale (A, in).** `normalize_cost_op` divides the operator by
-   `rescaling_factor`, the RMS of its per-Pauli-order coefficients, so the
-   network always sees the same scale-normalized problem.
-2. **Predict (B).** `predict_normalized` builds the features from that operator
-   (`rescale_a` is handed in, since some bundles consume it as a feature), runs
-   the ONNX session, and multiplies the output by `output_scale` (`π/2` for
-   every shipped bundle) to get radians.
+   `rescaling_factor`, the RMS of its per-Pauli-order coefficients.
+2. **Predict (B).** `predict_normalized` builds the features (`rescale_a` is
+   handed in, since some bundles consume it as a feature), runs the ONNX
+   session, and multiplies the output by `output_scale` to get radians.
 3. **Unscale (A, out).** `undo_cost_op_normalization` divides the **gammas
-   only** by `rescale_a`, mapping them onto the operator that was actually
-   passed. Betas are untouched.
+   only** by `rescale_a`, mapping them onto the operator that was passed.
 
 Both scaling steps live in [`scaling.py`](scaling.py), which imports neither
 `onnxruntime` nor a bundle, so the chain can be read and tested on its own
