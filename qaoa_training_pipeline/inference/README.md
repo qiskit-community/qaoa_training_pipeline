@@ -27,11 +27,18 @@ inference = AIInference(model="gcn/p3")      # downloaded from the Hub, then cac
 result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, gamma_1..gamma_p]
 ```
 
+All shipped bundles are pretrained on **max-cut** instances only, over the
+graph families described in [arXiv:2610.23296](https://arxiv.org/abs/2610.23296). A different problem
+class — MIS, or any Hamiltonian that is not a weighted max-cut graph — is
+outside what they were trained for, and `validate_cost_op` rejects the
+operators that cannot be a max-cut graph at all.
+
 - **The cost operator must use the max-cut convention the models were trained
   on**, `H = -0.5 * sum_e w_e Z_i Z_j` — i.e. `pre_factor=-0.5`, *not* the
   `pre_factor=1.0` default of `graph_to_operator`. The models consume edge
   weights, which `extract_np` recovers by dividing the coefficients by that
-  pre-factor (`MAX_CUT_PRE_FACTOR`). What has to match is the *sign*: the
+  pre-factor, which each bundle declares as `prefactor` in `hf_setup.json`
+  rather than this package hardcoding it. What has to match is the *sign*: the
   normalization described under *Rescaling of the cost operator* below divides
   the pre-factor's magnitude back out, so `-2.0` is the same normalized problem
   as `-0.5` and gets the gammas that are right for the operator it produced.
@@ -72,8 +79,12 @@ edge_weights), and reports back the `rescale_a` it was normalized at — the
 normalization itself belongs to [`scaling.py`](scaling.py), see below.
 
 Which operators are acceptable is [`conventions.py`](conventions.py):
-`MAX_CUT_PRE_FACTOR`, `validate_cost_op` (rejects complex coefficients, local
-fields and terms above second order) and `warn_on_unexpected_sign_convention`.
+`validate_cost_op` (rejects complex coefficients, local fields and terms above
+second order) and `warn_on_unexpected_sign_convention`, which is checked
+against the bundle's declared `prefactor`. That value comes from
+`hf_setup.json` and nowhere else: this package holds no default convention, so
+an entry without a `prefactor` is rejected by `validate_setup` rather than
+silently treated as max-cut.
 That last one has a blind spot by construction: a graph with weights of both
 signs has mixed coefficients under either convention, so nothing warns and the
 convention is the caller's to get right.
@@ -86,18 +97,33 @@ in the open:
 ```python
 normalized_cost_op, rescale_a = normalize_cost_op(cost_op)          # 1. scale
 raw_angles = predictor.predict_normalized(normalized_cost_op, rescale_a)  # 2. predict
-angles = undo_gamma_rescale(raw_angles, p, rescale_a)               # 3. unscale
+angles = undo_cost_op_normalization(raw_angles, p, rescale_a)               # 3. unscale
 ```
 
-1. **Scale.** `normalize_cost_op` divides the operator by `rescaling_factor`,
-   the RMS of its per-Pauli-order coefficients, so the network always sees the
-   same scale-normalized problem.
-2. **Predict.** `predict_normalized` builds the features from that operator
+**There are two independent normalizations here.** They are easy to conflate,
+so, before the steps:
+
+| | what it normalizes | factor | applies to | owned by |
+|---|---|---|---|---|
+| **A** | the problem's scale | `rescale_a`, the operator's own RMS | gammas only | `AIInference` |
+| **B** | the network's output units | `output_scale` from the bundle config | betas and gammas | `OnnxQAOAPredictor` |
+
+A exists because the models were trained on unit-scale operators; it is undone
+on the way out, and only for the gammas, because gamma multiplies the cost
+Hamiltonian while beta multiplies the mixer, which was never scaled. B exists
+because the models emit angles in normalized units rather than radians; it has
+nothing to do with the operator. The three steps then are:
+
+1. **Scale (A, in).** `normalize_cost_op` divides the operator by
+   `rescaling_factor`, the RMS of its per-Pauli-order coefficients, so the
+   network always sees the same scale-normalized problem.
+2. **Predict (B).** `predict_normalized` builds the features from that operator
    (`rescale_a` is handed in, since some bundles consume it as a feature), runs
-   the ONNX session, and denormalizes the output by the bundle's `output_scale`
-   (`× π/2` by default).
-3. **Unscale.** `undo_gamma_rescale` divides the **gammas only** by `rescale_a`,
-   mapping them onto the operator that was actually passed. Betas are untouched.
+   the ONNX session, and multiplies the output by `output_scale` (`π/2` for
+   every shipped bundle) to get radians.
+3. **Unscale (A, out).** `undo_cost_op_normalization` divides the **gammas
+   only** by `rescale_a`, mapping them onto the operator that was actually
+   passed. Betas are untouched.
 
 Both scaling steps live in [`scaling.py`](scaling.py), which imports neither
 `onnxruntime` nor a bundle, so the chain can be read and tested on its own

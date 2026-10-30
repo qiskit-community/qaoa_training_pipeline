@@ -137,6 +137,10 @@ The `qaoa_training_pipeline.inference` subpackage predicts QAOA angles from a
 cost operator using pre-trained models, without training. `AIInference` is a
 `ProblemParamsProvider`, so it plugs into the framework like any other provider.
 
+All shipped models are pretrained on **max-cut** instances only, over the graph
+families described in [arXiv:2610.23296](https://arxiv.org/abs/2610.23296). Another problem class is
+outside what they were trained for.
+
 Install the (optional) runtime dependency and predict:
 
 ```bash
