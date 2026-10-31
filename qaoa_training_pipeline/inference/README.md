@@ -47,6 +47,17 @@ operators that cannot be a max-cut graph at all.
   recognisable case, all-positive quadratic coefficients, raises a
   `UserWarning`; a graph with weights of both signs has mixed coefficients
   under either convention, so nothing warns and the convention is yours to get
+- **The models consume the edge weights of a graph, which `extract_np` recovers 
+  by dividing the coefficients of the cost operator by a pre-factor, which each bundle 
+  declares as `prefactor` in `hf_setup.json`. What has to match is the *sign*: the
+  normalization described under *Rescaling of the cost operator* below divides
+  the pre-factor's magnitude back out, so `-2.0` is the same normalized problem
+  as `-0.5` and gets the gammas that are right for the operator it produced.
+  The opposite sign does not divide out — it normalizes to the negated operator
+  — so it gives finite but wrong gammas rather than an error. The one
+  recognisable case, all-positive quadratic coefficients, raises a
+  `UserWarning`; a graph with weights of both signs has mixed coefficients
+  under either convention, so nothing warns and the convention is yours to get
   right.
 
 - Runs the exported `model.onnx` via `onnxruntime` + numpy — no torch, no
