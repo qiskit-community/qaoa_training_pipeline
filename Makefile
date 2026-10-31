@@ -28,10 +28,10 @@ lint:
 	python -m ruff check qaoa_training_pipeline tests
 
 black:
-	python -m black qaoa_training_pipeline tests
+	python -m black qaoa_training_pipeline tests how_tos
 
 style:
-	python -m black --check qaoa_training_pipeline tests
+	python -m black --check qaoa_training_pipeline tests how_tos
 	python -m ruff check qaoa_training_pipeline tests
 
 test:
