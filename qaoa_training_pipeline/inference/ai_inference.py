@@ -115,18 +115,18 @@ class AIInference(ProblemParamsProvider):
             raise RuntimeError("AI inference model config was not loaded.")
 
         # Scale -> predict -> unscale
-        normalized_cost_op, rescale_a = normalize_cost_op(cost_op)
+        normalized_cost_op, cost_op_scale = normalize_cost_op(cost_op)
 
         raw_angles = self.model.predict_normalized(
             normalized_cost_op,
-            rescale_a,
+            cost_op_scale,
             mixer=mixer,
             ansatz_circuit=ansatz_circuit,
             initial_state=initial_state,
         )
 
         qaoa_angles = undo_cost_op_normalization(
-            raw_angles, p=self.model.output_dim // 2, rescale_a=rescale_a
+            raw_angles, p=self.model.output_dim // 2, cost_op_scale=cost_op_scale
         )
 
         energy = None

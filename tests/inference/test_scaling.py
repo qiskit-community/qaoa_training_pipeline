@@ -57,10 +57,10 @@ class TestNormalizeCostOp(TrainingPipelineTestCase):
 
     def test_returns_the_operator_divided_by_the_factor(self):
         """The two returns must be consistent with each other."""
-        normalized, rescale_a = normalize_cost_op(self.OPERATOR)
-        self.assertEqual(rescale_a, rescaling_factor(self.OPERATOR))
+        normalized, cost_op_scale = normalize_cost_op(self.OPERATOR)
+        self.assertEqual(cost_op_scale, rescaling_factor(self.OPERATOR))
         np.testing.assert_allclose(
-            np.real(normalized.coeffs), np.real(self.OPERATOR.coeffs) / rescale_a, rtol=1e-6
+            np.real(normalized.coeffs), np.real(self.OPERATOR.coeffs) / cost_op_scale, rtol=1e-6
         )
 
     def test_the_normalized_operator_is_scale_free(self):
@@ -77,16 +77,16 @@ class TestUndoGammaRescale(TrainingPipelineTestCase):
 
     def test_only_the_second_half_moves(self):
         """The split is what output_dim decides: p betas, then p gammas."""
-        angles = undo_cost_op_normalization([0.1, 0.2, 0.3, 0.4], p=2, rescale_a=2.0)
+        angles = undo_cost_op_normalization([0.1, 0.2, 0.3, 0.4], p=2, cost_op_scale=2.0)
         self.assertEqual(angles, [0.1, 0.2, 0.15, 0.2])
 
     def test_returns_plain_floats(self):
         """The provider puts these in a ParamResult, so no numpy scalars."""
         angles = undo_cost_op_normalization(
-            np.asarray([0.1, 0.4], dtype=np.float32), p=1, rescale_a=4.0
+            np.asarray([0.1, 0.4], dtype=np.float32), p=1, cost_op_scale=4.0
         )
         self.assertTrue(all(isinstance(value, float) for value in angles))
 
     def test_a_factor_of_one_changes_nothing(self):
         """What a degenerate operator falls back to, so it must be a no-op."""
-        self.assertEqual(undo_cost_op_normalization([0.1, 0.9], p=1, rescale_a=1.0), [0.1, 0.9])
+        self.assertEqual(undo_cost_op_normalization([0.1, 0.9], p=1, cost_op_scale=1.0), [0.1, 0.9])

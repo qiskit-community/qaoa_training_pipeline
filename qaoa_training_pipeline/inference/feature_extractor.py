@@ -104,7 +104,9 @@ class AIFeatureExtractor(BaseFeatureExtractor):
                 f"Available stats: {sorted(norm_stats)}"
             )
 
-    def extract_np(self, cost_op: SparsePauliOp, rescale_a: float | None = None) -> dict[str, Any]:
+    def extract_np(
+        self, cost_op: SparsePauliOp, cost_op_scale: float | None = None
+    ) -> dict[str, Any]:
         """Extract raw (unnormalized) features from a cost operator as numpy.
 
         Converts the operator to a graph and computes the same scalar/graph
@@ -112,17 +114,17 @@ class AIFeatureExtractor(BaseFeatureExtractor):
             edges         (1, M, 2) int64
             edge_weights  (1, M)    float32
             node_count    (1,)      int64
-            nodes, rescale_a
+            nodes, cost_op_scale
 
         Args:
-            cost_op: The max-cut cost operator, or -- when ``rescale_a`` is
+            cost_op: The max-cut cost operator, or -- when ``cost_op_scale`` is
                 given -- that operator already divided by it.
-            rescale_a: The scale ``cost_op`` was normalized at, when the caller
+            cost_op_scale: The scale ``cost_op`` was normalized at, when the caller
                 normalized it
                 (:func:`~qaoa_training_pipeline.inference.scaling.normalize_cost_op`).
                 Features are then
                 read off ``cost_op`` as given, and the value is reported back as
-                the ``rescale_a`` feature. Left at ``None``, this method
+                the ``cost_op_scale`` feature. Left at ``None``, this method
                 normalizes the operator itself, which is what a caller that
                 hands over a raw operator wants.
 
@@ -160,8 +162,8 @@ class AIFeatureExtractor(BaseFeatureExtractor):
         validate_cost_op(cost_op)
         warn_on_unexpected_sign_convention(cost_op, self.prefactor)
 
-        if rescale_a is None:
-            cost_op, rescale_a = normalize_cost_op(cost_op)
+        if cost_op_scale is None:
+            cost_op, cost_op_scale = normalize_cost_op(cost_op)
 
         # include_one_local is off because validate_cost_op has already refused
         # one-local terms: a self-loop here would be double-counted into the
@@ -183,7 +185,10 @@ class AIFeatureExtractor(BaseFeatureExtractor):
             "edges_per_node": num_edges / num_nodes if num_nodes else 0.0,
             "mean_degree": float(np.mean(degrees)) if degrees.size else 0.0,
             "std_degree": float(np.std(degrees)) if degrees.size else 0.0,
-            "rescale_a": float(rescale_a),  # Can be a feature (a bundle may list it in in_features)
+            # Keyed "rescale_a", not cost_op_scale: this is a model *input
+            # feature* name, matched against the bundle's own in_features, so
+            # it is fixed by what the models were exported with.
+            "rescale_a": float(cost_op_scale),
             "nodes": list(graph.nodes()),
             "edges": edges_arr[np.newaxis, ...],
             "edge_weights": weights_arr[np.newaxis, ...],
@@ -244,13 +249,13 @@ class AIFeatureExtractor(BaseFeatureExtractor):
         return np.asarray(values, dtype=np.float32)[np.newaxis, ...]
 
     def extract_and_pack_np(
-        self, cost_op: SparsePauliOp, rescale_a: float | None = None
+        self, cost_op: SparsePauliOp, cost_op_scale: float | None = None
     ) -> tuple[np.ndarray, dict[str, Any]]:
         """Extract and pack features in one call. Returns ``(x_vec, features)``.
 
-        ``rescale_a`` is passed straight to :meth:`extract_np`.
+        ``cost_op_scale`` is passed straight to :meth:`extract_np`.
         """
-        features = self.extract_np(cost_op, rescale_a=rescale_a)
+        features = self.extract_np(cost_op, cost_op_scale=cost_op_scale)
         x_vec = self.pack_features_np(features)
         return x_vec, features
 

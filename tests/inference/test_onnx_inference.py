@@ -152,11 +152,13 @@ class TestOnnxInference(TrainingPipelineTestCase):
         The predictor is the network step alone, so a test that wants angles
         for an operator drives the two scaling steps itself.
         """
-        normalized, rescale_a = normalize_cost_op(cost_op)
-        raw = predictor.predict_normalized(normalized, rescale_a, **kwargs)
+        normalized, cost_op_scale = normalize_cost_op(cost_op)
+        raw = predictor.predict_normalized(normalized, cost_op_scale, **kwargs)
         if not predictor.denormalizes(kwargs.get("denormalize")):
             return raw
-        return undo_cost_op_normalization(raw, p=predictor.output_dim // 2, rescale_a=rescale_a)
+        return undo_cost_op_normalization(
+            raw, p=predictor.output_dim // 2, cost_op_scale=cost_op_scale
+        )
 
     def test_onnx_predictor_loads_and_predicts(self):
         """Every exported bundle loads via onnxruntime and produces 2*p angles."""
@@ -196,7 +198,7 @@ class TestOnnxInference(TrainingPipelineTestCase):
                 raw = self._angles(predictor, op, denormalize=False)
                 scaled = self._angles(predictor, op, denormalize=True)
                 # config output_scale = pi/2, so scaled == raw * pi/2 for the betas
-                # (first half); the gammas additionally undergo the rescale_a
+                # (first half); the gammas additionally undergo the cost_op_scale
                 # division, so compare only the betas here (p=1 -> index 0).
                 p = predictor.output_dim // 2
                 for raw_beta, scaled_beta in zip(raw[:p], scaled[:p]):
@@ -445,11 +447,11 @@ class TestScaleInvariance(TrainingPipelineTestCase):
     def _predict(self, cost_op, raw, output_dim):
         """Run the scaling chain with the ONNX session stubbed out."""
         predictor = self._predictor(raw, output_dim)
-        normalized, rescale_a = normalize_cost_op(cost_op)
+        normalized, cost_op_scale = normalize_cost_op(cost_op)
         return undo_cost_op_normalization(
-            predictor.predict_normalized(normalized, rescale_a),
+            predictor.predict_normalized(normalized, cost_op_scale),
             p=output_dim // 2,
-            rescale_a=rescale_a,
+            cost_op_scale=cost_op_scale,
         )
 
     def test_betas_hold_still_and_gammas_track_the_scale(self):

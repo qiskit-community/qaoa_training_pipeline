@@ -78,10 +78,10 @@ class OnnxQAOAPredictor:
 
     Example:
         predictor = OnnxQAOAPredictor.from_bundle("gcn/p1")
-        normalized, rescale_a = normalize_cost_op(cost_op)
-        raw = predictor.predict_normalized(normalized, rescale_a)
+        normalized, cost_op_scale = normalize_cost_op(cost_op)
+        raw = predictor.predict_normalized(normalized, cost_op_scale)
         angles = undo_cost_op_normalization(
-            raw, p=predictor.output_dim // 2, rescale_a=rescale_a
+            raw, p=predictor.output_dim // 2, cost_op_scale=cost_op_scale
         )
     """
 
@@ -328,7 +328,7 @@ class OnnxQAOAPredictor:
     def predict_normalized(
         self,
         cost_op: SparsePauliOp,
-        rescale_a: float,
+        cost_op_scale: float,
         mixer: QuantumCircuit | None = None,
         ansatz_circuit: QuantumCircuit | None = None,
         initial_state: QuantumCircuit | None = None,
@@ -342,11 +342,11 @@ class OnnxQAOAPredictor:
         un-rescaled.
 
         Args:
-            cost_op: The max-cut cost operator divided by ``rescale_a``, as
+            cost_op: The max-cut cost operator divided by ``cost_op_scale``, as
                 :func:`~qaoa_training_pipeline.inference.scaling.normalize_cost_op`
                 returns it.
-            rescale_a: The scale it was divided by. Not applied to the operator
-                again; it is reported to the network as the ``rescale_a``
+            cost_op_scale: The scale it was divided by. Not applied to the operator
+                again; it is reported to the network as the ``cost_op_scale``
                 feature, which some bundles consume.
             mixer: Accepted to match the provider signature but unused; a
                 non-default circuit warns rather than being honoured silently.
@@ -373,7 +373,9 @@ class OnnxQAOAPredictor:
                 stacklevel=2,
             )
 
-        x_vec, features = self.feature_extractor.extract_and_pack_np(cost_op, rescale_a=rescale_a)
+        x_vec, features = self.feature_extractor.extract_and_pack_np(
+            cost_op, cost_op_scale=cost_op_scale
+        )
         features["x"] = x_vec
         # Some builders need model hyperparameters (e.g. graph_transformer's
         # Laplacian PE width). Surface them from model_init so the numpy feed

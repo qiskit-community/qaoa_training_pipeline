@@ -56,9 +56,9 @@ class StubPredictor:
         self.output_dim = output_dim
         self.predict_calls = []
 
-    def predict_normalized(self, cost_op, rescale_a, **kwargs):
+    def predict_normalized(self, cost_op, cost_op_scale, **kwargs):
         """What the provider calls: the network step, with the scale handed in."""
-        self.predict_calls.append({"cost_op": cost_op, "rescale_a": rescale_a, **kwargs})
+        self.predict_calls.append({"cost_op": cost_op, "cost_op_scale": cost_op_scale, **kwargs})
         return list(self.angles)
 
     def metadata(self):

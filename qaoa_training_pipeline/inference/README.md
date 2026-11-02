@@ -86,7 +86,7 @@ operators that cannot be a max-cut graph at all.
 model inputs via a numpy path (`extract_np`/`pack_features_np`) that reproduces
 the shaping used during training, so the ONNX runtime produces the same numbers.
 It produces scalar features (num_nodes, degrees, …), a graph (edges,
-edge_weights), and reports back the `rescale_a` it was normalized at — the
+edge_weights), and reports back the `cost_op_scale` it was normalized at — the
 normalization itself belongs to [`scaling.py`](scaling.py), see below.
 
 Which operators are acceptable is [`conventions.py`](conventions.py):
@@ -106,16 +106,16 @@ Scale-invariance is a three-step chain, and `AIInference.provide_params` runs it
 in the open:
 
 ```python
-normalized_cost_op, rescale_a = normalize_cost_op(cost_op)          # 1. scale
-raw_angles = predictor.predict_normalized(normalized_cost_op, rescale_a)  # 2. predict
-angles = undo_cost_op_normalization(raw_angles, p, rescale_a)               # 3. unscale
+normalized_cost_op, cost_op_scale = normalize_cost_op(cost_op)          # 1. scale
+raw_angles = predictor.predict_normalized(normalized_cost_op, cost_op_scale)  # 2. predict
+angles = undo_cost_op_normalization(raw_angles, p, cost_op_scale)               # 3. unscale
 ```
 
 **Two independent normalizations**, easy to conflate:
 
 | | normalizes | factor | applies to | owned by |
 |---|---|---|---|---|
-| **A** | the problem's scale | `rescale_a`, the operator's own RMS | gammas only | `AIInference` |
+| **A** | the problem's scale | `cost_op_scale`, the operator's own RMS | gammas only | `AIInference` |
 | **B** | the network's output units | `output_scale`, from the bundle config | betas and gammas | `OnnxQAOAPredictor` |
 
 A is undone on the way out, and only for the gammas, because gamma multiplies
@@ -123,11 +123,11 @@ the cost Hamiltonian while beta multiplies the unscaled mixer. So:
 
 1. **Scale (A, in).** `normalize_cost_op` divides the operator by
    `rescaling_factor`, the RMS of its per-Pauli-order coefficients.
-2. **Predict (B).** `predict_normalized` builds the features (`rescale_a` is
+2. **Predict (B).** `predict_normalized` builds the features (`cost_op_scale` is
    handed in, since some bundles consume it as a feature), runs the ONNX
    session, and multiplies the output by `output_scale` to get radians.
 3. **Unscale (A, out).** `undo_cost_op_normalization` divides the **gammas
-   only** by `rescale_a`, mapping them onto the operator that was passed.
+   only** by `cost_op_scale`, mapping them onto the operator that was passed.
 
 Both scaling steps live in [`scaling.py`](scaling.py), which imports neither
 `onnxruntime` nor a bundle, so the chain can be read and tested on its own
