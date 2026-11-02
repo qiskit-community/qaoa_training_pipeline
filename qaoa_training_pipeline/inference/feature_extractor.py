@@ -27,7 +27,6 @@ from qaoa_training_pipeline.inference.conventions import (
     validate_cost_op,
     warn_on_unexpected_sign_convention,
 )
-from qaoa_training_pipeline.inference.scaling import normalize_cost_op
 from qaoa_training_pipeline.pre_processing.feature_extraction import BaseFeatureExtractor
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
 
@@ -54,8 +53,11 @@ class AIFeatureExtractor(BaseFeatureExtractor):
     vector depend on the other extractor's defaults.
 
     Example:
-        extractor = AIFeatureExtractor(in_features=["num_nodes", "mean_degree"])
-        x_vec, features = extractor.extract_and_pack_np(cost_op)
+        extractor = AIFeatureExtractor(
+            in_features=["num_nodes", "mean_degree"], norm_stats=stats, prefactor=-0.5
+        )
+        normalized, scale = normalize_cost_op(cost_op)
+        x_vec, features = extractor.extract_and_pack_np(normalized, scale)
     """
 
     def __init__(
@@ -90,6 +92,11 @@ class AIFeatureExtractor(BaseFeatureExtractor):
                 "prefactor must be non-zero: it is what the Pauli coefficients are divided "
                 "by to recover the edge weights the model consumes."
             )
+        # What the graph conversion is given. ``operator_to_graph`` *multiplies*
+        # the coefficients by its pre_factor, while recovering weights means
+        # dividing by the convention -- hence the reciprocal. (solve_max_cut
+        # does the same thing with a hardcoded pre_factor=-2.)
+        self._weight_recovery_factor = 1.0 / self.prefactor
         # One out-of-distribution warning per extractor, not per call: a size
         # sweep would otherwise emit a paragraph on every iteration.
         self._warned_out_of_distribution = False
@@ -104,9 +111,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
                 f"Available stats: {sorted(norm_stats)}"
             )
 
-    def extract_np(
-        self, cost_op: SparsePauliOp, cost_op_scale: float | None = None
-    ) -> dict[str, Any]:
+    def extract_np(self, cost_op: SparsePauliOp, cost_op_scale: float) -> dict[str, Any]:
         """Extract raw (unnormalized) features from a cost operator as numpy.
 
         Converts the operator to a graph and computes the same scalar/graph
@@ -117,28 +122,10 @@ class AIFeatureExtractor(BaseFeatureExtractor):
             nodes, cost_op_scale
 
         Args:
-            cost_op: The max-cut cost operator, or -- when ``cost_op_scale`` is
-                given -- that operator already divided by it.
-            cost_op_scale: The scale ``cost_op`` was normalized at, when the caller
-                normalized it
+            cost_op: The cost operator, already divided by ``cost_op_scale``
                 (:func:`~qaoa_training_pipeline.inference.scaling.normalize_cost_op`).
-                Features are then
-                read off ``cost_op`` as given, and the value is reported back as
-                the ``cost_op_scale`` feature. Left at ``None``, this method
-                normalizes the operator itself, which is what a caller that
-                hands over a raw operator wants.
-
-        ``cost_op`` must be a max-cut operator in the training convention
-        ``H = prefactor * sum_e w_e Z_i Z_j`` (see :attr:`prefactor`): the
-        edge weights the models were trained on are recovered by dividing the
-        coefficients by that pre-factor. An operator built differently predicts
-        finite but wrong angles, so the obvious case of it is warned about.
-
-        The operator is simplified first, so two spellings of the same
-        Hamiltonian (an un-combined ``sum(per_edge_terms)`` and its simplified
-        form) give the same features rather than different gammas, and any
-        identity term is dropped. Operators that cannot be a max-cut graph at
-        all are rejected by :func:`validate_cost_op`.
+            cost_op_scale: The scale it was divided by, reported back as a
+                feature.
         """
         cost_op = SparsePauliOp(cost_op).simplify()
 
@@ -162,16 +149,15 @@ class AIFeatureExtractor(BaseFeatureExtractor):
         validate_cost_op(cost_op)
         warn_on_unexpected_sign_convention(cost_op, self.prefactor)
 
-        if cost_op_scale is None:
-            cost_op, cost_op_scale = normalize_cost_op(cost_op)
-
         # include_one_local is off because validate_cost_op has already refused
         # one-local terms: a self-loop here would be double-counted into the
         # degrees by the symmetrization in onnx_inputs.
-        graph = operator_to_graph(cost_op, include_one_local=False)
+        graph = operator_to_graph(
+            cost_op, pre_factor=self._weight_recovery_factor, include_one_local=False
+        )
 
         edge_list = list(graph.edges())
-        edge_weights = [graph.edges[u, v].get("weight", 1.0) / self.prefactor for u, v in edge_list]
+        edge_weights = [graph.edges[u, v].get("weight", 1.0) for u, v in edge_list]
         degrees = np.asarray([deg for node, deg in graph.degree()])
         num_nodes = int(graph.number_of_nodes())
         num_edges = int(graph.number_of_edges())
@@ -249,7 +235,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
         return np.asarray(values, dtype=np.float32)[np.newaxis, ...]
 
     def extract_and_pack_np(
-        self, cost_op: SparsePauliOp, cost_op_scale: float | None = None
+        self, cost_op: SparsePauliOp, cost_op_scale: float
     ) -> tuple[np.ndarray, dict[str, Any]]:
         """Extract and pack features in one call. Returns ``(x_vec, features)``.
 
@@ -259,9 +245,11 @@ class AIFeatureExtractor(BaseFeatureExtractor):
         x_vec = self.pack_features_np(features)
         return x_vec, features
 
-    def __call__(self, cost_op: SparsePauliOp) -> tuple[np.ndarray, dict[str, Any]]:
+    def __call__(
+        self, cost_op: SparsePauliOp, cost_op_scale: float
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """Alias of :meth:`extract_and_pack_np`, the base class's entry point."""
-        return self.extract_and_pack_np(cost_op)
+        return self.extract_and_pack_np(cost_op, cost_op_scale)
 
     def features(self) -> list[str]:
         """The feature names, in the order the packed vector carries them.

@@ -29,6 +29,7 @@ from qaoa_training_pipeline.inference.feature_extractor import (
 )
 
 from ..training_pipeline_test_case import TrainingPipelineTestCase
+from qaoa_training_pipeline.inference.scaling import normalize_cost_op
 
 # The convention the shipped bundles declare; tests state it explicitly
 # because the package keeps no default.
@@ -63,7 +64,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
     def test_extract_triangle_graph_topology(self):
         """A 3-qubit triangle operator maps to a 3-node, 3-edge graph."""
         op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
-        feats = make_extractor().extract_np(op)
+        feats = make_extractor().extract_np(*normalize_cost_op(op))
         self.assertEqual(feats["num_nodes"], 3)
         self.assertEqual(feats["num_edges"], 3)
         self.assertAlmostEqual(feats["edges_per_node"], 1.0)
@@ -74,7 +75,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
     def test_extract_line_graph_topology(self):
         """A 4-qubit line operator maps to a 4-node, 3-edge path graph."""
         op = SparsePauliOp.from_list([("ZZII", -1.0), ("IZZI", -1.0), ("IIZZ", -1.0)])
-        feats = make_extractor().extract_np(op)
+        feats = make_extractor().extract_np(*normalize_cost_op(op))
         self.assertEqual(feats["num_nodes"], 4)
         self.assertEqual(feats["num_edges"], 3)
         # path degrees are [1, 2, 2, 1] -> mean 1.5
@@ -85,7 +86,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
         """pack_features_np returns a (1, n_features) array in sorted-name order."""
         op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
         ext = make_extractor()
-        feats = ext.extract_np(op)
+        feats = ext.extract_np(*normalize_cost_op(op))
         x = ext.pack_features_np(feats)
         self.assertEqual(x.shape, (1, len(SCALAR_FEATURES)))
         self.assertEqual(x.dtype, np.float32)
@@ -101,7 +102,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
         ext = AIFeatureExtractor(
             in_features=sorted(SCALAR_FEATURES), norm_stats=stats, prefactor=MAX_CUT
         )
-        feats = ext.extract_np(op)
+        feats = ext.extract_np(*normalize_cost_op(op))
         x = ext.pack_features_np(feats).squeeze(0)
         expected = [(float(feats[name]) - 1.0) / 2.0 for name in sorted(SCALAR_FEATURES)]
         np.testing.assert_allclose(x, expected, rtol=1e-6)
@@ -113,7 +114,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
         ext = AIFeatureExtractor(
             in_features=sorted(SCALAR_FEATURES), norm_stats=stats, prefactor=MAX_CUT
         )
-        x = ext.pack_features_np(ext.extract_np(op))
+        x = ext.pack_features_np(ext.extract_np(*normalize_cost_op(op)))
         self.assertTrue(np.isfinite(x).all())
 
     def test_pack_features_missing_feature_raises(self):
@@ -126,11 +127,11 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
         """extract_and_pack_np equals extract_np followed by pack_features_np."""
         op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
         ext = make_extractor()
-        x_vec, feats = ext.extract_and_pack_np(op)
+        x_vec, feats = ext.extract_and_pack_np(*normalize_cost_op(op))
         self.assertEqual(x_vec.shape, (1, len(SCALAR_FEATURES)))
         np.testing.assert_allclose(
             x_vec.squeeze(0),
-            ext.pack_features_np(ext.extract_np(op)).squeeze(0),
+            ext.pack_features_np(ext.extract_np(*normalize_cost_op(op))).squeeze(0),
             rtol=1e-6,
         )
         # graph-structure arrays are present for graph models
@@ -158,20 +159,20 @@ class TestCostOperatorConvention(TrainingPipelineTestCase):
         """An all-positive quadratic operator is the pre_factor=1.0 mistake."""
         op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
         with self.assertWarns(UserWarning):
-            make_extractor().extract_np(op)
+            make_extractor().extract_np(*normalize_cost_op(op))
 
     def test_training_convention_does_not_warn(self):
         """The convention the models were trained on must pass silently."""
         op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            make_extractor().extract_np(op)
+            make_extractor().extract_np(*normalize_cost_op(op))
         self.assertEqual([str(w.message) for w in caught], [])
 
     def test_edge_weights_undo_the_pre_factor(self):
         """extract_np recovers graph weights by dividing out the pre-factor."""
         op = SparsePauliOp.from_list([("ZZI", -0.5), ("IZZ", -0.5), ("ZIZ", -0.5)])
-        feats = make_extractor().extract_np(op)
+        feats = make_extractor().extract_np(*normalize_cost_op(op))
         # The operator is normalized by rescaling_factor first, so compare the
         # weights to the normalized coefficients divided by the pre-factor.
         expected = (-0.5 / feats["rescale_a"]) / MAX_CUT
@@ -196,7 +197,7 @@ class TestPreFactorSignAndMagnitude(TrainingPipelineTestCase):
         )
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            return make_extractor().extract_np(op)["edge_weights"].squeeze(0)
+            return make_extractor().extract_np(*normalize_cost_op(op))["edge_weights"].squeeze(0)
 
     def test_magnitude_divides_out(self):
         """-0.5 and -2.0 are the same normalized problem, so the same features."""
@@ -219,7 +220,7 @@ class TestPreFactorSignAndMagnitude(TrainingPipelineTestCase):
             with self.subTest(pre_factor=pre_factor):
                 with warnings.catch_warnings(record=True) as caught:
                     warnings.simplefilter("always")
-                    make_extractor().extract_np(op)
+                    make_extractor().extract_np(*normalize_cost_op(op))
                 self.assertEqual([str(w.message) for w in caught], [])
 
 
@@ -233,7 +234,9 @@ class TestDeclaredPrefactor(TrainingPipelineTestCase):
         extractor = AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=prefactor)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            return extractor.extract_np(self.OPERATOR)["edge_weights"].squeeze(0)
+            return extractor.extract_np(*normalize_cost_op(self.OPERATOR))["edge_weights"].squeeze(
+                0
+            )
 
     def test_the_declared_prefactor_divides_the_coefficients(self):
         """Halving the prefactor doubles the recovered weights."""
@@ -256,7 +259,7 @@ class TestDeclaredPrefactor(TrainingPipelineTestCase):
         extractor = AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=1.0)
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            extractor.extract_np(positive)
+            extractor.extract_np(*normalize_cost_op(positive))
         self.assertEqual([str(w.message) for w in caught], [])
 
     def test_the_prefactor_survives_a_config_round_trip(self):
@@ -285,7 +288,10 @@ class TestExtractorInterface(TrainingPipelineTestCase):
         )
         rebuilt = AIFeatureExtractor.from_config(extractor.to_config())
         op = SparsePauliOp.from_list([("ZZI", -0.5), ("IZZ", -0.5), ("ZIZ", -0.5)])
-        np.testing.assert_allclose(rebuilt(op)[0], extractor(op)[0], rtol=1e-6)
+        normalized, scale = normalize_cost_op(op)
+        np.testing.assert_allclose(
+            rebuilt(normalized, scale)[0], extractor(normalized, scale)[0], rtol=1e-6
+        )
 
     def test_a_config_without_norm_stats_is_refused(self):
         """Rebuilding without stats would silently stop normalizing."""

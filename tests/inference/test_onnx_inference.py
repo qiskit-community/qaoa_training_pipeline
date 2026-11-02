@@ -483,8 +483,8 @@ class TestScaleInvariance(TrainingPipelineTestCase):
         from qaoa_training_pipeline.inference.feature_extractor import AIFeatureExtractor
 
         extractor = AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=MAX_CUT)
-        base = extractor.extract_np(cost_op)["rescale_a"]
-        scaled = extractor.extract_np(cost_op * 4.0)["rescale_a"]
+        base = extractor.extract_np(*normalize_cost_op(cost_op))["rescale_a"]
+        scaled = extractor.extract_np(*normalize_cost_op(cost_op * 4.0))["rescale_a"]
         # The rescaling factor is homogeneous of degree one, which is what
         # makes the normalized features -- and so the raw prediction -- the
         # same at every scale.
