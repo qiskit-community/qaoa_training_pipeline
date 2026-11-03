@@ -271,7 +271,7 @@ This repository is still in development: new functionality is being added and th
 |      49 | Update tests to fix some issues.                             |          #87 |
 |      50 | Fix install: Quimb stays optional, Qiskit Aer is default.    |          #90 |
 |      51 | Vectorized depth-one evaluator to improve speed.             |          #65 |
-|      52 | Predict QAOA angles with pretrained models (AIInference)     |          #79 |
+|      52 | Predict QAOA angles with pretrained models (AIInference)     |          #92 |
 
 ## IBM Public Repository Disclosure
 
