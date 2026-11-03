@@ -50,6 +50,14 @@ tns = [
 sat = [
     "python-sat",
 ]
+# Torch-free AI angle inference (qaoa_training_pipeline.inference.AIInference).
+# Both are required by it: onnxruntime executes the exported graph, and
+# huggingface_hub downloads the model bundles, which are not shipped in the
+# wheel. torch is NOT a dependency of this package.
+inference = [
+    "onnxruntime",
+    "huggingface_hub",
+]
 notebooks = [
     "qiskit-ibm-runtime",
 ]
@@ -65,7 +73,7 @@ lint = [
     "ruff",
 ]
 dev = [
-    "qaoa_training_pipeline[tns,sat,cplex,notebooks,test,lint]",
+    "qaoa_training_pipeline[tns,sat,cplex,notebooks,inference,test,lint]",
     "pre-commit",
 ]
 
@@ -78,6 +86,23 @@ version = { file = "qaoa_training_pipeline/VERSION.txt" }
 
 [tool.setuptools.packages.find]
 include = ["qaoa_training_pipeline", "qaoa_training_pipeline.*"]
+
+[tool.setuptools.package-data]
+# No model artifacts ship in the wheel: every inference bundle
+# (model_config.json + model.onnx + model.onnx.data) is downloaded from the
+# HuggingFace Hub on first use and cached locally. Only hf_setup.json, which
+# pins each bundle to a repo and revision, is packaged -- see
+# qaoa_training_pipeline/inference/model_registry.py.
+#
+# The json data files are loaded at runtime (importlib.resources in
+# training/models/random_regular_fit.py, a package-relative path in
+# training/fixed_angle_conjecture.py), so a wheel without them raises.
+qaoa_training_pipeline = [
+    "VERSION.txt",
+    "models/*.json",
+    "training/data/*.json",
+    "inference/huggingface/hf_setup.json",
+]
 
 [tool.black]
 line-length = 100

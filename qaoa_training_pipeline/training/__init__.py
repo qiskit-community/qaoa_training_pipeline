@@ -7,6 +7,8 @@
 # that they have been altered from the originals.
 
 """This module collects all the methods to train the parameters of a QAOA circuit."""
+from qaoa_training_pipeline.inference.ai_inference import AIInference
+
 from .lrqaoa_trainer import LRQAOATrainer
 from .models.random_regular_fit import RandomRegularDepthOneFit
 from .optimized_parameter_loader import OptimizedParametersLoader
@@ -60,4 +62,5 @@ PIPELINE_COMPONENTS = {
 PROBLEM_PARAMS_PROVIDERS = {
     "DepthOneScanTrainer": DepthOneScanTrainer,
     "TransferTrainer": TransferTrainer,
+    "AIInference": AIInference,
 }
