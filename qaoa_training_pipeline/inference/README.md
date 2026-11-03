@@ -13,7 +13,7 @@ and numpy, and needs neither torch nor the original checkpoint.
 
 ### 1. Entry point — `AIInference`
 
-[`ai_inference.py`](ai_inference.py) is a `ProblemParamsProvider`, so it plugs
+[`ai_inference.py`](ai_inference.py) is a `ProblemParamsProvider` and plugs
 into the existing pipeline exactly like any other angle provider. You name a
 model; it calls `provide_params(cost_op)` and returns a `ParamResult` of angles.
 
@@ -27,57 +27,46 @@ inference = AIInference(model="gcn/p3")      # downloaded from the Hub, then cac
 result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, gamma_1..gamma_p]
 ```
 
-All shipped bundles are pretrained on **max-cut** instances only, over the
-graph families described in [arXiv:2610.23296](https://arxiv.org/abs/2610.23296). A different problem
-class — MIS, or any Hamiltonian that is not a weighted max-cut graph — is
-outside what they were trained for, and `validate_cost_op` rejects the
-operators that cannot be a max-cut graph at all.
+Users of the inference module should be aware of the following.
 
-- **The cost operator must use the max-cut convention the models were trained
-  on**, `H = -0.5 * sum_e w_e Z_i Z_j` — i.e. `pre_factor=-0.5`, *not* the
-  `pre_factor=1.0` default of `graph_to_operator`. The models consume edge
-  weights, which `extract_np` recovers by dividing the coefficients by that
-  pre-factor, which each bundle declares as `prefactor` in `hf_setup.json`
-  rather than this package hardcoding it. What has to match is the *sign*: the
-  normalization described under *Rescaling of the cost operator* below divides
-  the pre-factor's magnitude back out, so `-2.0` is the same normalized problem
-  as `-0.5` and gets the gammas that are right for the operator it produced.
-  The opposite sign does not divide out — it normalizes to the negated operator
-  — so it gives finite but wrong gammas rather than an error. The one
-  recognisable case, all-positive quadratic coefficients, raises a
-  `UserWarning`; a graph with weights of both signs has mixed coefficients
-  under either convention, so nothing warns and the convention is yours to get
-- **The models consume the edge weights of a graph, which `extract_np` recovers 
-  by dividing the coefficients of the cost operator by a pre-factor, which each bundle 
-  declares as `prefactor` in `hf_setup.json`. What has to match is the *sign*: the
-  normalization described under *Rescaling of the cost operator* below divides
-  the pre-factor's magnitude back out, so `-2.0` is the same normalized problem
-  as `-0.5` and gets the gammas that are right for the operator it produced.
-  The opposite sign does not divide out — it normalizes to the negated operator
-  — so it gives finite but wrong gammas rather than an error. The one
-  recognisable case, all-positive quadratic coefficients, raises a
-  `UserWarning`; a graph with weights of both signs has mixed coefficients
-  under either convention, so nothing warns and the convention is yours to get
-  right.
-
-- Runs the exported `model.onnx` via `onnxruntime` + numpy — no torch, no
-  checkpoint needed.
-- No angle post-processing: the `qaoa_angles_function` every provider carries is
-  fixed to the identity here, since this provider predicts rather than
-  optimizes and there is no basis to choose. Put a trainer after it in the
-  pipeline to refine or re-basis its angles. For the raw network output, call
+- The AI models consume a graph corresponding to the cost operator, see `feature_extractor.extract_np`.
+Therefore, the cost operator is internally converted to a graph.
+Each model declares in its bundle the pre-factor with which the cost operator is converted to a graph, see `hf_setup.json`.
+- `AIInference` runs the exported `model.onnx` via `onnxruntime` + numpy. 
+Torch checkpoints are note needed. 
+To get the raw network output call
   `OnnxQAOAPredictor.predict_normalized(..., denormalize=False)`.
+- Currently, all shipped bundles are pretrained on **max-cut** instances only, over the
+graph families described in [arXiv:2610.23296](https://arxiv.org/abs/2610.23296). 
+The cost operator must use the max-cut convention the models were trained on, 
+`H = -0.5 * sum_e w_e Z_i Z_j` — i.e. `pre_factor=-0.5`, *not* the
+`pre_factor=1.0` default of `graph_to_operator`, see `hf_setup.json`.
+A different problem class — MIS, or any Hamiltonian that is not a weighted max-cut 
+graph — is outside what they were trained for. 
+`validate_cost_op` rejects the operators that cannot be a max-cut graph.
+- The models provided in in [arXiv:2610.23296](https://arxiv.org/abs/2610.23296)
+were trained directly on the QAOA angles corresponding to the setting where the `qaoa_angles_function` is the identity. 
+- Internally, and before converting the cost operator to a graph, 
+[`AIInterface`](ai_interface.py) normalizes the cost operator
+by a constant.
+This is crucial to get good angle inference over cost operators
+with vary different coefficient scales.
+This normalization is undone by [`AIInterface`](ai_interface.py) so that the returned angles
+correspond to the angles for the unnormalized user provided cost operator.
+
 
 ### 2. Predictor
 
-- [`OnnxQAOAPredictor`](onnx_predictor.py) exposes `predict_normalized()` with
-  `output_dim` validation. It is the network step alone: the operator reaches it
-  already normalized, and un-rescaling the gammas is the caller's step, so the
-  scaling chain exists in one place only (see below).
-- It loads the `.onnx` graph, runs it, and only feeds inputs the graph actually
-  declares — so optional inputs like `edge_weights` do not break models that
+[`OnnxQAOAPredictor`](onnx_predictor.py) exposes the network step alone as `predict_normalized()`.
+The cost operator reaches it already normalized, and un-rescaling the gammas is the caller's responsibility.
+Crucially, some underlying models predict $\beta$ and $\gamma$ values
+that have an additional scaling.
+This scaling is different from the cost operator scaling discussed in [1. Entry point — `AIInference`](#1-entry-point--aiinference).
+It is undone in by `OnnxQAOAPredictor`.
+`OnnxQAOAPredictor` loads the `.onnx` model, runs it, and only feeds inputs the model declares.
+Therefore, optional inputs like `edge_weights` do not break models that
   omit them.
-- Model artifacts are **ingested from the HuggingFace Hub** (`resolve_bundle`,
+Model artifacts are **ingested from the HuggingFace Hub** (`resolve_bundle`,
   via `model_registry.py`) and cached locally.
 
 ### 3. Feature extraction
@@ -100,26 +89,18 @@ That last one has a blind spot by construction: a graph with weights of both
 signs has mixed coefficients under either convention, so nothing warns and the
 convention is the caller's to get right.
 
-## Rescaling of the cost operator
+## Rescaling summary
 
-Scale-invariance is a three-step chain, and `AIInference.provide_params` runs it
-in the open:
-
-```python
-normalized_cost_op, cost_op_scale = normalize_cost_op(cost_op)          # 1. scale
-raw_angles = predictor.predict_normalized(normalized_cost_op, cost_op_scale)  # 2. predict
-angles = undo_cost_op_normalization(raw_angles, p, cost_op_scale)               # 3. unscale
-```
-
-**Two independent normalizations**, easy to conflate:
+Here we summarize the two independent normalizations discussed in the [Architecture](#architecture-three-layers).
 
 | | normalizes | factor | applies to | owned by |
 |---|---|---|---|---|
-| **A** | the problem's scale | `cost_op_scale`, the operator's own RMS | gammas only | `AIInference` |
-| **B** | the network's output units | `output_scale`, from the bundle config | betas and gammas | `OnnxQAOAPredictor` |
+| **A** | the problem's scale | `cost_op_scale`, the operator's own RMS | $\gamma$ only | `AIInference` |
+| **B** | the network's output units | `output_scale`, from the bundle config | $\beta$ and $\gamma$ | `OnnxQAOAPredictor` |
 
-A is undone on the way out, and only for the gammas, because gamma multiplies
-the cost Hamiltonian while beta multiplies the unscaled mixer. So:
+Since $\gamma$ multiplies the cost Hamiltonian scaling **A**, 
+found in [`scaling.py`](scaling.py), is undone only for the $\gamma$ on the way out. 
+The code flow is thus
 
 1. **Scale (A, in).** `normalize_cost_op` divides the operator by
    `rescaling_factor`, the RMS of its per-Pauli-order coefficients.
@@ -127,23 +108,14 @@ the cost Hamiltonian while beta multiplies the unscaled mixer. So:
    handed in, since some bundles consume it as a feature), runs the ONNX
    session, and multiplies the output by `output_scale` to get radians.
 3. **Unscale (A, out).** `undo_cost_op_normalization` divides the **gammas
-   only** by `cost_op_scale`, mapping them onto the operator that was passed.
+   only** by `cost_op_scale`, mapping them onto the operator that was passed. 
 
-Both scaling steps live in [`scaling.py`](scaling.py), which imports neither
-`onnxruntime` nor a bundle, so the chain can be read and tested on its own
-(`tests/inference/test_scaling.py`). They reproduce the scaling applied during
-training, which is what makes ONNX inference match the trained model.
-
-Step 2 is the only thing `OnnxQAOAPredictor` does, so `AIInference` is the way
-to get angles for a cost operator; using the predictor directly means running
-steps 1 and 3 yourself, as the snippet above does.
+Therefore, `AIInference` is the way
+to get angles for a cost operator.
+Using the `OnnxQAOAPredictor` directly means running
+steps 1 and 3 yourself.
 `denormalize_output` (default `True`) in the config governs step 2's output
-scaling, and `predict_normalized(..., denormalize=False)` returns the raw
-network output.
-
-The invariance holds for a *positive* rescaling of the operator: `rescaling_factor`
-is an RMS and so is sign-blind, and negating the cost operator describes a
-different problem rather than the same one at another scale.
+scaling, and `predict_normalized(..., denormalize=False)` returns the raw network output.
 
 ## Model zoo
 
