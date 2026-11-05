@@ -61,7 +61,13 @@ class TrivialAngleAggregator(BaseAngleAggregator):
 class AverageAngleAggregator(BaseAngleAggregator):
     """Average a set of angles together."""
 
-    def __init__(self, axis: Union[int, List[int]] = 0):
+    def __init__(
+            self, 
+            axis: Union[int, List[int]] = 0,
+            wrap_angles: bool = False,
+            beta_wrap: float = 2 * np.pi,
+            gamma_wrap: float = 2 * np.pi,
+        ):
         """Setup the angle aggregator.
 
         Args:
@@ -71,11 +77,23 @@ class AverageAngleAggregator(BaseAngleAggregator):
             axis = [axis]
 
         self._axis = axis
+        self._wrap_angles = wrap_angles
+        self._beta_wrap = beta_wrap
+        self._gamma_wrap = gamma_wrap
 
     def __call__(self, qaoa_angles: Union[np.ndarray, List]):
         """Average over the qaoa_angles."""
         if isinstance(qaoa_angles, List):
             qaoa_angles = np.array(qaoa_angles)
+        
+        #Period for gamma is 2pi, for beta is pi/2
+        depth = int(qaoa_angles.shape[1]/2)
+        qaoa_angles[:,depth:] = (qaoa_angles[:,depth:]) % (2*np.pi)
+        #Period for gamma is 2pi, for beta is pi/2
+        if self._wrap_angles:
+            depth = int(qaoa_angles.shape[1]/2)
+            qaoa_angles[:,depth:] = (qaoa_angles[:,depth:]) % self._beta_wrap
+            qaoa_angles[:,0:depth] = (qaoa_angles[:,0:depth]) % self._gamma_wrap
 
         if any(i >= len(qaoa_angles.shape) for i in self._axis):
             raise ValueError("Input data not coherent with chosen axes")
@@ -85,12 +103,20 @@ class AverageAngleAggregator(BaseAngleAggregator):
         """Create config from the angle aggregator."""
         config = super().to_config()
         config["axis"] = self._axis
+        config["wrap_angles"] = self._wrap_angles
+        config["beta_wrap"] = self._beta_wrap
+        config["gamma_wrap"] = self._gamma_wrap
         return config
 
     @classmethod
     def from_config(cls, config: Dict) -> "AverageAngleAggregator":
         """Create the trivial feature matcher."""
-        return cls(config.get("axis", 0))
+        return cls(
+            config.get("axis", 0),
+            config.get("wrap_angles", False),
+            config.get("beta_wrap", 2 * np.pi),
+            config.get("gamma_wrap", 2 * np.pi),
+        )
 
 
 ANGLE_AGGREGATORS = {
