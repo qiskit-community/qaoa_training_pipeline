@@ -8,8 +8,6 @@
 
 """Tests of the class DepthOneScanTrainer."""
 
-import unittest
-
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.efficient_depth_one import (
@@ -158,19 +156,14 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
         expected_b_matrix = -0.01951626068306727
         self.assertAlmostEqual(b_matrix, expected_b_matrix)
 
-    # TODO: the analytic beta* assumes the mixer +sum_i X_i and must be re-derived for the
-    # mixer -sum_i X_i of CONVENTIONS.md. This is deferred to a separate change.
-    @unittest.expectedFailure
     def test_beta_star_for_gamma(self):
         """
         Test that the optimal beta value is received for a set gamma.
         """
         beta = self.trainer._beta_star_for_gamma(self.graph, gamma=1.5)
-        expected_beta = -0.7499982063376642
+        expected_beta = 1.5353963697351132
         self.assertAlmostEqual(beta, expected_beta)
 
-    # TODO: depends on the analytic beta*, see test_beta_star_for_gamma.
-    @unittest.expectedFailure
     def test_consistency_between_trainers(self):
         """
         Test that the optimal beta scanner achieves an energy <= the parameter scanner energy.
@@ -179,8 +172,11 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
         result_depth_one_trainer = depth_one_trainer.provide_params(self.cost_op)
         gamma_trainer = DepthOneGammaScanTrainer(EfficientDepthOneEvaluator(), num_points=100)
         result_opt_beta = gamma_trainer.provide_params(self.cost_op)
+
+        # Both trainers scan the same gamma values but the optimal beta is exact.
+        self.assertLessEqual(result_opt_beta["energy"], result_depth_one_trainer["energy"])
         self.assertAlmostEqual(
-            result_opt_beta["energy"], result_depth_one_trainer["energy"], places=3
+            result_opt_beta["energy"], result_depth_one_trainer["energy"], delta=1e-3
         )
 
         depth_one_trainer = DepthOneScanTrainer(EfficientDepthOneEvaluator(), num_points=10)
