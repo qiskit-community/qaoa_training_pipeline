@@ -9,11 +9,11 @@
 """Evaluator based on the estimator primitive."""
 
 from qiskit import QuantumCircuit
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import BaseEstimatorV2
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 
 
 class AerEvaluator(BaseEvaluator):

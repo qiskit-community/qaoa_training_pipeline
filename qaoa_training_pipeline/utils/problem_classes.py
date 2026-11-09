@@ -29,15 +29,18 @@ class MaxCut:
         return cls()
 
     def cost_operator(self, input_data: dict):
-        """Create the cost operator from the input.
+        r"""Create the cost operator from the input.
 
-        The (weighted) edges of the graph are converted to ZZ with a prefoactor of -0.5.
+        The (weighted) edges of the graph are converted to ZZ with a pre-factor of 0.5, i.e.,
+        :math:`H_C=\sum_{(i,j)}w_{ij}Z_iZ_j/2`. Following the conventions, the maximum cut is
+        the ground state of :math:`H_C` and the cut value is
+        :math:`\sum_{(i,j)}w_{ij}/2-\langle H_C\rangle`.
 
         Args:
             input: A dict specifying a graph where the keys are tuples of ints representing
                 edges or hyper-edge and the values are the weights.
         """
-        return input_to_operator(input_data, pre_factor=-0.5)
+        return input_to_operator(input_data, pre_factor=0.5)
 
 
 class MaxIndependentSet:
@@ -159,8 +162,7 @@ class LABS:
         Note: The input_data is ignored for LABS, as the problem
         is fully defined by N provided at initialization.
 
-        Note: LABS is a minimization problem. Use energy_minimization=True
-        in ScipyTrainer config when optimizing LABS.
+        Note: LABS is a minimization problem which matches the default of the trainers.
 
         Args:
             input_data: An optional dict, ignored.

@@ -12,11 +12,11 @@ import warnings
 import numpy as np
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.converters import circuit_to_dag
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 
 # cspell: ignore juliacall seval qarg qargs overlapwithzero
 # Safely import Julia if is is installed.

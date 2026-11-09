@@ -22,7 +22,7 @@ import networkx as nx
 from qaoa_training_pipeline.inference import AIInference
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
-cost_op = graph_to_operator(nx.random_regular_graph(3, 10, seed=7), pre_factor=-0.5)
+cost_op = graph_to_operator(nx.random_regular_graph(3, 10, seed=7), pre_factor=0.5)
 inference = AIInference(model="gcn/p3")      # downloaded from the Hub, then cached
 result = inference.provide_params(cost_op)   # ParamResult of [beta_1..beta_p, gamma_1..gamma_p]
 ```
@@ -38,9 +38,11 @@ To get the raw network output call
   `OnnxQAOAPredictor.predict_normalized(..., denormalize=False)`.
 - Currently, all shipped bundles are pretrained on **max-cut** instances only, over the
 graph families described in [arXiv:2610.23296](https://arxiv.org/abs/2610.23296). 
-The cost operator must use the max-cut convention the models were trained on, 
-`H = -0.5 * sum_e w_e Z_i Z_j` — i.e. `pre_factor=-0.5`, *not* the
+The cost operator must use the max-cut convention of [CONVENTIONS](../../CONVENTIONS.md),
+`H = 0.5 * sum_e w_e Z_i Z_j` — i.e. `pre_factor=0.5`, *not* the
 `pre_factor=1.0` default of `graph_to_operator`, see `hf_setup.json`.
+The models were trained to maximize `-H` with the mixer `sum_i X_i`. This is the same
+landscape as minimizing `H` with the default mixer `-sum_i X_i`, so the angles are unchanged.
 A different problem class — MIS, or any Hamiltonian that is not a weighted max-cut 
 graph — is outside what they were trained for. 
 `validate_cost_op` rejects the operators that cannot be a max-cut graph.

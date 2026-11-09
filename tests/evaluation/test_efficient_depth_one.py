@@ -12,7 +12,7 @@ import numpy as np
 from ddt import data, ddt, unpack
 from qiskit import QuantumCircuit, transpile
 from qiskit.circuit import Parameter
-from qiskit.circuit.library import PauliEvolutionGate, qaoa_ansatz
+from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import Operator, Pauli, SparsePauliOp, Statevector
 from qiskit_aer import Aer
@@ -22,6 +22,7 @@ from qaoa_training_pipeline.evaluation.efficient_depth_one import (
     EfficientDepthOneEvaluator,
     _edge_neighbours,
 )
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 
@@ -126,9 +127,9 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         self.assertTrue(abs(energy2 - energy) > 0.02)
 
     def test_default_mixer(self):
-        """Ensure the default mixer is the expected one."""
+        """Ensure the default mixer is exp(-i beta H_M) with H_M = -X."""
 
-        expected = Operator(PauliEvolutionGate(Pauli("X"), 1)).data
+        expected = Operator(PauliEvolutionGate(-Pauli("X"), 1)).data
 
         self.assertTrue((np.allclose(expected, self.evaluator.mixer(1.0))))
 
@@ -198,7 +199,7 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         initial_state.h(range(4))
 
         mixer = QuantumCircuit(4)
-        mixer.rx(2 * Parameter("b"), range(4))
+        mixer.rx(-2 * Parameter("b"), range(4))
 
         energy = self.evaluator.evaluate(
             cost_op,
@@ -225,13 +226,14 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
     def test_trivial_warm_start(self):
         r"""Test a warm-start like QAOA. We start in 0001.
 
-        In the case of a warm-start the mixer changes from `+X` to
+        In the case of a warm-start the mixer changes from :math:`-X` to
 
         ..math::
 
-            \sin(\theta)X - \cos(\theta)Z
+            -\sin(\theta)X - \cos(\theta)Z
 
-        which is equivalent to the conventional mixer when theta is pi/2.
+        which is equivalent to the conventional mixer when theta is pi/2. Here, theta is pi
+        for qubit 0 and 0 for the others so that the mixer is diagonal.
         """
         cost_op = SparsePauliOp.from_list([("IIZZ", -0.5), ("ZIIZ", -0.5), ("IZIZ", -0.5)])
 
@@ -240,12 +242,12 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         # Example of a warm-start where q0 is in 1 and the other qubits in 0.
         # In this case the cost-op does nothing and neither does beta.
         init = QuantumCircuit(4)
-        init.ry(-np.pi, 0)
+        init.ry(np.pi, 0)
 
         mixer = QuantumCircuit(4)
-        mixer.ry(np.pi, 0)
-        mixer.rz(2 * Parameter("beta"), range(4))
         mixer.ry(-np.pi, 0)
+        mixer.rz(-2 * Parameter("beta"), range(4))
+        mixer.ry(np.pi, 0)
 
         energy = self.evaluator.evaluate(cost_op, params, initial_state=init, mixer=mixer)
 
@@ -280,9 +282,9 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         cost_gate = PauliEvolutionGate(cost_op, time=params[1])
         qc.append(cost_gate, range(3))
 
-        # Mixer unitary: exp(-i beta * sum_j X_j)  ≡  Rx(2*beta) on each qubit
+        # Mixer unitary: exp(-i beta * (-sum_j X_j))  ≡  Rx(-2*beta) on each qubit
         for j in range(3):
-            qc.rx(2 * params[0], j)
+            qc.rx(-2 * params[0], j)
 
         # Compute <psi | cost_op | psi> via statevector simulation
         sv = Statevector(qc)
@@ -325,9 +327,9 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
 
         for j in range(3):
             theta = 0.1 * (j + 1)
-            mixer.ry(theta, j)
-            mixer.rz(-2 * beta, j)
             mixer.ry(-theta, j)
+            mixer.rz(-2 * beta, j)
+            mixer.ry(theta, j)
 
         qc.compose(mixer.assign_parameters({beta: params[0]}), inplace=True)
 
@@ -361,9 +363,9 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         init, mixer = QuantumCircuit(num_qubits), QuantumCircuit(num_qubits)
         for j, theta in enumerate(thetas):
             init.ry(theta, j)
-            mixer.ry(theta, j)
-            mixer.rz(-2 * beta, j)
             mixer.ry(-theta, j)
+            mixer.rz(-2 * beta, j)
+            mixer.ry(theta, j)
 
         return init, mixer
 
@@ -382,7 +384,7 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         qc.append(PauliEvolutionGate(circ_op, time=params[1]), range(num_qubits))
 
         if mixer is None:
-            qc.rx(2 * params[0], range(num_qubits))
+            qc.rx(-2 * params[0], range(num_qubits))
         else:
             qc.compose(mixer.assign_parameters([params[0]]), inplace=True)
 
@@ -506,7 +508,7 @@ class TestEfficientDepthOne(TrainingPipelineTestCase):
         cost_op = SparsePauliOp.from_list([("IIZZ", 1.0), ("ZIIZ", 1.0)])
 
         mixer = QuantumCircuit(3)
-        mixer.rx(2 * Parameter("b"), range(3))
+        mixer.rx(-2 * Parameter("b"), range(3))
 
         with self.assertRaises(ValueError):
             self.evaluator.evaluate(cost_op, [0.1, 0.2], mixer=mixer)

@@ -12,8 +12,8 @@ These need neither torch nor a checkpoint. The numpy path (``extract_np`` /
 ``pack_features_np`` / ``extract_and_pack_np``) is what the default ONNX
 inference backend uses, so it is the one exercised here.
 
-The operators below use negative ``ZZ`` coefficients because that is what the
-max-cut convention the models were trained on produces for positive edge
+The operators below use positive ``ZZ`` coefficients because that is what the
+max-cut convention ``H_C = 0.5 * sum_e w_e Z_i Z_j`` produces for positive edge
 weights (see each bundle's declared ``prefactor``).
 """
 
@@ -33,7 +33,7 @@ from qaoa_training_pipeline.inference.scaling import normalize_cost_op
 
 # The convention the shipped bundles declare; tests state it explicitly
 # because the package keeps no default.
-MAX_CUT = -0.5
+MAX_CUT = 0.5
 
 
 # Identity-ish norm stats (mean 0, std 1) so normalized == raw for easy checks.
@@ -63,7 +63,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
 
     def test_extract_triangle_graph_topology(self):
         """A 3-qubit triangle operator maps to a 3-node, 3-edge graph."""
-        op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
+        op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
         feats = make_extractor().extract_np(*normalize_cost_op(op))
         self.assertEqual(feats["num_nodes"], 3)
         self.assertEqual(feats["num_edges"], 3)
@@ -74,7 +74,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
 
     def test_extract_line_graph_topology(self):
         """A 4-qubit line operator maps to a 4-node, 3-edge path graph."""
-        op = SparsePauliOp.from_list([("ZZII", -1.0), ("IZZI", -1.0), ("IIZZ", -1.0)])
+        op = SparsePauliOp.from_list([("ZZII", 1.0), ("IZZI", 1.0), ("IIZZ", 1.0)])
         feats = make_extractor().extract_np(*normalize_cost_op(op))
         self.assertEqual(feats["num_nodes"], 4)
         self.assertEqual(feats["num_edges"], 3)
@@ -84,7 +84,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
 
     def test_pack_features_shape_and_order(self):
         """pack_features_np returns a (1, n_features) array in sorted-name order."""
-        op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
+        op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
         ext = make_extractor()
         feats = ext.extract_np(*normalize_cost_op(op))
         x = ext.pack_features_np(feats)
@@ -97,7 +97,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
 
     def test_pack_features_applies_normalization(self):
         """(v - mean) / std is applied per feature."""
-        op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
+        op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
         stats = {name: {"mean": 1.0, "std": 2.0} for name in SCALAR_FEATURES}
         ext = AIFeatureExtractor(
             in_features=sorted(SCALAR_FEATURES), norm_stats=stats, prefactor=MAX_CUT
@@ -109,7 +109,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
 
     def test_pack_features_zero_std_is_safe(self):
         """A zero std must not produce inf/nan (guarded to std=1)."""
-        op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
+        op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
         stats = {name: {"mean": 0.0, "std": 0.0} for name in SCALAR_FEATURES}
         ext = AIFeatureExtractor(
             in_features=sorted(SCALAR_FEATURES), norm_stats=stats, prefactor=MAX_CUT
@@ -125,7 +125,7 @@ class TestAIFeatureExtractor(TrainingPipelineTestCase):
 
     def test_extract_and_pack_consistency(self):
         """extract_and_pack_np equals extract_np followed by pack_features_np."""
-        op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
+        op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
         ext = make_extractor()
         x_vec, feats = ext.extract_and_pack_np(*normalize_cost_op(op))
         self.assertEqual(x_vec.shape, (1, len(SCALAR_FEATURES)))
@@ -156,14 +156,14 @@ class TestCostOperatorConvention(TrainingPipelineTestCase):
     """The models consume edge weights, so the operator's convention matters."""
 
     def test_wrong_pre_factor_warns(self):
-        """An all-positive quadratic operator is the pre_factor=1.0 mistake."""
-        op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
+        """An all-negative quadratic operator is the old pre_factor=-0.5 convention."""
+        op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
         with self.assertWarns(UserWarning):
             make_extractor().extract_np(*normalize_cost_op(op))
 
     def test_training_convention_does_not_warn(self):
         """The convention the models were trained on must pass silently."""
-        op = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0), ("ZIZ", -1.0)])
+        op = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0), ("ZIZ", 1.0)])
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             make_extractor().extract_np(*normalize_cost_op(op))
@@ -171,11 +171,11 @@ class TestCostOperatorConvention(TrainingPipelineTestCase):
 
     def test_edge_weights_undo_the_pre_factor(self):
         """extract_np recovers graph weights by dividing out the pre-factor."""
-        op = SparsePauliOp.from_list([("ZZI", -0.5), ("IZZ", -0.5), ("ZIZ", -0.5)])
+        op = SparsePauliOp.from_list([("ZZI", 0.5), ("IZZ", 0.5), ("ZIZ", 0.5)])
         feats = make_extractor().extract_np(*normalize_cost_op(op))
         # The operator is normalized by rescaling_factor first, so compare the
         # weights to the normalized coefficients divided by the pre-factor.
-        expected = (-0.5 / feats["rescale_a"]) / MAX_CUT
+        expected = (0.5 / feats["rescale_a"]) / MAX_CUT
         np.testing.assert_allclose(feats["edge_weights"].squeeze(0), [expected] * 3, rtol=1e-6)
 
 
@@ -200,12 +200,12 @@ class TestPreFactorSignAndMagnitude(TrainingPipelineTestCase):
             return make_extractor().extract_np(*normalize_cost_op(op))["edge_weights"].squeeze(0)
 
     def test_magnitude_divides_out(self):
-        """-0.5 and -2.0 are the same normalized problem, so the same features."""
-        np.testing.assert_allclose(self._weights(-0.5), self._weights(-2.0), rtol=1e-6)
+        """0.5 and 2.0 are the same normalized problem, so the same features."""
+        np.testing.assert_allclose(self._weights(0.5), self._weights(2.0), rtol=1e-6)
 
     def test_the_opposite_sign_survives_as_a_negation(self):
-        """+1.0 normalizes to the negated operator -- the case worth warning about."""
-        np.testing.assert_allclose(self._weights(1.0), -self._weights(-0.5), rtol=1e-6)
+        """-1.0 normalizes to the negated operator -- the case worth warning about."""
+        np.testing.assert_allclose(self._weights(-1.0), -self._weights(0.5), rtol=1e-6)
 
     def test_mixed_sign_weights_are_the_documented_blind_spot(self):
         """Neither spelling of a mixed-sign graph warns; the test pins that down.
@@ -213,7 +213,7 @@ class TestPreFactorSignAndMagnitude(TrainingPipelineTestCase):
         Nothing is wrong here -- it is why the docstring says the convention is
         the caller's to get right when weights have both signs.
         """
-        for pre_factor in (-0.5, 1.0):
+        for pre_factor in (0.5, -1.0):
             op = SparsePauliOp.from_list(
                 [("ZZI", pre_factor), ("IZZ", -pre_factor), ("ZIZ", 2 * pre_factor)]
             )
@@ -227,7 +227,7 @@ class TestPreFactorSignAndMagnitude(TrainingPipelineTestCase):
 class TestDeclaredPrefactor(TrainingPipelineTestCase):
     """The convention comes from the bundle's setup entry, not from a constant."""
 
-    OPERATOR = SparsePauliOp.from_list([("ZZI", -0.5), ("IZZ", -0.5), ("ZIZ", -0.5)])
+    OPERATOR = SparsePauliOp.from_list([("ZZI", 0.5), ("IZZ", 0.5), ("ZIZ", 0.5)])
 
     def _weights(self, prefactor):
         """Recovered edge weights when the bundle declares ``prefactor``."""
@@ -240,7 +240,7 @@ class TestDeclaredPrefactor(TrainingPipelineTestCase):
 
     def test_the_declared_prefactor_divides_the_coefficients(self):
         """Halving the prefactor doubles the recovered weights."""
-        np.testing.assert_allclose(self._weights(-0.25), self._weights(-0.5) * 2.0, rtol=1e-6)
+        np.testing.assert_allclose(self._weights(0.25), self._weights(0.5) * 2.0, rtol=1e-6)
 
     def test_the_prefactor_is_required(self):
         """There is no default convention to fall back on."""
@@ -254,12 +254,12 @@ class TestDeclaredPrefactor(TrainingPipelineTestCase):
         self.assertIn("non-zero", str(ctx.exception))
 
     def test_the_warning_follows_the_declared_sign(self):
-        """A positive-prefactor model must not be warned about positive coefficients."""
-        positive = SparsePauliOp.from_list([("ZZI", 1.0), ("IZZ", 1.0)])
-        extractor = AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=1.0)
+        """A negative-prefactor model must not be warned about negative coefficients."""
+        negative = SparsePauliOp.from_list([("ZZI", -1.0), ("IZZ", -1.0)])
+        extractor = AIFeatureExtractor(in_features=[], norm_stats={}, prefactor=-1.0)
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            extractor.extract_np(*normalize_cost_op(positive))
+            extractor.extract_np(*normalize_cost_op(negative))
         self.assertEqual([str(w.message) for w in caught], [])
 
     def test_the_prefactor_survives_a_config_round_trip(self):
@@ -287,7 +287,7 @@ class TestExtractorInterface(TrainingPipelineTestCase):
             in_features=sorted(SCALAR_FEATURES), norm_stats=IDENTITY_STATS, prefactor=MAX_CUT
         )
         rebuilt = AIFeatureExtractor.from_config(extractor.to_config())
-        op = SparsePauliOp.from_list([("ZZI", -0.5), ("IZZ", -0.5), ("ZIZ", -0.5)])
+        op = SparsePauliOp.from_list([("ZZI", 0.5), ("IZZ", 0.5), ("ZIZ", 0.5)])
         normalized, scale = normalize_cost_op(op)
         np.testing.assert_allclose(
             rebuilt(normalized, scale)[0], extractor(normalized, scale)[0], rtol=1e-6

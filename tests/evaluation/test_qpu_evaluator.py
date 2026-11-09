@@ -9,12 +9,12 @@
 
 from unittest import TestCase
 
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer import AerSimulator
 
 from qaoa_training_pipeline.evaluation.qpu_sample_evaluator import QPUSampleEvaluator
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 
 
 class TestQPUSampleEvaluator(TestCase):
@@ -119,6 +119,6 @@ class TestQPUSampleEvaluator(TestCase):
         self.assertEqual(config["name"], "QPUSampleEvaluator")
         self.assertEqual(config["backend"], "aer_simulator_matrix_product_state")
         self.assertEqual(config["cvar_alpha"], 1)
-        self.assertEqual(config["energy_minimization"], False)
+        self.assertEqual(config["energy_minimization"], True)
         self.assertEqual(config["backend_config"]["method"], "matrix_product_state")
         self.assertEqual(config["shots"], 20_000)

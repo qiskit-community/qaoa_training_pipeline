@@ -304,22 +304,24 @@ def load_graph(file_name: str) -> nx.Graph:
 
 
 def solve_max_cut(cost_op: SparsePauliOp, energy: float | None = None):
-    """Solve the MaximumCut problem for the given cost op.
+    r"""Solve the MaximumCut problem for the given cost op.
 
     This method allows us to benchmark performance. It requires CPLEX to solve to optimality
     the MaxCut problem for the given cost operator. In addition, if we provide the
     energy then the approximation ratio corresponding to this energy is computed.
 
     Args:
-        cost_op: The cost operator that will be converted to a graph.
+        cost_op: The cost operator that will be converted to a graph. It must follow the
+            MaxCut convention :math:`H_C=\sum_{(i,j)}w_{ij}Z_iZ_j/2` of `MaxCut.cost_operator`.
         energy: An energy to compare to the minimum and maximum cuts found by CPLEX. If
-            this quantity is given then we will convert it to an approximation ratio.
+            this quantity is given then we will convert it to an approximation ratio. The
+            corresponding cut value is :math:`\sum_{(i,j)}w_{ij}/2-\langle H_C\rangle`.
     """
     from qiskit_optimization.algorithms import CplexOptimizer
     from qiskit_optimization.applications import Maxcut
     from qiskit_optimization.problems.quadratic_objective import ObjSense
 
-    graph = operator_to_graph(cost_op, pre_factor=-2)
+    graph = operator_to_graph(cost_op, pre_factor=2)
 
     opt_problem = Maxcut(nx.adjacency_matrix(graph, nodelist=range(graph.order())).toarray())
 
@@ -337,7 +339,7 @@ def solve_max_cut(cost_op: SparsePauliOp, energy: float | None = None):
     if energy is not None:
         sum_weights = sum(val[2].get("weight", 1.0) for val in graph.edges(data=True))
 
-        cut_val = energy + 0.5 * sum_weights
+        cut_val = 0.5 * sum_weights - energy
 
         approximation_ratio = (cut_val - min_cut) / (max_cut - min_cut)
 

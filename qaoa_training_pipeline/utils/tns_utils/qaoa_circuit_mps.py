@@ -70,7 +70,7 @@ class QAOACircuitTNSRepresentation(ABC):
                 element of the tuple is a list containing the indices of the hyperedge,
                 and the second element is the corresponding weight. Defaults to None.
             mixer: A quantum circuit describing the mixer operator. If None is given, the default,
-                then we assume that the mixer is the sum of X gates. A current limitation of the
+                then the mixer is -sum_i X_i, i.e., Rx(-2 beta) gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
             store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
@@ -146,7 +146,7 @@ class QAOACircuitTNSRepresentation(ABC):
             swap_strategy (SwapStrategy): The swap strategy to use. If None (the default)
                 then we do not apply the gates in the cost layer following a swap strategy.
             mixer: A quantum circuit describing the mixer operator. If None is given, the default,
-                then we assume that the mixer is the sum of X gates. A current limitation of the
+                then the mixer is -sum_i X_i, i.e., Rx(-2 beta) gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
             store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
@@ -199,7 +199,7 @@ class QAOACircuitTNSRepresentation(ABC):
                 swap gates. This can result in a more efficient implementation of the cost
                 operator, especially for dense problems. Defaults to None.
             mixer: A quantum circuit describing the mixer operator. If None is given, the default,
-                then we assume that the mixer is the sum of X gates. A current limitation of the
+                then the mixer is -sum_i X_i, i.e., Rx(-2 beta) gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
         """
@@ -431,7 +431,7 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
                 element of the tuple is a list containing the indices of the hyperedge,
                 and the second element is the corresponding weight. Defaults to None.
             mixer: A quantum circuit describing the mixer operator. If None is given, the default,
-                then we assume that the mixer is the sum of X gates. A current limitation of the
+                then the mixer is -sum_i X_i, i.e., Rx(-2 beta) gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
             store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
@@ -510,9 +510,10 @@ class QAOACircuitMPSRepresentation(QAOACircuitTNSRepresentation):
         if self._mixers is not None:
             self.apply_split_circuits(self._mixers, scaling_factor)
         else:
-            # Single-qubit gate, no truncation. However, we keep track of the canonization
+            # Single-qubit gate, no truncation. However, we keep track of the canonization.
+            # The default mixer H_M = -sum_i X_i gives Rx(-2 beta) gates.
             for i_qubit in range(self._n_qubits):
-                self._mps_representation.apply_gate("RX", 2.0 * scaling_factor, i_qubit)
+                self._mps_representation.apply_gate("RX", -2.0 * scaling_factor, i_qubit)
 
         self._canonization_center = self.n_qubits - 1
 
@@ -784,7 +785,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
                 element of the tuple is a list containing the indices of the hyperedge,
                 and the second element is the corresponding weight. Defaults to None.
             mixer: A quantum circuit describing the mixer operator. If None is given, the default,
-                then we assume that the mixer is the sum of X gates. A current limitation of the
+                then the mixer is -sum_i X_i, i.e., Rx(-2 beta) gates. A current limitation of the
                 method is that the mixer is made of single-qubit rotations only.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
             store_intermediate_schmidt_values (bool): whether the Schmidt values associated with
@@ -841,8 +842,8 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
     def _apply_mixing_layer(self, scaling_factor: float) -> None:
         """Applies the mixing layer onto the circuit.
 
-        For the moment, the mixing layer is hardcoded being a
-        layer of Rx gates.
+        By default, the mixing layer is a layer of Rx(-2 beta) gates, which corresponds
+        to the mixer H_M = -sum_i X_i.
 
         Args:
             scaling_factor (float): scaling term for the mixing.
@@ -853,7 +854,7 @@ class QAOACircuitVidalRepresentation(QAOACircuitTNSRepresentation):
             # Single-qubit gate, no truncation. However, we keep track of the
             # canonization
             for i_qubit in range(self._n_qubits):
-                self._mps_representation.apply_rx_gate(i_qubit, 2.0 * scaling_factor)
+                self._mps_representation.apply_rx_gate(i_qubit, -2.0 * scaling_factor)
 
     def _apply_one_local(self, scaling_factor):
         """Internal helper function to apply one-local terms from the Ansatz."""

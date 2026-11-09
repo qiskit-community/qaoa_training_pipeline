@@ -15,13 +15,13 @@ import numpy as np
 from ddt import data, ddt, unpack
 from qiskit import QuantumCircuit, transpile
 from qiskit.circuit import Parameter
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler.passes.routing.commuting_2q_gate_routing import SwapStrategy
 
 from qaoa_training_pipeline.evaluation import EfficientDepthOneEvaluator, MPSEvaluator
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator, load_graph
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 
@@ -197,12 +197,12 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         # Example of a warm-start where q0 is in 1 and the other qubits in 0.
         # In this case the cost-op does nothing and neither does beta.
         init = QuantumCircuit(4)
-        init.ry(-np.pi, 0)
+        init.ry(np.pi, 0)
 
         mixer = QuantumCircuit(4)
-        mixer.ry(np.pi, 0)
-        mixer.rz(2 * Parameter("beta"), range(4))
         mixer.ry(-np.pi, 0)
+        mixer.rz(-2 * Parameter("beta"), range(4))
+        mixer.ry(np.pi, 0)
 
         energy = MPSEvaluator(
             use_vidal_form=vidal, store_schmidt_values=store_schmidt_values
@@ -219,7 +219,7 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         # Test raise on multiple parameters
         mixer = QuantumCircuit(4)
         for idx in range(4):
-            mixer.rx(2 * Parameter(f"beta{idx}"), idx)
+            mixer.rx(-2 * Parameter(f"beta{idx}"), idx)
 
         with self.assertRaises(ValueError):
             MPSEvaluator(use_vidal_form=vidal).evaluate(cost_op, params, mixer=mixer)
@@ -281,7 +281,7 @@ class TestMPSEvaluator(TrainingPipelineTestCase):
         data_dir = self.test_dir + "/../data/"
         graph_file = "000000_12nodes_minus_plus_weighted.json"
         graph = load_graph(data_dir + graph_file)
-        cost_op = graph_to_operator(graph, pre_factor=-0.5)
+        cost_op = graph_to_operator(graph, pre_factor=0.5)
 
         # Proceeds to the evaluation
         evaluator_vidal_m_128 = MPSEvaluator(bond_dim_circuit=128, use_vidal_form=True)

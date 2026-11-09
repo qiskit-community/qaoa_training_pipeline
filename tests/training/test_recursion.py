@@ -40,7 +40,8 @@ class TestRecursion(TrainingPipelineTestCase):
             params0=result_pre["optimized_params"],
         )
 
-        self.assertTrue(result[2]["energy"] < result[3]["energy"])
+        # Deeper circuits reach a lower energy since we minimize by default.
+        self.assertTrue(result[2]["energy"] > result[3]["energy"])
         self.assertEqual(len(result["optimized_params"]), 6)
 
     def test_from_config(self):

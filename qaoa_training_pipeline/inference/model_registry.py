@@ -167,7 +167,7 @@ def validate_setup(setup: dict[str, Any], source: Path) -> None:
             problems.append(
                 f"bundle {bundle_key!r} declares no prefactor. Every entry must state the "
                 "cost-operator convention its model was trained under, "
-                "H = prefactor * sum_e w_e Z_i Z_j (-0.5 for the shipped max-cut models)."
+                "H = prefactor * sum_e w_e Z_i Z_j (0.5 for the shipped max-cut models)."
             )
         else:
             try:

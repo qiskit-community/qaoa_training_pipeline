@@ -93,7 +93,8 @@ class TestTransitionStates(TrainingPipelineTestCase):
         p0 = result1["optimized_params"]
         result2 = trainer2.provide_params(cost_op, params0=p0)
 
-        self.assertTrue(result1["energy"] < result2["energy"])
+        # Depth two reaches a lower energy since we minimize by default.
+        self.assertTrue(result1["energy"] > result2["energy"])
 
     def test_from_config(self):
         """Test that we can load from a config file."""

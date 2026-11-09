@@ -89,7 +89,7 @@ class TestTrain(TrainingPipelineTestCase):
             problem_str,
         ]
 
-        op1 = [("IZZ", -0.5), ("ZIZ", -0.5)]
+        op1 = [("IZZ", 0.5), ("ZIZ", 0.5)]
         op2 = [("IIZ", -0.5), ("IZZ", 0.5), ("ZIZ", 0.5)]
         op3 = [("IIZ", -1.0), ("IZI", -0.25), ("ZII", -0.25), ("IZZ", 0.75), ("ZIZ", 0.75)]
 
@@ -262,7 +262,7 @@ class TestTrain(TrainingPipelineTestCase):
             "edge_map": {0: 1, 1: 2, 2: 0},
         }
 
-        expected_op = SparsePauliOp.from_list([("IZZ", -0.5), ("ZZI", -0.5)])
+        expected_op = SparsePauliOp.from_list([("IZZ", 0.5), ("ZZI", 0.5)])
 
         with patch.object(sys, "argv", test_args):
             args, _ = get_script_args()
@@ -291,7 +291,7 @@ class TestTrain(TrainingPipelineTestCase):
             "maxcut",
         ]
 
-        op1 = [("IZZ", -0.5), ("ZIZ", -0.5)]
+        op1 = [("IZZ", 0.5), ("ZIZ", 0.5)]
         expected = SparsePauliOp.from_list(op1)
 
         with patch.object(sys, "argv", test_args):

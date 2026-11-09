@@ -34,7 +34,7 @@ from ..training_pipeline_test_case import TrainingPipelineTestCase
 
 # The convention the shipped bundles declare; tests state it explicitly
 # because the package keeps no default.
-MAX_CUT = -0.5
+MAX_CUT = 0.5
 
 HF_TESTS_ENABLED = os.environ.get("QTP_HF_TESTS") == "1"
 
@@ -273,8 +273,8 @@ class TestProviderScaleInvariance(TrainingPipelineTestCase):
 
     @staticmethod
     def _max_cut_ring(n):
-        """A ring in the training convention: negative quadratic coefficients."""
-        return _ring(n) * -0.5
+        """A ring in the max-cut convention: positive quadratic coefficients."""
+        return _ring(n) * 0.5
 
     def _provider_on_a_stubbed_network(self, raw, output_dim):
         """An AIInference whose model is a real predictor with a mock session."""

@@ -24,12 +24,12 @@ class TestFixedAngleConjecture(TrainingPipelineTestCase):
         """Setup the class."""
         self.cost_op = SparsePauliOp.from_list(
             [
-                ("IIZZ", -0.5),
-                ("IZIZ", -0.5),
-                ("ZIIZ", -0.5),
-                ("IZZI", -0.5),
-                ("ZIZI", -0.5),
-                ("ZZII", -0.5),
+                ("IIZZ", 0.5),
+                ("IZIZ", 0.5),
+                ("ZIIZ", 0.5),
+                ("IZZI", 0.5),
+                ("ZIZI", 0.5),
+                ("ZZII", 0.5),
             ]
         )
 

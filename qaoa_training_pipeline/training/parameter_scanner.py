@@ -46,7 +46,7 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
     def __init__(
         self,
         evaluator: BaseEvaluator,
-        energy_minimization: bool = False,
+        energy_minimization: bool = True,
         qaoa_angles_function: BaseAnglesFunction = IdentityFunction(),
         parameter_ranges: list[tuple[float, float]] | None = None,
         num_points: int = 15,
@@ -57,7 +57,7 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
             evaluator: The evaluator that computes the energy.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
-                maximize the energy.
+                minimize the energy, see CONVENTIONS.md.
             qaoa_angles_function: A function to convert optimization parameters into QAOA
                 angles. By default, this is the identity function. Ideally, this argument is
                 an instance of `BaseAnglesFunction` but we allow any callable here that maps
@@ -216,7 +216,7 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
-            config.get("energy_minimization", False),
+            config.get("energy_minimization", True),
             qaoa_angles_function=function,
         )
 
@@ -267,7 +267,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
     def __init__(
         self,
         evaluator: BaseEvaluator,
-        energy_minimization: bool = False,
+        energy_minimization: bool = True,
         parameter_ranges: list[tuple[float, float]] | None = None,
         num_points: int = 15,
     ):
@@ -277,7 +277,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             evaluator: The evaluator that computes the energy.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
-                maximize the energy.
+                minimize the energy, see CONVENTIONS.md.
             parameter_ranges:  The parameter range for gamma over which to scan. If
                 this argument is not provided we default to `(0, 2 * np.pi)`.
             num_points: The number of points in the gamma range to take. This
@@ -546,7 +546,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
-            config.get("energy_minimization", False),
+            config.get("energy_minimization", True),
             config.get("parameter_ranges", None),
             config.get("num_points", None),
         )

@@ -150,7 +150,7 @@ class MPSEvaluator(BaseEvaluator):
                 The params are given in the order
                 :math:`[\beta_0, \beta_1, \ldots, \gamma_0, \gamma_1, \ldots]`.
             mixer: Circuit to be used as the mixer part of the QAOA circuit. Defaults to None.
-                If equal to None, just uses a layer of Rx gates.
+                If equal to None, uses the mixer -sum_i X_i, i.e., a layer of Rx(-2 beta) gates.
             initial_state: Circuit used for the state initialization. Defaults to None.
             ansatz_circuit: Ansatz circuit for the QAOA. Defaults to None. If equal to None, just uses
                 the Trotterized propagator associated with the underlying Hamiltonian. When

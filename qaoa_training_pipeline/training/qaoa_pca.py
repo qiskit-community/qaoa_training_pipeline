@@ -37,7 +37,7 @@ class QAOAPCA(ScipyTrainer):
         num_components: int,
         evaluator: BaseEvaluator,
         minimize_args: dict[str, object] | None = None,
-        energy_minimization: bool = False,
+        energy_minimization: bool = True,
     ):
         """Setup the QAOAPCA trainer.
 
@@ -54,7 +54,7 @@ class QAOAPCA(ScipyTrainer):
             minimize_args: Arguments that will be passed to SciPy's `minimize`.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
-                maximize the energy.
+                minimize the energy, see CONVENTIONS.md.
 
         """
         self._data_loader = data_loader
@@ -106,5 +106,5 @@ class QAOAPCA(ScipyTrainer):
             num_components=config["num_components"],
             evaluator=evaluator_cls.from_config(config["evaluator_init"]),
             minimize_args=config.get("minimize_args", None),
-            energy_minimization=config.get("minimize_energy", False),
+            energy_minimization=config.get("energy_minimization", True),
         )

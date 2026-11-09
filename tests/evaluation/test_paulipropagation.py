@@ -12,13 +12,13 @@
 import numpy as np
 from ddt import data, ddt, unpack
 from qiskit import transpile
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer import Aer
 
 from qaoa_training_pipeline.evaluation.pauli_propagation import PPEvaluator
 from qaoa_training_pipeline.evaluation.statevector_evaluator import StatevectorEvaluator
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 TEST_CASES = [

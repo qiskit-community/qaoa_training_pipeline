@@ -19,61 +19,12 @@ In more detail, this repository contains the following.
 
 ## Conventions
 
-Technically, QAOA can be defined with various prefactors in the exponentials of the involved Hamiltonians.
-Here, we carefully outline the conventions used by this API.
-This repository assumes that standard QAOA applies the variational circuit
+See [CONVENTIONS](CONVENTIONS.md) for the QAOA conventions used in this repository.
 
-$$\prod_{k=1}^p \exp{(-i\beta_k H_M)}\exp{(-i\gamma_k H_C)}\left\vert+\right\rangle^{\otimes n}$$
-
-This definition follows the [original QAOA paper](https://arxiv.org/pdf/1411.4028) by Fahri et al. in which the energy of the cost function is **maximized**.
-This definition also aligns with the `QAOAAnsatz` class in Qiskit up to the mixer operator.
-Here, the important convention is in the exponential functions, i.e., $-i\beta_k H_M$ and $-i\gamma_k H_C$.
-By default, i.e., when not otherwise explicitly specified, we assume that the mixer Hamiltonian is defined by
-
-$$H_M = \sum_{i=0}^{n-1} X_i$$
-
-This mixer has $\left\vert+\right\rangle^{\otimes n}$ as the highest excited state.
-We thus assume that we are **maximizing** the energy of the cost operator $H_C$.
-The users of this repository can interact with the trainers by calling their `train` method.
-```
-result = trainer.train(cost_op, ...)
-```
-Here, `trainer` is an instance of a trainer class in the `training` module.
-The `cost_op` is a cost operator and is an instance of a `SparsePauliOp` as found in Qiskit.
-By convention, the parameters returned by `train` are in the order `[beta_1, ..., beta_p, gamma_1, ..., gamma_p]`.
-It is also possible to minimize the energy of `cost_op` by appropriatly initializing the trainer class.
-
-### Input problems
-
-This framework supports optmization problems of the form
-$$\max_{x\in\{0,1\}^n}f(x).$$
-We exemplify the conversion of such an optimization problem to an Ising Hamiltonian with a QUBO defined as
-$$\max_{x\in\{0,1\}^n}\sum_{i,j=0}^{n-1}Q_{ij}x_ix_j.$$
-Here, the $n\times n$ matrix $Q$ specifies the QUBO.
-With the change of variable $2x_i=1-z_i$ we can rewrite the objective as
-$$\frac{1}{4}\max_{x\in\{0,1\}^n}\sum_{i,j=0}^{n-1}Q_{ij}(z_iz_j-z_i-z_j+1).$$
-This optimization problem is then related to an Ising Hamiltonian by replacing each $z_i$ with a Pauli-Z operator $Z_i$.
-To specify an input problem, the user provides a list of hyper-edges and coefficients.
-For example, the input
-```
-{
-    "edge list": [
-        {"nodes": [0, 1, 2], "weight": -1.0},
-        {"nodes": [0, 2], "weight": 2.0},
-    ],
-    "Description": "Example of a problem specification."
-}
-```
-will be mapped to the Hamiltonian $H_C=2\cdot ZIZ - 1\cdot ZZZ$.
-We now examplify how the Maximum Cut (MaxCut) objective function relates to the Hamiltonian $H_C$.
-For a graph $G=(V,E)$, the objective of MaxCut is to maximize the value of the cut
-$$C_\text{max}=\max_{x\in\{0,1\}^n}\sum_{i,j=0}^{n-1}w_{ij}x_i(1-x_j)=\sum_{i,j=0}^{n-1}\frac{w_{ij}}{4}+\max_{z\in\{-1, 1\}^n}\sum_{i,j=0}^{n-1}-\frac{w_{ij}}{4}z_iz_j.$$
-Here, $w_{ij}$ is the weight of edge $(i,j)\in E$.
-Therefore, for MaxCut, we maximize the energy of the Hamiltonian
-$$H_C=\sum_{(i,j)\in E}-\frac{w_{ij}}{2}Z_iZ_j.$$
-Here, the sum runs over the edges $E$ in the graph and not over $i,j=0$ to $n-1$.
-Therefore, we have a factor of $1/2$ instead of $1/4$.
-With this convention, the energy $\langle H_C\rangle$ is related to the value of the cut $C$ by $C=\langle H_C\rangle+\sum_{(i,j)\in E}w_{ij}/2$.
+## MaxCut
+For a graph with edges $E$ and weights $w_{ij}$, the MaxCut cost operator is
+$H_C = \frac{1}{2}\sum_{(i,j)\in E} w_{ij} Z_iZ_j$, i.e., `pre_factor=0.5` in `graph_to_operator` and `MaxCut.cost_operator`.
+The maximum cut is the ground state of $H_C$, and the cut value relates to the energy by $C = \sum_{(i,j)\in E} w_{ij}/2 - ⟨H_C⟩$.
 
 ## Example usage
 
@@ -86,15 +37,15 @@ For convenience, the method is typically contained in JSon file with examples fo
 The trainers may rely on evaluators to compute the energy of the QAOA circuit (or an approximation thereof).
 Performing command line training will require commands of the form
 ```bash
-python -m train --input path_to_graph.json --config path_to_method.json --save --save_dir dir_path --save_file results.json --pre_factor -0.5
+python -m train --input path_to_graph.json --config path_to_method.json --save --save_dir dir_path --save_file results.json --pre_factor 0.5
 ```
 Additional arguments can be given as described in `train.py`.
 Finally, the output of the training is a dictionnary with the results.
 The "energy" is the best found energy and "optmized_params" are the parameters found from the optimization.
 When running from the command line these results are saved in a JSon file.
 The example above corresponds to a MaxCut optimization problem where the input is given as a graph.
-Therefore, we specify `--pre_factor -0.5` to convert the graph to the MaxCut Hamiltonian.
-I.e., upon data loading the pre-factor of `-0.5` is multipled to each edge to obtain the MaxCut cost function discussed above.
+Therefore, we specify `--pre_factor 0.5` to convert the graph to the MaxCut Hamiltonian.
+I.e., upon data loading the pre-factor of `0.5` is multipled to each edge to obtain the MaxCut cost function described in [CONVENTIONS](CONVENTIONS.md#maxcut).
 The pre-factor does not need to be specified (it defaults to 1.0) if the problem in the input JSon has the weights of the intended Ising Hamiltonian.
 
 Files with pre-configured methods to train are found under the folder `data/methods/`.
@@ -154,10 +105,10 @@ import networkx as nx
 from qaoa_training_pipeline.inference import AIInference
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
 
-# The models are trained on the max-cut convention H = -0.5 * sum_e w_e Z_i Z_j,
-# so the operator must be built with pre_factor=-0.5 (graph_to_operator defaults
+# The models expect the max-cut convention H = 0.5 * sum_e w_e Z_i Z_j,
+# so the operator must be built with pre_factor=0.5 (graph_to_operator defaults
 # to 1.0). With any other pre-factor the predicted gammas are quietly wrong.
-cost_op = graph_to_operator(nx.cycle_graph(3), pre_factor=-0.5)
+cost_op = graph_to_operator(nx.cycle_graph(3), pre_factor=0.5)
 ai = AIInference(model="graph_neural_network/p1")
 angles = ai.provide_params(cost_op)["optimized_params"]  # p=1 -> [beta, gamma]
 ```
@@ -272,6 +223,7 @@ This repository is still in development: new functionality is being added and th
 |      50 | Fix install: Quimb stays optional, Qiskit Aer is default.    |          #90 |
 |      51 | Vectorized depth-one evaluator to improve speed.             |          #65 |
 |      52 | Predict QAOA angles with pretrained models (AIInference)     |          #92 |
+|      53 | Align the code with CONVENTIONS.md (minimize, -X mixer)      |          #TBD |
 
 ## IBM Public Repository Disclosure
 

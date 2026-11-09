@@ -10,7 +10,6 @@
 
 import numpy as np
 from ddt import data, ddt
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp, Statevector
 
 from qaoa_training_pipeline.evaluation import (
@@ -20,6 +19,7 @@ from qaoa_training_pipeline.evaluation import (
 )
 from qaoa_training_pipeline.training.functions import FourierFunction
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 
@@ -51,11 +51,12 @@ class TestSciPyTrainer(TrainingPipelineTestCase):
         self.assertTrue(len(result["energy_evaluation_time"]) > 0)
 
     def test_min_vs_max(self):
-        """Test that a simple training works."""
+        """Test that the default minimizes and that maximization can be selected."""
         cost_op = SparsePauliOp.from_list([("ZIIZ", -1), ("IZIZ", -1), ("IIZZ", -1)])
 
-        trainer1 = ScipyTrainer(EfficientDepthOneEvaluator())
-        trainer2 = ScipyTrainer(EfficientDepthOneEvaluator(), energy_minimization=True)
+        trainer1 = ScipyTrainer(EfficientDepthOneEvaluator(), energy_minimization=False)
+        trainer2 = ScipyTrainer(EfficientDepthOneEvaluator())
+        self.assertTrue(trainer2.minimization)
         result1 = trainer1.provide_params(cost_op, params0=[0.5, 0.2])
         result2 = trainer2.provide_params(cost_op, params0=[0.5, 0.2])
 

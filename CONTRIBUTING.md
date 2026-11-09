@@ -6,6 +6,7 @@ and is open for contributions in the form of new features or bug fixes.
 ## How to Get Involved
 - Read the project [Overview](https://github.com/qiskit-community/qaoa_training_pipeline/blob/main/README.md) to see if you would be interested in contributing to this project repo.
 - Read the [Code of Conduct](https://github.com/qiskit-community/qaoa_training_pipeline/blob/main/CODE_OF_CONDUCT.md)
+- Read the [QAOA conventions](CONVENTIONS.md). All code, tests, notebooks and docs must comply with them.
 
 ## How Can I Contribute?
 

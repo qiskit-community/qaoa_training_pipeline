@@ -45,6 +45,12 @@ class AIInference(ProblemParamsProvider):
     bundle key and predicts the QAOA angles for a cost operator in one forward
     pass, with no circuit evaluations.
 
+    The cost operator must follow the max-cut convention of ``MaxCut.cost_operator``,
+    i.e., ``H_C = 0.5 * sum_e w_e Z_i Z_j``, and the predicted angles are for the default
+    mixer ``-sum_i X_i`` of CONVENTIONS.md. The shipped models were trained to maximize
+    ``-H_C`` with the mixer ``sum_i X_i``. This is the same landscape as minimizing ``H_C``
+    with the mixer ``-sum_i X_i`` and therefore yields the same angles.
+
     **Two independent normalizations**, easy to confuse:
 
     * **The problem's scale**, owned here: the operator is divided by the RMS of

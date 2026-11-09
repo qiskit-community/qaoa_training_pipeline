@@ -16,7 +16,6 @@ import qiskit_optimization.optionals as _optionals
 from ddt import ddt
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import HighLevelSynthesis
@@ -28,6 +27,7 @@ from qaoa_training_pipeline.utils.graph_utils import (
     operator_to_graph,
     solve_max_cut,
 )
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 
@@ -240,7 +240,7 @@ class TestGraphUtils(TrainingPipelineTestCase):
         """Test that we can properly solve for the maximum cut."""
 
         # Graph [(0, 1, w=1), (1, 2, w=1)]
-        cost_op = SparsePauliOp.from_list([("IZZ", -0.5), ("ZZI", -0.5)])
+        cost_op = SparsePauliOp.from_list([("IZZ", 0.5), ("ZZI", 0.5)])
 
         max_cut, min_cut, approx = solve_max_cut(cost_op)
 
@@ -249,9 +249,10 @@ class TestGraphUtils(TrainingPipelineTestCase):
         self.assertIsNone(approx)
 
         # Graph [(0, 1, w=-1), (1, 2, w=1)]
-        cost_op = SparsePauliOp.from_list([("IZZ", 0.5), ("ZZI", -0.5)])
+        cost_op = SparsePauliOp.from_list([("IZZ", -0.5), ("ZZI", 0.5)])
 
-        max_cut, min_cut, approx = solve_max_cut(cost_op, energy=1.0)
+        # The cut value is sum_ij w_ij / 2 - energy = 0 - (-1) = 1, i.e., the maximum cut.
+        max_cut, min_cut, approx = solve_max_cut(cost_op, energy=-1.0)
 
         self.assertEqual(max_cut, 1)
         self.assertEqual(min_cut, -1)

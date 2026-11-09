@@ -12,13 +12,13 @@ import hashlib
 
 import numpy as np
 from qiskit.circuit import QuantumCircuit
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import BitArray
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer import AerSimulator
 from qiskit_aer.primitives import SamplerV2
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 
 
 class MPSSampleEvaluator(BaseEvaluator):

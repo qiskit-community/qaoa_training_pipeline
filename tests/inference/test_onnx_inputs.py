@@ -38,7 +38,7 @@ from qaoa_training_pipeline.inference.scaling import normalize_cost_op
 
 # The convention the shipped bundles declare; stated explicitly
 # because the package keeps no default.
-MAX_CUT = -0.5
+MAX_CUT = 0.5
 
 
 # The builders never look at the scalar normalization, only at its output shape, so

@@ -12,13 +12,13 @@ import networkx as nx
 import numpy as np
 from qiskit import transpile
 from qiskit.circuit import QuantumCircuit
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.primitives.base import BaseEstimatorV2
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
 from qaoa_training_pipeline.utils.graph_utils import operator_to_graph
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 
 
 # cspell: words correlator correlators

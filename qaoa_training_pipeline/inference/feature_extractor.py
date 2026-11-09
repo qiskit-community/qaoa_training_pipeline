@@ -54,7 +54,7 @@ class AIFeatureExtractor(BaseFeatureExtractor):
 
     Example:
         extractor = AIFeatureExtractor(
-            in_features=["num_nodes", "mean_degree"], norm_stats=stats, prefactor=-0.5
+            in_features=["num_nodes", "mean_degree"], norm_stats=stats, prefactor=0.5
         )
         normalized, scale = normalize_cost_op(cost_op)
         x_vec, features = extractor.extract_and_pack_np(normalized, scale)
