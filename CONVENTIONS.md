@@ -50,7 +50,7 @@ We assume that $c$ is the continuous solution to the relaxed problem.
 Therefore, under $c_i=1/2~\forall~i$ the initial state is the equal superposition state $|+⟩$.
 This allows us to recover [Standard QAOA](#standard-qaoa) with the same conventions.
 
-3. **mixer**: The initial state is the ground state of the mixer $H_M = -\sum_in^T(ϑ_i)σ_i$ with $n_i = (\sin ϑ_i, 0, \cos ϑ_i)$ and $σ^T_i=(X_i,Y_i,Z_i)$. 
+3. **mixer**: The initial state is the ground state of the mixer $H_M = -\sum_i n^T(ϑ_i)σ_i$ with $n_i = (\sin ϑ_i, 0, \cos ϑ_i)$ and $σ^T_i=(X_i,Y_i,Z_i)$. 
 The mixer operator is thus $\exp(-iβH_M) = Π_i R_Y(ϑ_i) R_Z(-2β) R_Y(-ϑ_i)$. I.e., in a circuit we apply $R_Y(-ϑ_i)$ first. 
 For the default QAOA, i.e., $c_i= 1/2$ and $ϑ = π/2$, we have $n_i = (1, 0, 0)$, so $U_M(β) = \exp(−iβ (-1)Σ_iX_i) = Π_i R_X(-2β)$ which is consistent with the conventions for the default QAOA.
 In edge cases, a warm-start may cause issues since qubits with $c_i\in\{0, 1\}$ are frozen because the mixer is a Pauli-$Z$ rotation and commutes with the phase separator of QAOA.
