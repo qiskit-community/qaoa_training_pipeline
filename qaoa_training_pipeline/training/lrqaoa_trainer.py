@@ -39,7 +39,7 @@ class LRQAOATrainer(ScipyTrainer):
         reps: int | None = None,
         evaluator: BaseEvaluator | None = None,
         minimize_args: dict[str, object] | None = None,
-        energy_minimization: bool = False,
+        energy_minimization: bool = True,
     ):
         """Initialize the Linear Ramp QAOA trainer.
 
@@ -49,7 +49,7 @@ class LRQAOATrainer(ScipyTrainer):
             minimize_args: Arguments that will be passed to SciPy's `minimize`.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
-                maximize the energy.
+                minimize the energy, see CONVENTIONS.md.
         """
         super().__init__(
             evaluator,
@@ -68,5 +68,5 @@ class LRQAOATrainer(ScipyTrainer):
             evaluator=evaluator_cls.from_config(config["evaluator_init"]),
             reps=config.get("reps"),
             minimize_args=config.get("minimize_args", None),
-            energy_minimization=config.get("energy_minimization", False),
+            energy_minimization=config.get("energy_minimization", True),
         )

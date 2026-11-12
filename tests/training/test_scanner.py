@@ -161,19 +161,24 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
         Test that the optimal beta value is received for a set gamma.
         """
         beta = self.trainer._beta_star_for_gamma(self.graph, gamma=1.5)
-        expected_beta = -0.7499982063376642
+        expected_beta = 1.5353963697351132
         self.assertAlmostEqual(beta, expected_beta)
 
     def test_consistency_between_trainers(self):
         """
-        Test that the optimal beta scanner acheives an energy >= the parameter scanner energy.
+        Test that the optimal beta scanner achieves an energy <= the parameter scanner energy.
         """
         depth_one_trainer = DepthOneScanTrainer(EfficientDepthOneEvaluator(), num_points=100)
         result_depth_one_trainer = depth_one_trainer.provide_params(self.cost_op)
         gamma_trainer = DepthOneGammaScanTrainer(EfficientDepthOneEvaluator(), num_points=100)
         result_opt_beta = gamma_trainer.provide_params(self.cost_op)
+
+        # Both trainers scan the same gamma values but the optimal beta is exact.
+        self.assertLessEqual(result_opt_beta["energy"], result_depth_one_trainer["energy"])
+
+        # This check is approximate due to the discretization of the grid.
         self.assertAlmostEqual(
-            result_opt_beta["energy"], result_depth_one_trainer["energy"], places=3
+            result_opt_beta["energy"], result_depth_one_trainer["energy"], delta=1e-3
         )
 
         depth_one_trainer = DepthOneScanTrainer(EfficientDepthOneEvaluator(), num_points=10)
@@ -181,4 +186,4 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
         result_depth_one_trainer = depth_one_trainer.provide_params(self.cost_op)
         gamma_trainer = DepthOneGammaScanTrainer(EfficientDepthOneEvaluator(), num_points=10)
         result_opt_beta = gamma_trainer.provide_params(self.cost_op)
-        assert result_opt_beta["energy"] >= result_depth_one_trainer["energy"]
+        assert result_opt_beta["energy"] <= result_depth_one_trainer["energy"]

@@ -13,7 +13,6 @@ from typing import Dict
 import networkx as nx
 from ddt import data, ddt, unpack
 from qiskit import transpile
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import Pauli, SparsePauliOp
 
@@ -22,6 +21,7 @@ from qaoa_training_pipeline.evaluation.efficient_depth_one import (
 )
 from qaoa_training_pipeline.evaluation.light_cone import LightConeEvaluator
 from qaoa_training_pipeline.utils.graph_utils import graph_to_operator
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 

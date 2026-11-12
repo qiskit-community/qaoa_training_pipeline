@@ -30,6 +30,7 @@ from qopt_best_practices.transpilation.annotated_transpilation_passes import (
 )
 
 from qaoa_training_pipeline.evaluation.base_evaluator import BaseEvaluator
+from qaoa_training_pipeline.utils.qaoa_ansatz import default_mixer_operator
 
 _DEFAULT_SHOTS = 20_000
 
@@ -43,7 +44,7 @@ class QPUSampleEvaluator(BaseEvaluator):
         backend,
         shots: int = _DEFAULT_SHOTS,
         cvar_alpha: float = 1.00,
-        energy_minimization: bool = False,
+        energy_minimization: bool = True,
         samples_folder: str | Path | None = None,
         sampler=None,
     ):
@@ -195,6 +196,10 @@ class QPUSampleEvaluator(BaseEvaluator):
         initial_state: QuantumCircuit | None = None,
     ):
         """Prepare the circuit for hardware execution."""
+        # annotated_qaoa_ansatz defaults to +X so we set the mixer of the conventions explicitly.
+        if mixer is None:
+            mixer = default_mixer_operator(ansatz_circuit.num_qubits)
+
         ansatz = annotated_qaoa_ansatz(
             ansatz_circuit, reps=depth, mixer_operator=mixer, initial_state=initial_state
         )
@@ -232,7 +237,7 @@ class QPUSampleEvaluator(BaseEvaluator):
             backend,
             config.get("shots", _DEFAULT_SHOTS),
             config.get("cvar_alpha", 1.00),
-            config.get("energy_minimization", False),
+            config.get("energy_minimization", True),
             config.get("samples_folder", None),
             config.get("sampler", None),
         )
@@ -250,10 +255,7 @@ class QPUSampleEvaluator(BaseEvaluator):
     def cvar(self, energies: list):
         """Compute the CVAR energy."""
 
-        if self._energy_minimization:
-            sorted_energies = sorted(energies, key=lambda x: -x)
-        else:
-            sorted_energies = sorted(energies)
+        sorted_energies = sorted(energies, reverse=not self._energy_minimization)
 
         end_idx = max(int(self._cvar_alpha * len(energies)), 1)
 

@@ -163,8 +163,8 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             params: The parameters for QAOA. They are a list of length two and
                 correspond to [beta, gamma].
             mixer: A quantum circuit describing the mixer operator. If None is given, the default,
-                then we assume that the mixer is the sum of X gates. The mixer must be made of
-                single-qubit gates only and have a single parameter which is beta. Different
+                then we use the mixer H_M = -sum_i X_i, i.e., Rx(-2 beta) gates. The mixer must be
+                made of single-qubit gates only and have a single parameter which is beta. Different
                 qubits may have different mixers, as in warm-start QAOA.
             initial_state: The initial state. This is given to accommodate, e.g., warm-start QAOA.
                 It must be made of single-qubit gates only.
@@ -206,20 +206,12 @@ class EfficientDepthOneEvaluator(BaseEvaluator):
             beta: The rotation angle of the mixer.
 
         Returns:
-            The single-qubit mixer :math:`\\exp(-i\\beta X)` as a 2x2 matrix.
+            The single-qubit mixer :math:`\\exp(i\\beta X)=R_X(-2\\beta)` as a 2x2 matrix. This
+            is the default mixer :math:`H_M=-\\sum_iX_i` of the conventions.
         """
-        exp_m = np.exp(1.0j * beta)
-        exp_p = np.exp(-1.0j * beta)
+        cos, sin = np.cos(beta), np.sin(beta)
 
-        mixer = np.array(
-            [
-                [0.5 * exp_p + 0.5 * exp_m, 0.5 * (exp_p - exp_m)],
-                [0.5 * (exp_p - exp_m), 0.5 * exp_m + 0.5 * exp_p],
-            ],
-            dtype=complex,
-        )
-
-        return mixer
+        return np.array([[cos, 1.0j * sin], [1.0j * sin, cos]], dtype=complex)
 
     @staticmethod
     def _is_cached(key: tuple[object, ...] | None, *objects: object) -> bool:

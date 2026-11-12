@@ -44,7 +44,7 @@ class ScipyTrainer(PipelineComponent, HistoryMixin):
         self,
         evaluator: BaseEvaluator | None = None,
         minimize_args: dict[str, object] | None = None,
-        energy_minimization: bool = False,
+        energy_minimization: bool = True,
         qaoa_angles_function: BaseAnglesFunction = IdentityFunction(),
     ):
         """Initialize the trainer.
@@ -55,7 +55,7 @@ class ScipyTrainer(PipelineComponent, HistoryMixin):
             minimize_args: Arguments that will be passed to SciPy's `minimize`.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
-                maximize the energy.
+                minimize the energy, see CONVENTIONS.md.
             qaoa_angles_function: A function to convert optimization parameters into QAOA
                 angles. By default, this is the identity function. Ideally, this argument is
                 an instance of `BaseAnglesFunction` but we allow any callable here that maps
@@ -201,7 +201,7 @@ class ScipyTrainer(PipelineComponent, HistoryMixin):
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
             config.get("minimize_args", None),
-            energy_minimization=config.get("energy_minimization", False),
+            energy_minimization=config.get("energy_minimization", True),
             qaoa_angles_function=function,
         )
 

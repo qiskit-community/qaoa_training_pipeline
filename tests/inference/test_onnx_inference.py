@@ -44,14 +44,14 @@ from ..training_pipeline_test_case import TrainingPipelineTestCase
 
 # The convention the shipped bundles declare; tests state it explicitly
 # because the package keeps no default.
-MAX_CUT = -0.5
+MAX_CUT = 0.5
 
 # Distinguishes "output_dim absent" from "output_dim is None" in the tests below.
 _ABSENT = object()
 
 
 def _max_cut_operator(num_nodes: int) -> SparsePauliOp:
-    """A ring max-cut operator in the convention the models were trained on."""
+    """A ring max-cut operator in the convention the models expect."""
     terms, coeffs = [], []
     for node in range(num_nodes):
         label = ["I"] * num_nodes
@@ -414,7 +414,7 @@ class TestScaleInvariance(TrainingPipelineTestCase):
 
     This is the property the whole normalize/denormalize path exists to
     provide. With ``U = prod_k exp(-i beta_k H_B) exp(-i gamma_k H_C)`` and
-    ``H_B = sum_i X_i``, sending ``H_C -> c H_C`` preserves the state only if
+    ``H_B = -sum_i X_i``, sending ``H_C -> c H_C`` preserves the state only if
     ``gamma -> gamma / c``, while beta must not move. It runs without a bundle:
     the network is stubbed, so what is under test is the transformation layer
     around it, which is where the rescaling is applied.

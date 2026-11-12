@@ -46,7 +46,7 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
     def __init__(
         self,
         evaluator: BaseEvaluator,
-        energy_minimization: bool = False,
+        energy_minimization: bool = True,
         qaoa_angles_function: BaseAnglesFunction = IdentityFunction(),
         parameter_ranges: list[tuple[float, float]] | None = None,
         num_points: int = 15,
@@ -57,7 +57,7 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
             evaluator: The evaluator that computes the energy.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
-                maximize the energy.
+                minimize the energy, see CONVENTIONS.md.
             qaoa_angles_function: A function to convert optimization parameters into QAOA
                 angles. By default, this is the identity function. Ideally, this argument is
                 an instance of `BaseAnglesFunction` but we allow any callable here that maps
@@ -216,7 +216,7 @@ class DepthOneScanTrainer(ProblemParamsProvider, HistoryMixin):
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
-            config.get("energy_minimization", False),
+            config.get("energy_minimization", True),
             qaoa_angles_function=function,
         )
 
@@ -260,14 +260,14 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
     gamma as per https://arxiv.org/pdf/2501.16419 -
     "Near-Optimal Parameter Tuning of Level-1 QAOA for Ising Models".
     The guarantee for optimality of the beta parameter here is dependant on using the
-    standard mixer Hm = sum X_j.
+    standard mixer Hm = -sum X_j of CONVENTIONS.md and a cost operator without one-local terms.
     For other mixer hamiltonian the value of the beta computed here might be non optimal.
     """
 
     def __init__(
         self,
         evaluator: BaseEvaluator,
-        energy_minimization: bool = False,
+        energy_minimization: bool = True,
         parameter_ranges: list[tuple[float, float]] | None = None,
         num_points: int = 15,
     ):
@@ -277,7 +277,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
             evaluator: The evaluator that computes the energy.
             energy_minimization: Allows us to switch between minimizing the energy or maximizing
                 the energy. The default and assumed convention in this repository is to
-                maximize the energy.
+                minimize the energy, see CONVENTIONS.md.
             parameter_ranges:  The parameter range for gamma over which to scan. If
                 this argument is not provided we default to `(0, 2 * np.pi)`.
             num_points: The number of points in the gamma range to take. This
@@ -375,9 +375,13 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         Compute beta*(gamma) per Theorem 5 (https://arxiv.org/pdf/2501.16419)
         (field-free Ising, QAOA p=1) for a given gamma and graph G.
 
-        Returns beta* in [0, pi].
+        Formula: beta* = (1/4) * (atan2(2A(gamma), B(gamma)) + pi) when minimizing and
+        beta* = (1/4) * atan2(2A(gamma), B(gamma)) when maximizing.
 
-        Formula: beta* = (1/4) * (atan2(2A(gamma), B(gamma)) + pi).
+        The paper uses the mixer sum_i X_i while CONVENTIONS.md uses -sum_i X_i. Since
+        exp(-i beta (-sum_i X_i)) = exp(-i (-beta) sum_i X_i), we return -beta*. For a cost
+        operator without one-local terms the energy is periodic in beta with period pi / 2,
+        so we shift -beta* into the canonical range [0, pi).
         """
         a_matrix, b_matrix = self._compute_a_b_matrices_for_gamma(
             graph, gamma, weight_attr=weight_attr
@@ -392,7 +396,8 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
         else:
             beta = 0.25 * math.atan2(2.0 * a_matrix, b_matrix)
 
-        return beta
+        # Convert from the mixer sum_i X_i of the paper to the mixer -sum_i X_i.
+        return (-beta) % (math.pi / 2)
 
     def _edge_weight(self, graph: nx.Graph, u: int, v: int, weight_attr: str = "weight") -> float:
         """Fetch edge weight (u,v) J_uv. default weight is 1.0."""
@@ -546,7 +551,7 @@ class DepthOneGammaScanTrainer(DepthOneScanTrainer):
 
         return cls(
             evaluator_cls.from_config(config["evaluator_init"]),
-            config.get("energy_minimization", False),
+            config.get("energy_minimization", True),
             config.get("parameter_ranges", None),
             config.get("num_points", None),
         )

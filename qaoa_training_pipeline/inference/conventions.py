@@ -41,8 +41,8 @@ def warn_on_unexpected_sign_convention(cost_op: SparsePauliOp, prefactor: float)
     coefficients = [
         float(np.real(term.coeffs[0])) for term in cost_op if int(sum(term.paulis[0].z)) > 1
     ]
-    # Under a negative prefactor, positive edge weights give negative
-    # coefficients -- so all-positive ones mean the opposite sign was used.
+    # Positive edge weights give coefficients with the sign of the prefactor, so
+    # coefficients that all have the opposite sign mean the wrong sign was used.
     wrong_sign = (
         all(c > 0.0 for c in coefficients) if prefactor < 0 else all(c < 0.0 for c in coefficients)
     )

@@ -7,16 +7,18 @@
 # that they have been altered from the originals.
 """QPU-based QAOA evaluator tests."""
 
+from ddt import data, ddt, unpack
 from unittest import TestCase
 
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer import AerSimulator
 
 from qaoa_training_pipeline.evaluation.qpu_sample_evaluator import QPUSampleEvaluator
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 
 
+@ddt
 class TestQPUSampleEvaluator(TestCase):
     """Test that the QPU evaluator from qiskit aer works."""
 
@@ -119,6 +121,25 @@ class TestQPUSampleEvaluator(TestCase):
         self.assertEqual(config["name"], "QPUSampleEvaluator")
         self.assertEqual(config["backend"], "aer_simulator_matrix_product_state")
         self.assertEqual(config["cvar_alpha"], 1)
-        self.assertEqual(config["energy_minimization"], False)
+        self.assertEqual(config["energy_minimization"], True)
         self.assertEqual(config["backend_config"]["method"], "matrix_product_state")
         self.assertEqual(config["shots"], 20_000)
+
+    @data((True, 2.0), (False, 3.0))
+    @unpack
+    def test_cvar(self, minimization, cvar_value):
+        """Test the CVaR sorting."""
+        energies = [2.0, 3.0, 1.0, 4.0]
+
+        evaluator1 = QPUSampleEvaluator(
+            backend=AerSimulator(
+                method="matrix_product_state",
+                matrix_product_state_max_bond_dimension=20,
+                max_parallel_threads=1,
+                seed_simulator=35,
+            ),
+            cvar_alpha=0.75,
+            energy_minimization=minimization,
+        )
+
+        self.assertEqual(evaluator1.cvar(energies), cvar_value)

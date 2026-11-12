@@ -1035,9 +1035,9 @@ class TestMatrixProductStateHOBO(TrainingPipelineTestCase):
             elif len(i_term[0]) == 4:
                 quadruple_zeta_gate = PauliEvolutionGate(exp_op, gamma * i_term[1])
                 qc.append(quadruple_zeta_gate, i_term[0])
-        # Mixing layer
+        # Mixing layer of the default mixer -sum_i X_i
         for i_qubit in range(n_qubits):
-            qc.rx(2 * beta, i_qubit)
+            qc.rx(-2 * beta, i_qubit)
 
         # Checks that the overlap is one
         overlap = (

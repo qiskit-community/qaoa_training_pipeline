@@ -31,7 +31,7 @@ class TestTransferTraininer(TrainingPipelineTestCase):
 
         # The data contains 4 instances of QAOA angles with depth 2.
         self._data = {
-            (2, 6, 9, 3.0, -0.5, 0.6): {
+            (2, 6, 9, 3.0, 0.5, 0.6): {
                 "qaoa_angles": [
                     [2.0493, 0.2858, 0.5022, 0.9166],
                     [1.9483, 0.2896, 0.5436, 1.0704],
@@ -55,7 +55,7 @@ class TestTransferTraininer(TrainingPipelineTestCase):
     def test_simple(self):
         """Simple test."""
         graph = nx.random_regular_graph(n=6, d=3, seed=123)
-        cost_op = graph_to_operator(graph, pre_factor=-0.5)
+        cost_op = graph_to_operator(graph, pre_factor=0.5)
 
         result = self._trainer.provide_params(cost_op)
 
@@ -72,7 +72,7 @@ class TestTransferTraininer(TrainingPipelineTestCase):
         )
 
         graph = nx.random_regular_graph(n=6, d=3, seed=123)
-        cost_op = graph_to_operator(graph, pre_factor=-0.5)
+        cost_op = graph_to_operator(graph, pre_factor=0.5)
         result = load_trainer.provide_params(cost_op)
 
         self.assertEqual(len(result["optimized_qaoa_angles"]), 2 * self._qaoa_depth)
@@ -106,7 +106,7 @@ class TestTransferTraininer(TrainingPipelineTestCase):
             "data_loader_init": {
                 "function_name": "TrivialDataLoader",
                 "data": {
-                    (2, 6, 9, 3.0, -0.5, 0.6): [
+                    (2, 6, 9, 3.0, 0.5, 0.6): [
                         [
                             2.0493085568376133,
                             0.2858951231432829,

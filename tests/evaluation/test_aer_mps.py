@@ -9,12 +9,12 @@
 """Qiskit Aer MPS-based QAOA evaluator tests."""
 
 
-from qiskit.circuit.library import qaoa_ansatz
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp
 
 from qaoa_training_pipeline.evaluation.mps_aer import MPSAerEvaluator
 from qaoa_training_pipeline.training.scipy_trainer import ScipyTrainer
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 from tests.training_pipeline_test_case import TrainingPipelineTestCase
 
 

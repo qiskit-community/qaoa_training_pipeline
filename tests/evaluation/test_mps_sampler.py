@@ -11,11 +11,12 @@ from unittest import TestCase
 
 import numpy as np
 from qiskit import QuantumCircuit, transpile
-from qiskit.circuit.library import PauliEvolutionGate, qaoa_ansatz
+from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.primitives import StatevectorEstimator
 from qiskit.quantum_info import SparsePauliOp, Statevector
 
 from qaoa_training_pipeline.evaluation.mps_sample_evaluator import MPSSampleEvaluator
+from qaoa_training_pipeline.utils.qaoa_ansatz import qaoa_ansatz
 
 
 class TestMPSSampleEvaluator(TestCase):
@@ -131,13 +132,15 @@ class TestMPSSampleEvaluator(TestCase):
         r"""
         Test a warm-start like QAOA. We start in 0001.
 
-        In the case of a warm-start the mixer changes from `+X` to
+        In the case of a warm-start the mixer changes from :math:`-X` to
 
         ..math::
 
-            \sin(\theta)X - \cos(\theta)Z
+            -\sin(\theta)X - \cos(\theta)Z
 
-        which is equivalent to the conventional mixer when theta is pi/2.
+        which is equivalent to the conventional mixer when theta is pi/2. Here, theta is pi
+        for qubit 0 and 0 for the others so that the initial state is the ground state of
+        the mixer.
         """
         cost_op = SparsePauliOp.from_list([("IIZZ", -0.5), ("ZIIZ", -0.5), ("IZIZ", -0.5)])
 
@@ -146,9 +149,9 @@ class TestMPSSampleEvaluator(TestCase):
         # Example of a warm-start where q0 is in 1 and the other qubits in 0.
         # In this case the cost-op does nothing and neither does beta.
         init = QuantumCircuit(4)
-        init.ry(-np.pi, 0)
+        init.ry(np.pi, 0)
 
-        mixer_op = SparsePauliOp.from_list([("ZIII", -1), ("IZII", 1), ("IIZI", 1), ("IIIZ", 1)])
+        mixer_op = SparsePauliOp.from_list([("ZIII", -1), ("IZII", -1), ("IIZI", -1), ("IIIZ", 1)])
 
         energy = self.evaluator.evaluate(cost_op, params, initial_state=init, mixer=mixer_op)
 
@@ -183,9 +186,9 @@ class TestMPSSampleEvaluator(TestCase):
         cost_gate = PauliEvolutionGate(cost_op, time=params[1])
         qc.append(cost_gate, range(3))
 
-        # Mixer unitary: exp(-i beta * sum_j X_j)  ≡  Rx(2*beta) on each qubit
+        # Mixer unitary: exp(-i beta * (-sum_j X_j))  ≡  Rx(-2*beta) on each qubit
         for j in range(3):
-            qc.rx(2 * params[0], j)
+            qc.rx(-2 * params[0], j)
 
         # Compute <psi | cost_op | psi> via statevector simulation
         sv = Statevector(qc)
