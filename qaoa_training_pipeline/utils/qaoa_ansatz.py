@@ -48,6 +48,9 @@ def qaoa_ansatz(
             especially for parameter binding, but can be desirable for a cleaner visualization.
     """
 
+    if not isinstance(cost_operator.num_qubits, int):
+        raise ValueError("cost_operator.num_qubits should be an int.")
+
     if mixer_operator is None:
         mixer_operator = default_mixer_operator(cost_operator.num_qubits)
 
