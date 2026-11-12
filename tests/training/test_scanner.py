@@ -176,7 +176,7 @@ class TestDepthOneGammaScanTrainer(TrainingPipelineTestCase):
         # Both trainers scan the same gamma values but the optimal beta is exact.
         self.assertLessEqual(result_opt_beta["energy"], result_depth_one_trainer["energy"])
         self.assertAlmostEqual(
-            result_opt_beta["energy"], result_depth_one_trainer["energy"], delta=1e-3
+            result_opt_beta["energy"], result_depth_one_trainer["energy"], places=3
         )
 
         depth_one_trainer = DepthOneScanTrainer(EfficientDepthOneEvaluator(), num_points=10)
