@@ -223,7 +223,15 @@ This repository is still in development: new functionality is being added and th
 |      50 | Fix install: Quimb stays optional, Qiskit Aer is default.    |          #90 |
 |      51 | Vectorized depth-one evaluator to improve speed.             |          #65 |
 |      52 | Predict QAOA angles with pretrained models (AIInference)     |          #92 |
-|      53 | Align the code with CONVENTIONS.md (minimize, -X mixer)      |          #93 |
+|      53 | Breaking change: new CONVENTIONS.md (minimize, -X mixer)     |          #93 |
+
+### Details
+
+Version 53 introduced new [CONVENTIONS](CONVENTIONS.md).
+User configs that set the `energy_minimization` key silently break because the default flip does not touch them:
+
+* If `"energy_minimization": false` (old maximization of -0.5 * sum w Z Z): after moving to pre_factor=0.5 it still maximizes, now +H_C, so it finds the minimum cut instead of the maximum cut.
+* If someone already calculated angles using `"energy_minimization": true` (old minimization) the mixer is now -X, so the optimal beta is mirrored (beta -> -beta). Angles saved from older runs are not valid for the new circuit. 
 
 ## IBM Public Repository Disclosure
 
