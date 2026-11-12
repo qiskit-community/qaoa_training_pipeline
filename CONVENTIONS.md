@@ -34,7 +34,7 @@ The cost layer, mixer and initial state follow the conventions
 ## Parameters
 - Parameter vectors are given as $θ = [β_1, …, β_p, γ_1, …, γ_p]$, i.e., the $β$ block comes first.
 - Every API that takes or returns $β$ and $γ$ separately lists $β$ first.
-- Canonical form of returned angles: $γ_1 ≥ 0$ and $β_k \in [0, π)$ for all $k$.
+- Canonical form of angles $γ_1 ≥ 0$ and $β_k \in [0, π)$ for all $k$ is suggested but not enforced.
   Minimizing from the ground state of the mixer typically gives $γ > 0$ and $β>0$.
   The canonical form can be achieved by potentially replacing $(β, γ)$ with $(-β, -γ)$ and then replacing $β$ by $β + kπ$ with suitably chosen $k \in \mathbb{N}$.
 
