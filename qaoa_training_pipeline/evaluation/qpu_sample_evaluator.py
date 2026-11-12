@@ -255,10 +255,7 @@ class QPUSampleEvaluator(BaseEvaluator):
     def cvar(self, energies: list):
         """Compute the CVAR energy."""
 
-        if self._energy_minimization:
-            sorted_energies = sorted(energies, key=lambda x: -x)
-        else:
-            sorted_energies = sorted(energies)
+        sorted_energies = sorted(energies, reverse=not self._energy_minimization)
 
         end_idx = max(int(self._cvar_alpha * len(energies)), 1)
 
