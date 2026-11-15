@@ -30,7 +30,7 @@ dependencies = [
     "networkx",
     "numpy>=1.22.0",
     "scipy",
-    "qiskit",
+    "qiskit<3",
     "qiskit-aer",
     "scikit-learn",
     "matplotlib>=3.3",
